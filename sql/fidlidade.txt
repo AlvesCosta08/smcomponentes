@@ -1,0 +1,24 @@
+/fidelidade/
+├── config/
+│   └── database.php
+├── css/
+│   └── estilo.css
+├── js/
+│   └── scripts.js
+├── includes/
+│   ├── header.php
+│   └── footer.php
+├── admin/
+│   ├── programar_cashback.php
+│   ├── programar_pizza_gratis.php
+│   └── relatorios.php
+├── cliente/
+│   ├── meus_pontos.php
+│   ├── resgatar_pizza.php
+│   └── resgatar_cashback.php
+├── processa/
+│   ├── adicionar_pontos.php
+│   ├── resgatar_recompensa.php
+│   └── calcular_cashback.php
+├── index.php
+└── functions.php

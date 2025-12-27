@@ -1,0 +1,5 @@
+[10-Apr-2025 13:00:31 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'p.categoria_id' in 'field list' in /home2/codig267/public_html/demostracao_delivery/sistema/painel/paginas/pedidos/mudar-status.php:48
+Stack trace:
+#0 /home2/codig267/public_html/demostracao_delivery/sistema/painel/paginas/pedidos/mudar-status.php(48): PDO->query('UPDATE vendas S...')
+#1 {main}
+  thrown in /home2/codig267/public_html/demostracao_delivery/sistema/painel/paginas/pedidos/mudar-status.php on line 48

@@ -1,0 +1,588 @@
+[13-Mar-2025 17:33:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[13-Mar-2025 17:33:17 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[13-Mar-2025 17:33:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[13-Mar-2025 17:33:42 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[13-Mar-2025 17:33:49 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[13-Mar-2025 17:33:49 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 10:37:16 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 10:37:16 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 10:37:27 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 10:37:27 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 10:39:27 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 10:39:27 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 10:40:05 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 10:40:05 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 10:47:27 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 10:47:27 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:15 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:23 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:23 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:38 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:38 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:03:50 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:03:50 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:07:26 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:07:26 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:07:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:07:31 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:07:32 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:07:32 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:07:32 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:07:32 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:10:38 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:10:38 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:10:48 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:10:48 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:13:56 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:13:56 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 11:19:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 11:19:13 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 12:49:22 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 12:49:22 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php:13
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php(13): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 13
+[14-Mar-2025 12:51:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 12:51:57 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 12:51:57 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 12:51:57 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 12:52:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 12:52:17 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 12:52:17 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 12:52:17 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 12:56:52 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:03 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:12:03 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:12:03 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:12:40 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:12:40 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:13:11 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:13:11 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:13:37 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:13:37 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:18:45 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:18:45 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:26:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:26:03 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:27:40 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:27:40 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:27:40 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:27:40 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:27:48 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:27:48 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php:34
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php(34): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 34
+[14-Mar-2025 13:28:00 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:28:00 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:28:00 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:28:00 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:28:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:28:02 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:28:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:28:08 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'codig267_delivery.entregadores' doesn't exist in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php:34
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php(34): PDO->query('SELECT * from e...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 34
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:31:06 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:31:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:08 America/Sao_Paulo] PHP Warning:  Undefined array key 0 in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[14-Mar-2025 13:31:08 America/Sao_Paulo] PHP Warning:  Trying to access array offset on value of type null in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[14-Mar-2025 13:31:08 America/Sao_Paulo] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'id_entregador' in 'where clause' in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php:87
+Stack trace:
+#0 /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php(87): PDO->query('SELECT * from v...')
+#1 /home2/codig267/public_html/delivery/sistema/entregador/painel/index.php(91): require_once('/home2/codig267...')
+#2 {main}
+  thrown in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 87
+[14-Mar-2025 13:31:14 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:14 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 13:31:14 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 13:31:14 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 13:31:30 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:30 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:31:34 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:31:34 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:34:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:34:03 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:38:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:38:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:42:33 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:42:33 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:47:19 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:47:19 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:48:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:48:08 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:49:51 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:49:51 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:54:33 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:54:33 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 13:59:59 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:03:23 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:45 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:45 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:45 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:07:45 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:12:01 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:12:02 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:14:05 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:14:05 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:14:20 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:26:19 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:26:20 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:31:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:31:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:06 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:07 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:07 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:07 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:07 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:07 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:35:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:48:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:48:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:48:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:48:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:56:17 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:57:15 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:57:16 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:57:16 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:58:19 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:58:19 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:58:20 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:58:20 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:59:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:59:21 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 14:59:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:00:34 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:03:52 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:03:52 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:03:52 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:03:52 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:04:41 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:04:41 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:04:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:04:42 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:05:23 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:05:23 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:05:24 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:13 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:07:48 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:08:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:10:17 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:10:17 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:10:57 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:14:36 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:14:36 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:24 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:24 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:25 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:16:26 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:16:26 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:31 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:17:32 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:17:32 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:18:04 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:18:04 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:21:38 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:23:42 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:24:56 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:25:26 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:25:26 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:27:14 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:27:14 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:27:14 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:27:14 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:27:15 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:27:15 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:28:36 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:28:36 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:28:36 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:28:36 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:30:03 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:34:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:34:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:34:35 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:34:35 America/Sao_Paulo] PHP Warning:  Undefined variable $id in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregas.php on line 33
+[14-Mar-2025 15:35:49 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:35:49 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:35:49 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:35:49 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:35:53 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:35:53 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:35:53 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:35:53 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:39:23 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:39:23 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:39:23 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:39:23 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:39:24 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:20 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:21 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[14-Mar-2025 15:40:22 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key 0 in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Trying to access array offset on value of type null in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[14-Mar-2025 15:46:12 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 10:44:44 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[24-Mar-2025 10:44:44 America/Sao_Paulo] PHP Warning:  Undefined variable $entregas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 225
+[24-Mar-2025 10:44:44 America/Sao_Paulo] PHP Warning:  Undefined variable $tarefas in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 226
+[24-Mar-2025 10:44:44 America/Sao_Paulo] PHP Warning:  Undefined variable $entregador in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/home.php on line 227
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key 0 in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Trying to access array offset on value of type null in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:06:08 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined variable $alterar_acessos in /home2/codig267/public_html/delivery/sistema/entregador/painel/cabecalho.php on line 66
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key 0 in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Trying to access array offset on value of type null in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 66
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93
+[24-Mar-2025 11:12:25 America/Sao_Paulo] PHP Warning:  Undefined array key "nome" in /home2/codig267/public_html/delivery/sistema/entregador/painel/paginas/entregador.php on line 93

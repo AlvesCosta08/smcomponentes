@@ -1,0 +1,5 @@
+[11-Nov-2024 15:25:19 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: number_format(): Argument #1 ($num) must be of type float, string given in /home2/moniel43/delivery.monielsistemas.com.br/sistema/painel/paginas/pagar/salvar.php:33
+Stack trace:
+#0 /home2/moniel43/delivery.monielsistemas.com.br/sistema/painel/paginas/pagar/salvar.php(33): number_format('qq', 2, ',', '.')
+#1 {main}
+  thrown in /home2/moniel43/delivery.monielsistemas.com.br/sistema/painel/paginas/pagar/salvar.php on line 33
