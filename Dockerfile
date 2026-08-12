@@ -1,7 +1,7 @@
-# Usando PHP 8.3 Alpine (muito mais leve que Ubuntu)
+# Usando PHP 8.3 Alpine (imagem leve)
 FROM php:8.3-fpm-alpine
 
-# Instala dependências do sistema
+# Instala dependências do sistema (CORRIGIDO)
 RUN apk add --no-cache \
     curl \
     git \
@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     libzip-dev \
     libpng-dev \
     libxml2-dev \
-    libssl-dev \
+    openssl-dev \
     libjpeg-turbo-dev \
     freetype-dev \
     libwebp-dev \
@@ -20,13 +20,15 @@ RUN apk add --no-cache \
     oniguruma-dev \
     libmemcached-dev \
     libffi-dev \
-    openssl-dev \
     bash \
     vim \
     nano \
     supervisor \
     nodejs \
-    npm
+    npm \
+    autoconf \
+    g++ \
+    make
 
 # Instala extensões PHP
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp && \
@@ -73,7 +75,7 @@ WORKDIR /var/www/html
 # Copia arquivos de dependências primeiro (cache)
 COPY composer.json composer.lock package.json package-lock.json ./
 
-# Instala dependências do Composer (sem dev)
+# Instala dependências do Composer
 RUN composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist --optimize-autoloader
 
 # Instala dependências Node
