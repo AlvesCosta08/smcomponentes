@@ -1,112 +1,79 @@
-# Usando Ubuntu como base
-FROM ubuntu:24.04
-
-# Evita prompts interativos durante a instalação
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=America/Sao_Paulo
+# Usando PHP 8.3 Alpine (muito mais leve que Ubuntu)
+FROM php:8.3-fpm-alpine
 
 # Instala dependências do sistema
-RUN apt-get update && apt-get install -y \
-    apt-utils \
-    gnupg \
+RUN apk add --no-cache \
     curl \
-    wget \
     git \
     unzip \
     zip \
     libzip-dev \
     libpng-dev \
-    libonig-dev \
     libxml2-dev \
     libssl-dev \
-    libcurl4-openssl-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
     libwebp-dev \
-    libxpm-dev \
     libpq-dev \
-    libicu-dev \
-    libgmp-dev \
-    libreadline-dev \
-    libedit-dev \
-    libsqlite3-dev \
-    locales \
+    icu-dev \
+    gmp-dev \
+    oniguruma-dev \
+    libmemcached-dev \
+    libffi-dev \
+    openssl-dev \
+    bash \
     vim \
     nano \
-    htop \
-    net-tools \
-    && rm -rf /var/lib/apt/lists/*
+    supervisor \
+    nodejs \
+    npm
 
-# Instala Node.js 22.x e npm
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get update \
-    && apt-get install -y nodejs \
-    && npm install -g npm@10.8.2
+# Instala extensões PHP
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp && \
+    docker-php-ext-install -j$(nproc) \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    pdo_sqlite \
+    mysqli \
+    curl \
+    gd \
+    mbstring \
+    xml \
+    zip \
+    bcmath \
+    intl \
+    opcache \
+    soap \
+    gmp \
+    ldap \
+    imap \
+    tidy \
+    exif \
+    sockets \
+    pcntl \
+    gettext \
+    shmop \
+    sysvmsg \
+    sysvsem \
+    sysvshm
 
-# Instala PHP 8.3 com todas extensões necessárias
-RUN apt-get update && apt-get install -y \
-    php8.3 \
-    php8.3-cli \
-    php8.3-common \
-    php8.3-fpm \
-    php8.3-mysql \
-    php8.3-pgsql \
-    php8.3-sqlite3 \
-    php8.3-curl \
-    php8.3-gd \
-    php8.3-mbstring \
-    php8.3-xml \
-    php8.3-zip \
-    php8.3-bcmath \
-    php8.3-intl \
-    php8.3-opcache \
-    php8.3-readline \
-    php8.3-soap \
-    php8.3-gmp \
-    php8.3-ldap \
-    php8.3-imap \
-    php8.3-tidy \
-    php8.3-redis \
-    php8.3-memcached \
-    php8.3-imagick \
-    && rm -rf /var/lib/apt/lists/*
+# Instala extensões PECL
+RUN pecl install redis memcached imagick && \
+    docker-php-ext-enable redis memcached imagick
 
 # Instala Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Cria usuário para o Laravel
-RUN groupadd -g 1000 laravel && \
-    useradd -u 1000 -g laravel -m -s /bin/bash laravel
-
-# Configura locale
-RUN locale-gen pt_BR.UTF-8 && \
-    update-locale LANG=pt_BR.UTF-8 LC_ALL=pt_BR.UTF-8
-ENV LANG=pt_BR.UTF-8 \
-    LC_ALL=pt_BR.UTF-8 \
-    LANGUAGE=pt_BR:pt:en
-
-# Configura PHP
-RUN echo "upload_max_filesize = 100M" >> /etc/php/8.3/cli/conf.d/99-overrides.ini && \
-    echo "post_max_size = 100M" >> /etc/php/8.3/cli/conf.d/99-overrides.ini && \
-    echo "memory_limit = 256M" >> /etc/php/8.3/cli/conf.d/99-overrides.ini && \
-    echo "max_execution_time = 300" >> /etc/php/8.3/cli/conf.d/99-overrides.ini && \
-    echo "date.timezone = America/Sao_Paulo" >> /etc/php/8.3/cli/conf.d/99-overrides.ini
-
-RUN echo "upload_max_filesize = 100M" >> /etc/php/8.3/fpm/conf.d/99-overrides.ini && \
-    echo "post_max_size = 100M" >> /etc/php/8.3/fpm/conf.d/99-overrides.ini && \
-    echo "memory_limit = 256M" >> /etc/php/8.3/fpm/conf.d/99-overrides.ini && \
-    echo "max_execution_time = 300" >> /etc/php/8.3/fpm/conf.d/99-overrides.ini && \
-    echo "date.timezone = America/Sao_Paulo" >> /etc/php/8.3/fpm/conf.d/99-overrides.ini
-
-# Cria diretórios necessários
+# Cria diretórios
 RUN mkdir -p /var/www/html/storage /var/www/html/bootstrap/cache /var/log
 
 WORKDIR /var/www/html
 
-# Copia arquivos de dependências primeiro (melhor cache)
+# Copia arquivos de dependências primeiro (cache)
 COPY composer.json composer.lock package.json package-lock.json ./
 
-# Instala dependências do Composer
+# Instala dependências do Composer (sem dev)
 RUN composer install --no-interaction --no-plugins --no-scripts --no-dev --prefer-dist --optimize-autoloader
 
 # Instala dependências Node
@@ -115,46 +82,66 @@ RUN npm ci --only=production || npm install --production
 # Copia o restante do projeto
 COPY . .
 
-# Builda os assets
+# Builda assets
 RUN npm run build
 
-# Executa scripts pós-instalação do Composer
+# Executa scripts pós-instalação
 RUN composer install --no-interaction --optimize-autoloader
 
 # Cria link storage
 RUN php artisan storage:link || true
 
 # Permissões
-RUN chown -R laravel:laravel /var/www/html && \
+RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 755 /var/www/html/storage && \
     chmod -R 755 /var/www/html/bootstrap/cache && \
     chmod -R 755 /var/www/html/public
 
-# Configura PHP-FPM
-RUN sed -i 's/^listen = .*/listen = 9000/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^;listen.owner = .*/listen.owner = laravel/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^;listen.group = .*/listen.group = laravel/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^;listen.mode = .*/listen.mode = 0660/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^user = .*/user = laravel/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^group = .*/group = laravel/' /etc/php/8.3/fpm/pool.d/www.conf && \
-    sed -i 's/^;clear_env = no/clear_env = no/' /etc/php/8.3/fpm/pool.d/www.conf
+# Configura PHP
+RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/laravel.ini && \
+    echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/laravel.ini && \
+    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/laravel.ini && \
+    echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/laravel.ini && \
+    echo "date.timezone = America/Sao_Paulo" >> /usr/local/etc/php/conf.d/laravel.ini
+
+# Configura Supervisor
+RUN cat > /etc/supervisord.conf << 'EOL'
+[supervisord]
+nodaemon=true
+user=root
+
+[program:php-fpm]
+command=php-fpm -F
+autostart=true
+autorestart=true
+user=www-data
+stdout_logfile=/var/log/php-fpm.log
+stderr_logfile=/var/log/php-fpm-error.log
+
+[program:queue-worker]
+command=php /var/www/html/artisan queue:work --tries=3 --timeout=90
+autostart=true
+autorestart=true
+user=www-data
+stdout_logfile=/var/log/queue-worker.log
+stderr_logfile=/var/log/queue-worker-error.log
+
+[program:schedule-worker]
+command=php /var/www/html/artisan schedule:work
+autostart=true
+autorestart=true
+user=www-data
+stdout_logfile=/var/log/schedule-worker.log
+stderr_logfile=/var/log/schedule-worker-error.log
+EOL
 
 # Cria entrypoint
-RUN echo '#!/bin/bash\n\
+RUN echo '#!/bin/sh\n\
 set -e\n\
 \n\
 # Permissões\n\
-chown -R laravel:laravel /var/www/html/storage\n\
-chown -R laravel:laravel /var/www/html/bootstrap/cache\n\
-\n\
-# Aguarda banco de dados\n\
-if [ -n "$DB_HOST" ]; then\n\
-    echo "Aguardando banco de dados..."\n\
-    while ! nc -z $DB_HOST $DB_PORT; do\n\
-        sleep 1\n\
-    done\n\
-    echo "Banco de dados disponível!"\n\
-fi\n\
+chown -R www-data:www-data /var/www/html/storage\n\
+chown -R www-data:www-data /var/www/html/bootstrap/cache\n\
 \n\
 # Limpa cache\n\
 php artisan config:clear\n\
@@ -176,10 +163,10 @@ php artisan config:cache\n\
 php artisan route:cache\n\
 php artisan view:cache\n\
 \n\
-# Inicia PHP-FPM\n\
-php-fpm8.3 -F\n' > /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
+# Inicia Supervisor\n\
+exec /usr/bin/supervisord -c /etc/supervisord.conf\n' > /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
-# Portas
-EXPOSE 8000 9000
+# Porta
+EXPOSE 9000
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
