@@ -1,0 +1,17 @@
+👑 USUÁRIO ADMIN (Acesso Total)
+Campo	Valor
+Email	admin@smcomponentes.com
+Senha	12345678
+Nome	Administrador
+Role	Admin
+Acesso	✅ Dashboard Admin + Todos os recursos
+Dashboard Admin: http://localhost:8000/admin/dashboard
+
+👤 USUÁRIO COMUM (Cliente)
+Campo	Valor
+Email	usuario@teste.com
+Senha	12345678
+Nome	Usuário Comum
+Role	Cliente
+Acesso	✅ Dashboard do Cliente + Compras
+Dashboard Cliente: http://localhost:8000/dashboard

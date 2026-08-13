@@ -5,7 +5,7 @@ use Pdo\Mysql;
 
 return [
 
-    'default' => env('DB_CONNECTION', 'pgsql'),
+    'default' => env('DB_CONNECTION', 'mysql'), // ← ALTERADO: pgsql → mysql
 
     'connections' => [
 
@@ -39,6 +39,19 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            
+            // ⭐ CONFIGURAÇÃO PARA BACKUP (SPATIE)
+            'dump' => [
+                'dump_binary_path' => '/usr/bin', // ← CAMINHO DO mysqldump
+                'use_single_transaction' => true,
+                'timeout' => 60 * 5, // 5 minutos
+                'exclude_tables' => [
+                    // 'cache',
+                    // 'sessions',
+                    // 'jobs',
+                    // 'failed_jobs',
+                ],
+            ],
         ],
 
         'mariadb' => [
@@ -59,9 +72,15 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            
+            // ⭐ CONFIGURAÇÃO PARA BACKUP (SPATIE)
+            'dump' => [
+                'dump_binary_path' => '/usr/bin',
+                'use_single_transaction' => true,
+                'timeout' => 60 * 5,
+            ],
         ],
 
-        // ⭐ CONFIGURAÇÃO PRINCIPAL DO POSTGRESQL
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
@@ -75,13 +94,11 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             
-            // ⭐ CONFIGURAÇÃO SSL PARA RENDER
             'sslmode' => env('DB_SSLMODE', 'require'),
             'sslcert' => env('DB_SSLCERT'),
             'sslkey' => env('DB_SSLKEY'),
             'sslrootcert' => env('DB_SSLROOTCERT'),
             
-            // ⭐ POOL DE CONEXÕES PARA EVITAR QUEDAS
             'options' => [
                 PDO::ATTR_TIMEOUT => 30,
                 PDO::ATTR_PERSISTENT => false,
@@ -101,6 +118,12 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
+            
+            // ⭐ CONFIGURAÇÃO PARA BACKUP (SPATIE)
+            'dump' => [
+                'dump_binary_path' => '/usr/bin',
+                'timeout' => 60 * 5,
+            ],
         ],
 
     ],

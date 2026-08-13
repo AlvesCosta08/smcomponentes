@@ -21,8 +21,6 @@ class ProdutoSeeder extends Seeder
         }
 
         $handle = fopen($path, 'r');
-        
-        // 🔥 CORRIGIDO: Lendo o cabeçalho com escape parameter
         $headers = fgetcsv($handle, 0, ',', '"', '\\');
         
         if (!$headers) {
@@ -40,19 +38,16 @@ class ProdutoSeeder extends Seeder
         while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
             $line++;
             
-            // Verificar se a linha tem dados
-            if (count($row) < 2 || empty(trim($row[1] ?? ''))) {
+            if (count($row) < 2 || empty(trim($row[0] ?? ''))) {
                 continue;
             }
             
             try {
-                // Criar array associativo
                 $record = [];
                 foreach ($headers as $index => $header) {
                     $record[$header] = $row[$index] ?? '';
                 }
                 
-                // 🔥 Extrair dados com os nomes corretos
                 $categoria = trim($record['Categoria'] ?? '');
                 $referencia = trim($record['Refefencia_Produto'] ?? '');
                 $imagem = trim($record['Imagem_Produto'] ?? '');
@@ -68,19 +63,16 @@ class ProdutoSeeder extends Seeder
                 $valor_custo = $this->parseCurrency($record['Valor_Custo'] ?? '');
                 $valor_unitario = $this->parseCurrency($record['Valor_Unitario'] ?? '');
                 
-                // Validar dados obrigatórios
                 if (empty($referencia)) {
                     $this->command->warn("⚠️ Linha {$line}: Referência vazia, pulando...");
                     continue;
                 }
                 
-                // Verificar se o produto já existe
                 if (Produto::where('referencia', $referencia)->exists()) {
                     $this->command->warn("⚠️ Linha {$line}: Produto {$referencia} já existe, pulando...");
                     continue;
                 }
                 
-                // Criar o produto
                 $produto = new Produto();
                 $produto->categoria = $categoria ?: 'GERAL';
                 $produto->referencia = $referencia;
@@ -98,6 +90,7 @@ class ProdutoSeeder extends Seeder
                 $produto->valor_unitario = $valor_unitario;
                 $produto->slug = Str::slug($referencia . '-' . substr($descricao, 0, 30));
                 $produto->ativo = true;
+                $produto->estoque_minimo = 5;
                 
                 $produto->save();
                 $count++;
@@ -131,12 +124,10 @@ class ProdutoSeeder extends Seeder
             return $value === 'DISPONÍVEL' ? 'DISPONIVEL' : $value;
         }
         
-        // Se a disponibilidade for "SIM" ou "1", considerar disponível
         if ($value === 'SIM' || $value === '1' || $value === 'S') {
             return 'DISPONIVEL';
         }
         
-        // Se for "NÃO" ou "0", considerar indisponível
         if ($value === 'NÃO' || $value === 'NAO' || $value === '0' || $value === 'N') {
             return 'INDISPONIVEL';
         }
@@ -151,7 +142,6 @@ class ProdutoSeeder extends Seeder
             return null;
         }
         
-        // Remover R$, espaços e outros caracteres
         $value = str_replace(['R$', ' ', '.', '(', ')'], '', $value);
         $value = str_replace(',', '.', $value);
         $value = preg_replace('/[^\d.]/', '', $value);
@@ -196,7 +186,6 @@ class ProdutoSeeder extends Seeder
             return null;
         }
         
-        // Tentar vários formatos
         $formats = ['d/m/Y', 'd/m/y', 'Y-m-d', 'd-m-Y', 'm/d/Y'];
         foreach ($formats as $format) {
             $date = \DateTime::createFromFormat($format, $value);
