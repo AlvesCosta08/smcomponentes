@@ -19,363 +19,104 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
 # ============================================
-# FUNÇÃO PARA SUBSTITUIR VARIÁVEIS NO .ENV
+# 1. CRIAR .env COM VALORES DAS VARIÁVEIS DE AMBIENTE
 # ============================================
-substitute_env_vars() {
-    log_step "Substituindo variáveis de ambiente no .env..."
-    
-    if [ ! -f .env ]; then
-        log_error ".env não encontrado!"
-        return 1
-    fi
-    
-    # Força PostgreSQL se estiver no Render
-    if [ -n "$RENDER" ] || [ -n "$DB_HOST" ]; then
-        log_info "🔧 Detectado ambiente Render - Forçando PostgreSQL"
-        # Substitui DB_CONNECTION para pgsql
-        sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/" .env
-    fi
-    
-    # Lista de variáveis para substituir
-    VARS=(
-        "DB_HOST"
-        "DB_PORT"
-        "DB_DATABASE"
-        "DB_USERNAME"
-        "DB_PASSWORD"
-        "DB_SSLMODE"
-        "APP_URL"
-        "APP_ENV"
-        "APP_DEBUG"
-        "REDIS_HOST"
-        "REDIS_PORT"
-        "REDIS_PASSWORD"
-        "MERCADOPAGO_PUBLIC_KEY"
-        "MERCADOPAGO_ACCESS_TOKEN"
-        "MERCADOPAGO_WEBHOOK_URL"
-        "VITE_APP_URL"
-        "FORCE_HTTPS"
-    )
-    
-    for VAR in "${VARS[@]}"; do
-        if [ -n "${!VAR}" ]; then
-            log_info "Substituindo \${$VAR}..."
-            # Escapa caracteres especiais para sed
-            VALUE=$(echo "${!VAR}" | sed -e 's/[\/&]/\\&/g')
-            # Substitui ${VAR}
-            sed -i "s/\${$VAR}/$VALUE/g" .env
-        fi
-    done
-    
-    # Se DB_HOST não foi substituído, tenta usar valor do ambiente
-    if grep -q "\${DB_HOST}" .env; then
-        if [ -n "$DB_HOST" ]; then
-            log_info "Usando DB_HOST do ambiente: $DB_HOST"
-            sed -i "s/\${DB_HOST}/$DB_HOST/g" .env
-        fi
-    fi
-    
-    # Se DB_PORT não foi substituído, usa padrão
-    if grep -q "\${DB_PORT}" .env; then
-        DB_PORT_VALUE=${DB_PORT:-5432}
-        log_info "Usando DB_PORT: $DB_PORT_VALUE"
-        sed -i "s/\${DB_PORT}/$DB_PORT_VALUE/g" .env
-    fi
-    
-    # Se DB_DATABASE não foi substituído
-    if grep -q "\${DB_DATABASE}" .env; then
-        if [ -n "$DB_DATABASE" ]; then
-            log_info "Usando DB_DATABASE do ambiente: $DB_DATABASE"
-            sed -i "s/\${DB_DATABASE}/$DB_DATABASE/g" .env
-        fi
-    fi
-    
-    # Verifica se ainda há variáveis não substituídas
-    if grep -q "\${" .env; then
-        log_warn "⚠️ Ainda há variáveis não substituídas no .env"
-        grep "\${" .env | while read -r line; do
-            log_warn "  $line"
-        done
-        log_warn "⚠️ O aplicativo pode não funcionar corretamente!"
-    else
-        log_info "✅ Todas as variáveis foram substituídas"
-    fi
-    
-    # Mostra configuração final do banco
-    log_info "📊 Configuração final do banco:"
-    grep "^DB_" .env | while read -r line; do
-        log_info "  $line"
-    done
-}
+log_step "Criando arquivo .env com valores das variáveis..."
 
-# ============================================
-# FUNÇÃO PARA AGUARDAR BANCO DE DADOS
-# ============================================
-wait_for_db() {
-    log_step "Aguardando banco de dados..."
-
-    # Lê as variáveis do .env
-    DB_CONNECTION=$(grep ^DB_CONNECTION .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    DB_HOST=$(grep ^DB_HOST .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    DB_PORT=$(grep ^DB_PORT .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    DB_DATABASE=$(grep ^DB_DATABASE .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    DB_USERNAME=$(grep ^DB_USERNAME .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    DB_PASSWORD=$(grep ^DB_PASSWORD .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-
-    log_info "DB_CONNECTION: $DB_CONNECTION"
-    log_info "DB_HOST: $DB_HOST"
-    log_info "DB_PORT: $DB_PORT"
-    log_info "DB_DATABASE: $DB_DATABASE"
-
-    if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ] || echo "$DB_HOST" | grep -q "PLACEHOLDER" || echo "$DB_HOST" | grep -q "\${"; then
-        log_warn "Variáveis de banco não configuradas corretamente. Pulando verificação..."
-        return 0
-    fi
-
-    # Para PostgreSQL
-    if [ "$DB_CONNECTION" = "pgsql" ] || [ "$DB_CONNECTION" = "postgres" ]; then
-        log_info "Testando conexão PostgreSQL: $DB_HOST:$DB_PORT"
-        
-        MAX_RETRIES=30
-        RETRY=0
-        
-        # Usa PHP PDO para testar
-        while ! php -r "
-            try {
-                \$pdo = new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
-                echo 'OK';
-            } catch (Exception \$e) {
-                exit(1);
-            }
-        " 2>/dev/null | grep -q OK; do
-            RETRY=$((RETRY + 1))
-            if [ $RETRY -ge $MAX_RETRIES ]; then
-                log_error "Timeout ao conectar ao PostgreSQL"
-                log_error "Host: $DB_HOST, Port: $DB_PORT, Database: $DB_DATABASE"
-                return 1
-            fi
-            log_warn "Aguardando PostgreSQL... (${RETRY}/${MAX_RETRIES})"
-            sleep 2
-        done
-        
-        log_info "✅ PostgreSQL conectado!"
-        return 0
-    fi
-
-    # Para MySQL
-    if [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mysqli" ]; then
-        log_info "Testando conexão MySQL: $DB_HOST:$DB_PORT"
-        
-        MAX_RETRIES=30
-        RETRY=0
-        
-        while ! php -r "
-            try {
-                \$pdo = new PDO('mysql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
-                echo 'OK';
-            } catch (Exception \$e) {
-                exit(1);
-            }
-        " 2>/dev/null | grep -q OK; do
-            RETRY=$((RETRY + 1))
-            if [ $RETRY -ge $MAX_RETRIES ]; then
-                log_error "Timeout ao conectar ao MySQL"
-                return 1
-            fi
-            log_warn "Aguardando MySQL... (${RETRY}/${MAX_RETRIES})"
-            sleep 2
-        done
-        
-        log_info "✅ MySQL conectado!"
-        return 0
-    fi
-
-    log_warn "Conexão '$DB_CONNECTION' não suportada para espera automática"
-    return 0
-}
-
-# ============================================
-# FUNÇÃO PARA RODAR MIGRATIONS E SEEDERS
-# ============================================
-run_migrations_and_seeders() {
-    log_step "Verificando e executando migrações..."
-
-    # Tenta conectar ao banco
-    if ! php artisan db:show > /dev/null 2>&1; then
-        log_warn "⚠️ Banco não conectado. Pulando migrações e seeders."
-        return 1
-    fi
-
-    log_info "✅ Banco conectado. Verificando migrações..."
-
-    # Verifica se a tabela migrations existe
-    if php artisan migrate:status > /dev/null 2>&1; then
-        # Conta migrações já executadas
-        MIGRATIONS_DONE=$(php artisan migrate:status 2>/dev/null | grep -c "\[X\]" || echo "0")
-        MIGRATIONS_TOTAL=$(php artisan migrate:status 2>/dev/null | grep -c "\[ \]" || echo "0")
-        
-        log_info "📊 Migrações executadas: $MIGRATIONS_DONE"
-        log_info "📊 Migrações pendentes: $MIGRATIONS_TOTAL"
-        
-        if [ "$MIGRATIONS_TOTAL" -gt 0 ] || [ "$MIGRATIONS_DONE" -eq 0 ]; then
-            log_info "📦 Executando migrações..."
-            php artisan migrate --force || log_error "❌ Falha ao executar migrações"
-            log_info "✅ Migrações concluídas"
-        else
-            log_info "ℹ️ Nenhuma migração pendente"
-        fi
-
-        # Verifica se deve rodar seeders
-        RUN_SEEDERS=${RUN_SEEDERS:-false}
-        FORCE_SEEDERS=${FORCE_SEEDERS:-false}
-        APP_ENV=$(grep ^APP_ENV .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-        
-        if [ "$RUN_SEEDERS" = "true" ] || [ "$FORCE_SEEDERS" = "true" ] || [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "development" ]; then
-            log_step "Executando seeders..."
-            
-            if [ "$FORCE_SEEDERS" = "true" ]; then
-                log_warn "⚠️ Forçando execução de seeders..."
-                php artisan db:seed --force || log_warn "⚠️ Falha ao executar seeders"
-                log_info "✅ Seeders concluídos"
-            else
-                # Verifica se já tem dados
-                HAS_DATA=false
-                if php artisan tinker --execute="echo App\\Models\\User::count();" 2>/dev/null | grep -q "^[1-9]"; then
-                    HAS_DATA=true
-                fi
-                
-                if [ "$HAS_DATA" = false ]; then
-                    log_info "🌱 Banco vazio. Executando seeders..."
-                    php artisan db:seed --force || log_warn "⚠️ Falha ao executar seeders"
-                    log_info "✅ Seeders concluídos"
-                else
-                    log_warn "⚠️ Banco já possui dados. Pulando seeders."
-                    log_info "💡 Para forçar seeders, defina FORCE_SEEDERS=true"
-                fi
-            fi
-        else
-            log_info "ℹ️ Seeders não executados (RUN_SEEDERS=false ou ambiente de produção)"
-        fi
-
-        return 0
-    else
-        log_warn "⚠️ Não foi possível verificar status das migrações"
-        return 1
-    fi
-}
-
-# ============================================
-# FUNÇÃO PARA RODAR MIGRATIONS EM FRESH
-# ============================================
-run_fresh_migrations() {
-    REFRESH_DATABASE=${REFRESH_DATABASE:-false}
-    APP_ENV=$(grep ^APP_ENV .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    
-    if [ "$REFRESH_DATABASE" = "true" ]; then
-        log_step "🔄 REFRESH DATABASE - Recriando todas as tabelas..."
-        log_warn "⚠️ Isso irá apagar todos os dados existentes!"
-        
-        if [ "$APP_ENV" = "production" ]; then
-            log_error "❌ REFRESH_DATABASE não permitido em produção!"
-            return 1
-        fi
-        
-        php artisan migrate:fresh --force || log_error "❌ Falha ao recriar banco"
-        log_info "✅ Banco recriado com sucesso"
-        
-        RUN_SEEDERS=${RUN_SEEDERS:-false}
-        if [ "$RUN_SEEDERS" = "true" ]; then
-            log_step "Executando seeders no banco fresco..."
-            php artisan db:seed --force || log_warn "⚠️ Falha ao executar seeders"
-            log_info "✅ Seeders concluídos"
-        fi
-    fi
-}
-
-# ============================================
-# 1. VERIFICAR .ENV E SUBSTITUIR VARIÁVEIS
-# ============================================
-log_step "Verificando arquivo .env..."
-
-if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        log_warn "Copiando .env.example para .env..."
-        cp .env.example .env
-    else
-        log_warn "Criando .env vazio..."
-        cat > .env << 'EOF'
-APP_NAME="Loja Virtual SM Componentes"
-APP_ENV=production
-APP_DEBUG=false
-APP_TIMEZONE=America/Sao_Paulo
-APP_URL=${APP_URL}
-ASSET_URL=${APP_URL}
-
-DB_CONNECTION=pgsql
-DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT}
-DB_DATABASE=${DB_DATABASE}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
-DB_SSLMODE=require
-
-CACHE_DRIVER=file
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-SESSION_SECURE_COOKIE=true
-QUEUE_CONNECTION=sync
-
-BROADCAST_DRIVER=log
-LOG_CHANNEL=stack
-LOG_LEVEL=error
-
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS=contato@smcomponentes.com
-MAIL_FROM_NAME="SM Componentes"
-
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY}
-MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
-MERCADOPAGO_WEBHOOK_URL=${MERCADOPAGO_WEBHOOK_URL}
-MERCADOPAGO_ENV=production
-
-VITE_APP_URL=${VITE_APP_URL}
-
-FORCE_HTTPS=true
-
-RUN_SEEDERS=false
-REFRESH_DATABASE=false
-FORCE_SEEDERS=false
-EOF
-    fi
-    log_info ".env criado"
-else
-    log_info ".env encontrado"
+# Verifica se as variáveis críticas estão definidas
+if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ]; then
+    log_error "❌ Variáveis de banco não definidas!"
+    log_error "DB_HOST: ${DB_HOST:-NÃO DEFINIDO}"
+    log_error "DB_DATABASE: ${DB_DATABASE:-NÃO DEFINIDO}"
+    log_error "Verifique as variáveis de ambiente no Render!"
+    exit 1
 fi
 
-# Substitui variáveis de ambiente no .env
-substitute_env_vars
+log_info "✅ Variáveis encontradas:"
+log_info "  DB_HOST: $DB_HOST"
+log_info "  DB_PORT: ${DB_PORT:-5432}"
+log_info "  DB_DATABASE: $DB_DATABASE"
+log_info "  DB_USERNAME: ${DB_USERNAME:-NÃO DEFINIDO}"
+log_info "  DB_CONNECTION: ${DB_CONNECTION:-pgsql}"
+
+# Cria .env diretamente com os valores
+cat > .env << EOF
+APP_NAME="${APP_NAME:-Loja Virtual SM Componentes}"
+APP_ENV="${APP_ENV:-production}"
+APP_DEBUG="${APP_DEBUG:-false}"
+APP_TIMEZONE="${APP_TIMEZONE:-America/Sao_Paulo}"
+APP_URL="${APP_URL:-https://smcomponentes.onrender.com}"
+ASSET_URL="${ASSET_URL:-${APP_URL:-https://smcomponentes.onrender.com}}"
+APP_KEY="${APP_KEY:-}"
+
+DB_CONNECTION="${DB_CONNECTION:-pgsql}"
+DB_HOST="${DB_HOST}"
+DB_PORT="${DB_PORT:-5432}"
+DB_DATABASE="${DB_DATABASE}"
+DB_USERNAME="${DB_USERNAME}"
+DB_PASSWORD="${DB_PASSWORD}"
+DB_SSLMODE="${DB_SSLMODE:-require}"
+
+CACHE_DRIVER="${CACHE_DRIVER:-file}"
+SESSION_DRIVER="${SESSION_DRIVER:-database}"
+SESSION_LIFETIME="${SESSION_LIFETIME:-120}"
+SESSION_SECURE_COOKIE="${SESSION_SECURE_COOKIE:-true}"
+QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
+
+BROADCAST_DRIVER="${BROADCAST_DRIVER:-log}"
+LOG_CHANNEL="${LOG_CHANNEL:-stack}"
+LOG_LEVEL="${LOG_LEVEL:-error}"
+
+MAIL_MAILER="${MAIL_MAILER:-smtp}"
+MAIL_HOST="${MAIL_HOST:-smtp.mailtrap.io}"
+MAIL_PORT="${MAIL_PORT:-2525}"
+MAIL_USERNAME="${MAIL_USERNAME:-null}"
+MAIL_PASSWORD="${MAIL_PASSWORD:-null}"
+MAIL_ENCRYPTION="${MAIL_ENCRYPTION:-null}"
+MAIL_FROM_ADDRESS="${MAIL_FROM_ADDRESS:-contato@smcomponentes.com}"
+MAIL_FROM_NAME="${MAIL_FROM_NAME:-SM Componentes}"
+
+REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
+REDIS_PASSWORD="${REDIS_PASSWORD:-null}"
+REDIS_PORT="${REDIS_PORT:-6379}"
+
+MERCADOPAGO_PUBLIC_KEY="${MERCADOPAGO_PUBLIC_KEY:-}"
+MERCADOPAGO_ACCESS_TOKEN="${MERCADOPAGO_ACCESS_TOKEN:-}"
+MERCADOPAGO_WEBHOOK_URL="${MERCADOPAGO_WEBHOOK_URL:-}"
+MERCADOPAGO_ENV="${MERCADOPAGO_ENV:-production}"
+
+VITE_APP_URL="${VITE_APP_URL:-${APP_URL:-https://smcomponentes.onrender.com}}"
+
+FORCE_HTTPS="${FORCE_HTTPS:-true}"
+
+RUN_SEEDERS="${RUN_SEEDERS:-false}"
+REFRESH_DATABASE="${REFRESH_DATABASE:-false}"
+FORCE_SEEDERS="${FORCE_SEEDERS:-false}"
+EOF
+
+log_info "✅ .env criado com sucesso"
+
+# Mostra configuração do banco (sem a senha)
+log_info "📊 Configuração do banco:"
+grep "^DB_" .env | grep -v "PASSWORD" | while read -r line; do
+    log_info "  $line"
+done
 
 # ============================================
-# 2. GERAR APP_KEY
+# 2. GERAR APP_KEY (se não existir)
 # ============================================
 log_step "Verificando APP_KEY..."
 
-if ! grep -q "^APP_KEY=" .env || grep -q "^APP_KEY=$" .env || grep -q "^APP_KEY=\${" .env; then
+if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:..." ] || [ "$APP_KEY" = "43bbe8c4f273807bc376b9809bf19ac8" ]; then
     log_warn "Gerando APP_KEY..."
-    php artisan key:generate --force
-    log_info "APP_KEY gerada"
+    php artisan key:generate --force 2>/dev/null || true
+    # Pega a chave gerada do .env
+    APP_KEY=$(grep "^APP_KEY=" .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+    if [ -n "$APP_KEY" ]; then
+        log_info "APP_KEY gerada: ${APP_KEY:0:15}..."
+    fi
 else
-    APP_KEY=$(grep ^APP_KEY .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    log_info "APP_KEY já definida: ${APP_KEY:0:10}..."
+    log_info "APP_KEY já definida: ${APP_KEY:0:15}..."
 fi
 
 # ============================================
@@ -391,31 +132,72 @@ mkdir -p bootstrap/cache
 mkdir -p public/build
 
 chmod -R 775 storage bootstrap/cache public/build 2>/dev/null || true
-chown -R www-data:www-data storage bootstrap/cache public/build 2>/dev/null || true
 
 # ============================================
 # 4. AGUARDAR BANCO DE DADOS
 # ============================================
-wait_for_db || true
+log_step "Aguardando banco de dados..."
+
+MAX_RETRIES=30
+RETRY=0
+DB_CONNECTED=false
+
+# Pega os valores do .env (ou das variáveis)
+DB_CONNECTION=$(grep ^DB_CONNECTION .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_HOST=$(grep ^DB_HOST .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_PORT=$(grep ^DB_PORT .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_DATABASE=$(grep ^DB_DATABASE .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_USERNAME=$(grep ^DB_USERNAME .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_PASSWORD=$(grep ^DB_PASSWORD .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+
+log_info "Testando conexão: $DB_CONNECTION://$DB_HOST:$DB_PORT/$DB_DATABASE"
+
+while [ $RETRY -lt $MAX_RETRIES ]; do
+    # Tenta conectar com PHP PDO
+    if php -r "
+        try {
+            \$pdo = new PDO('$DB_CONNECTION:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
+            echo 'OK';
+        } catch (Exception \$e) {
+            exit(1);
+        }
+    " 2>/dev/null | grep -q OK; then
+        DB_CONNECTED=true
+        log_info "✅ Banco conectado!"
+        break
+    fi
+    
+    RETRY=$((RETRY + 1))
+    log_warn "Aguardando banco... (${RETRY}/${MAX_RETRIES})"
+    sleep 2
+done
+
+if [ "$DB_CONNECTED" = false ]; then
+    log_warn "⚠️ Não foi possível conectar ao banco. Continuando mesmo assim..."
+fi
 
 # ============================================
 # 5. LIMPAR CACHE
 # ============================================
 log_step "Limpando cache..."
 
-php artisan config:clear || true
-php artisan cache:clear || true
-php artisan view:clear || true
-php artisan route:clear || true
+php artisan config:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
+php artisan view:clear 2>/dev/null || true
+php artisan route:clear 2>/dev/null || true
 
 # ============================================
-# 6. RODAR MIGRATIONS E SEEDERS
+# 6. RODAR MIGRATIONS
 # ============================================
-# Executa refresh se configurado
-run_fresh_migrations
+log_step "Rodando migrations..."
 
-# Executa migrações normais
-run_migrations_and_seeders
+if [ "$DB_CONNECTED" = true ]; then
+    log_info "✅ Banco conectado. Executando migrações..."
+    php artisan migrate --force 2>/dev/null || log_warn "⚠️ Migrations falharam"
+    log_info "✅ Migrações concluídas"
+else
+    log_warn "⚠️ Banco não conectado. Pulando migrations."
+fi
 
 # ============================================
 # 7. LINK STORAGE
@@ -423,79 +205,46 @@ run_migrations_and_seeders
 log_step "Criando storage link..."
 
 if [ ! -L public/storage ]; then
-    php artisan storage:link || true
+    php artisan storage:link 2>/dev/null || true
     log_info "Storage link criado"
 else
     log_info "Storage link já existe"
 fi
 
 # ============================================
-# 8. VERIFICAR DEPENDÊNCIAS
+# 8. OTIMIZAR (PRODUÇÃO)
 # ============================================
-log_step "Verificando dependências..."
-
-if [ ! -f vendor/autoload.php ]; then
-    log_warn "Vendor não encontrado. Instalando PHP dependencies..."
-    composer install --no-interaction --optimize-autoloader
-fi
-
-if [ -f package.json ] && [ ! -d node_modules ]; then
-    log_warn "Node modules não encontrados. Instalando..."
-    npm ci || npm install
-fi
-
-# ============================================
-# 9. OTIMIZAR (APENAS PRODUÇÃO)
-# ============================================
-if grep -q "APP_ENV=production" .env; then
+if [ "${APP_ENV:-production}" = "production" ]; then
     log_step "Ambiente PRODUÇÃO - Otimizando..."
-
-    php artisan config:cache || true
-    php artisan route:cache || true
-    php artisan view:cache || true
-    php artisan event:cache || true
-
-    # Compilar assets
-    if [ -f package.json ] && [ -d node_modules ]; then
-        log_info "Compilando assets..."
-        npm run build || echo "Build ignorado"
-    fi
-
+    php artisan config:cache 2>/dev/null || true
+    php artisan route:cache 2>/dev/null || true
+    php artisan view:cache 2>/dev/null || true
     log_info "✅ Otimização concluída"
-else
-    log_step "Ambiente DESENVOLVIMENTO - Pulando otimizações"
 fi
 
 # ============================================
-# 10. VERIFICAR CONEXÃO FINAL
+# 9. VERIFICAR CONEXÃO FINAL
 # ============================================
 log_step "Verificando conexão final..."
 
-if php artisan db:show > /dev/null 2>&1; then
+if php artisan db:show 2>/dev/null; then
     log_info "✅ Conexão com banco de dados OK"
-    
-    # Mostra status das migrações
-    MIGRATIONS_DONE=$(php artisan migrate:status 2>/dev/null | grep -c "\[X\]" || echo "0")
-    log_info "📊 Migrações executadas: $MIGRATIONS_DONE"
 else
     log_warn "⚠️ Conexão com banco de dados falhou"
 fi
 
 # ============================================
-# 11. RESUMO FINAL
+# 10. RESUMO FINAL
 # ============================================
 echo ""
 echo "============================================="
 echo "  🚀 SM Componentes - Aplicação iniciada"
 echo "============================================="
-echo "  🌐 URL: $(grep ^APP_URL .env | cut -d '=' -f2- | tr -d '\r' || echo 'Não definida')"
-echo "  🔧 Ambiente: $(grep ^APP_ENV .env | cut -d '=' -f2- | tr -d '\r' || echo 'Não definido')"
+echo "  🌐 URL: ${APP_URL:-https://smcomponentes.onrender.com}"
+echo "  🔧 Ambiente: ${APP_ENV:-production}"
 echo "  🐘 PHP: $(php -r 'echo PHP_VERSION;')"
-echo "  📦 Laravel: $(php artisan --version | cut -d' ' -f2 || echo 'N/A')"
-echo "  📦 Node: $(node -v 2>/dev/null || echo 'N/A')"
-echo "  📦 NPM: $(npm -v 2>/dev/null || echo 'N/A')"
-echo "  🗄️  Banco: $(grep ^DB_CONNECTION .env | cut -d '=' -f2- | tr -d '\r' || echo 'N/A')"
-echo "  📊 Migrações: $(php artisan migrate:status 2>/dev/null | grep -c '\[X\]' || echo '0') executadas"
+echo "  🗄️  Banco: ${DB_CONNECTION:-pgsql}"
+echo "  📊 Conexão: $([ "$DB_CONNECTED" = true ] && echo '✅ OK' || echo '❌ FALHOU')"
 echo "============================================="
 echo ""
 
