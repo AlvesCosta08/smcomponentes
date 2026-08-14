@@ -16,50 +16,24 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
 # ============================================
-# 1. DEFINIR VALORES DAS VARIÁVEIS
+# 1. CRIAR .env A PARTIR DAS VARIÁVEIS DE AMBIENTE
 # ============================================
-log_step "Configurando variáveis de ambiente..."
+log_step "Criando arquivo .env a partir das variáveis de ambiente..."
 
-# Verifica se as variáveis estão definidas, senão usa valores fixos
-# IMPORTANTE: Substitua pelos valores REAIS do seu banco no Render
-if [ -z "$DB_HOST" ] || [ "$DB_HOST" = '${DB_HOST}' ]; then
-    log_warn "DB_HOST não definido, usando valor fixo..."
-    DB_HOST="postgresql-smcomponentes.render.com"  # Substitua pelo seu host
+# Verifica se as variáveis obrigatórias existem
+if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ]; then
+    log_error "❌ Variáveis de banco não definidas!"
+    log_error "DB_HOST: ${DB_HOST:-NÃO DEFINIDO}"
+    log_error "DB_DATABASE: ${DB_DATABASE:-NÃO DEFINIDO}"
+    log_error "Verifique as variáveis de ambiente no Render!"
+    exit 1
 fi
 
-if [ -z "$DB_PORT" ] || [ "$DB_PORT" = '${DB_PORT}' ]; then
-    log_warn "DB_PORT não definido, usando valor fixo..."
-    DB_PORT="5432"
-fi
-
-if [ -z "$DB_DATABASE" ] || [ "$DB_DATABASE" = '${DB_DATABASE}' ]; then
-    log_warn "DB_DATABASE não definido, usando valor fixo..."
-    DB_DATABASE="smcomponentes_db"  # Substitua pelo nome do seu banco
-fi
-
-if [ -z "$DB_USERNAME" ] || [ "$DB_USERNAME" = '${DB_USERNAME}' ]; then
-    log_warn "DB_USERNAME não definido, usando valor fixo..."
-    DB_USERNAME="smcomponentes_user"  # Substitua pelo seu usuário
-fi
-
-if [ -z "$DB_PASSWORD" ] || [ "$DB_PASSWORD" = '${DB_PASSWORD}' ]; then
-    log_warn "DB_PASSWORD não definido, usando valor fixo..."
-    DB_PASSWORD="sua_senha_aqui"  # Substitua pela sua senha
-fi
-
-log_info "✅ Variáveis configuradas:"
-log_info "  DB_HOST: $DB_HOST"
-log_info "  DB_PORT: $DB_PORT"
-log_info "  DB_DATABASE: $DB_DATABASE"
-log_info "  DB_USERNAME: $DB_USERNAME"
-log_info "  DB_CONNECTION: ${DB_CONNECTION:-pgsql}"
-
-# ============================================
-# 2. CRIAR .env
-# ============================================
-log_step "Criando arquivo .env..."
-
+# Cria .env com os valores das variáveis de ambiente
 cat > .env << EOF
+# ============================================
+# CONFIGURAÇÕES GERAIS DA APLICAÇÃO
+# ============================================
 APP_NAME="${APP_NAME:-Loja Virtual SM Componentes}"
 APP_ENV="${APP_ENV:-production}"
 APP_DEBUG="${APP_DEBUG:-false}"
@@ -68,6 +42,9 @@ APP_URL="${APP_URL:-https://smcomponentes.onrender.com}"
 ASSET_URL="${ASSET_URL:-${APP_URL:-https://smcomponentes.onrender.com}}"
 APP_KEY="${APP_KEY:-}"
 
+# ============================================
+# CONFIGURAÇÕES DE BANCO DE DADOS (PostgreSQL)
+# ============================================
 DB_CONNECTION="${DB_CONNECTION:-pgsql}"
 DB_HOST="${DB_HOST}"
 DB_PORT="${DB_PORT:-5432}"
@@ -76,16 +53,25 @@ DB_USERNAME="${DB_USERNAME}"
 DB_PASSWORD="${DB_PASSWORD}"
 DB_SSLMODE="${DB_SSLMODE:-require}"
 
+# ============================================
+# CONFIGURAÇÕES DE CACHE E SESSÃO
+# ============================================
 CACHE_DRIVER="${CACHE_DRIVER:-file}"
 SESSION_DRIVER="${SESSION_DRIVER:-database}"
 SESSION_LIFETIME="${SESSION_LIFETIME:-120}"
 SESSION_SECURE_COOKIE="${SESSION_SECURE_COOKIE:-true}"
 QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
 
+# ============================================
+# CONFIGURAÇÕES DE BROADCAST E LOG
+# ============================================
 BROADCAST_DRIVER="${BROADCAST_DRIVER:-log}"
 LOG_CHANNEL="${LOG_CHANNEL:-stack}"
 LOG_LEVEL="${LOG_LEVEL:-error}"
 
+# ============================================
+# CONFIGURAÇÕES DE EMAIL
+# ============================================
 MAIL_MAILER="${MAIL_MAILER:-smtp}"
 MAIL_HOST="${MAIL_HOST:-smtp.mailtrap.io}"
 MAIL_PORT="${MAIL_PORT:-2525}"
@@ -95,25 +81,40 @@ MAIL_ENCRYPTION="${MAIL_ENCRYPTION:-null}"
 MAIL_FROM_ADDRESS="${MAIL_FROM_ADDRESS:-contato@smcomponentes.com}"
 MAIL_FROM_NAME="${MAIL_FROM_NAME:-SM Componentes}"
 
+# ============================================
+# REDIS
+# ============================================
 REDIS_HOST="${REDIS_HOST:-127.0.0.1}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-null}"
 REDIS_PORT="${REDIS_PORT:-6379}"
 
+# ============================================
+# MERCADO PAGO
+# ============================================
 MERCADOPAGO_PUBLIC_KEY="${MERCADOPAGO_PUBLIC_KEY:-}"
 MERCADOPAGO_ACCESS_TOKEN="${MERCADOPAGO_ACCESS_TOKEN:-}"
 MERCADOPAGO_WEBHOOK_URL="${MERCADOPAGO_WEBHOOK_URL:-}"
 MERCADOPAGO_ENV="${MERCADOPAGO_ENV:-production}"
 
+# ============================================
+# VITE (Frontend)
+# ============================================
 VITE_APP_URL="${VITE_APP_URL:-${APP_URL:-https://smcomponentes.onrender.com}}"
 
+# ============================================
+# HTTPS (forçado em produção)
+# ============================================
 FORCE_HTTPS="${FORCE_HTTPS:-true}"
 
+# ============================================
+# CONTROLE DE SEEDERS E MIGRAÇÕES
+# ============================================
 RUN_SEEDERS="${RUN_SEEDERS:-false}"
 REFRESH_DATABASE="${REFRESH_DATABASE:-false}"
 FORCE_SEEDERS="${FORCE_SEEDERS:-false}"
 EOF
 
-log_info "✅ .env criado"
+log_info "✅ .env criado com sucesso"
 
 # Mostra configuração (sem senha)
 log_info "📊 Configuração:"
@@ -122,7 +123,7 @@ grep -E "^(APP_ENV|APP_URL|DB_CONNECTION|DB_HOST|DB_PORT|DB_DATABASE|DB_USERNAME
 done
 
 # ============================================
-# 3. GERAR APP_KEY
+# 2. GERAR APP_KEY (se não existir)
 # ============================================
 log_step "Verificando APP_KEY..."
 
@@ -136,20 +137,26 @@ else
 fi
 
 # ============================================
-# 4. CRIAR DIRETÓRIOS
+# 3. CRIAR DIRETÓRIOS
 # ============================================
 log_step "Criando diretórios..."
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache public/build
 chmod -R 775 storage bootstrap/cache public/build 2>/dev/null || true
 
 # ============================================
-# 5. TESTAR CONEXÃO COM O BANCO
+# 4. TESTAR CONEXÃO COM O BANCO
 # ============================================
 log_step "Testando conexão com o banco..."
 
 MAX_RETRIES=30
 RETRY=0
 DB_CONNECTED=false
+
+DB_HOST=$(grep ^DB_HOST .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_PORT=$(grep ^DB_PORT .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_DATABASE=$(grep ^DB_DATABASE .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_USERNAME=$(grep ^DB_USERNAME .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+DB_PASSWORD=$(grep ^DB_PASSWORD .env | cut -d '=' -f2- | tr -d '\r' | xargs)
 
 while [ $RETRY -lt $MAX_RETRIES ] && [ "$DB_CONNECTED" = false ]; do
     if php -r "
@@ -170,11 +177,11 @@ while [ $RETRY -lt $MAX_RETRIES ] && [ "$DB_CONNECTED" = false ]; do
 done
 
 if [ "$DB_CONNECTED" = false ]; then
-    log_warn "⚠️ Não foi possível conectar ao banco."
+    log_warn "⚠️ Não foi possível conectar ao banco. Verifique as credenciais!"
 fi
 
 # ============================================
-# 6. LIMPAR CACHE
+# 5. LIMPAR CACHE
 # ============================================
 log_step "Limpando cache..."
 php artisan config:clear 2>/dev/null || true
@@ -183,18 +190,26 @@ php artisan view:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
 
 # ============================================
-# 7. RODAR MIGRATIONS
+# 6. RODAR MIGRATIONS
 # ============================================
 if [ "$DB_CONNECTED" = true ]; then
     log_step "Rodando migrations..."
     php artisan migrate --force 2>/dev/null || log_warn "⚠️ Migrations falharam"
     log_info "✅ Migrações concluídas"
+    
+    # Rodar seeders se configurado
+    RUN_SEEDERS=$(grep ^RUN_SEEDERS .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+    if [ "$RUN_SEEDERS" = "true" ]; then
+        log_step "Rodando seeders..."
+        php artisan db:seed --force 2>/dev/null || log_warn "⚠️ Seeders falharam"
+        log_info "✅ Seeders concluídos"
+    fi
 else
     log_warn "⚠️ Pulando migrations (banco não conectado)"
 fi
 
 # ============================================
-# 8. LINK STORAGE
+# 7. LINK STORAGE
 # ============================================
 log_step "Criando storage link..."
 if [ ! -L public/storage ]; then
@@ -202,9 +217,10 @@ if [ ! -L public/storage ]; then
 fi
 
 # ============================================
-# 9. OTIMIZAR
+# 8. OTIMIZAR
 # ============================================
-if [ "${APP_ENV:-production}" = "production" ] && [ "$DB_CONNECTED" = true ]; then
+APP_ENV=$(grep ^APP_ENV .env | cut -d '=' -f2- | tr -d '\r' | xargs)
+if [ "$APP_ENV" = "production" ] && [ "$DB_CONNECTED" = true ]; then
     log_step "Otimizando para produção..."
     php artisan config:cache 2>/dev/null || true
     php artisan route:cache 2>/dev/null || true
@@ -213,7 +229,7 @@ if [ "${APP_ENV:-production}" = "production" ] && [ "$DB_CONNECTED" = true ]; th
 fi
 
 # ============================================
-# 10. RESUMO
+# 9. RESUMO
 # ============================================
 echo ""
 echo "============================================="
@@ -221,7 +237,7 @@ echo "  🚀 SM Componentes - Aplicação iniciada"
 echo "============================================="
 echo "  🌐 URL: ${APP_URL:-https://smcomponentes.onrender.com}"
 echo "  🔧 Ambiente: ${APP_ENV:-production}"
-echo "  🗄️  Banco: ${DB_CONNECTION:-pgsql}"
+echo "  🗄️  Banco: PostgreSQL"
 echo "  📊 Conexão: $([ "$DB_CONNECTED" = true ] && echo '✅ OK' || echo '❌ FALHOU')"
 echo "============================================="
 echo ""
