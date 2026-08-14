@@ -10,36 +10,55 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# ============================================
-# FUNÇÕES DE LOG
-# ============================================
 log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
 # ============================================
-# 1. CRIAR .env COM VALORES DAS VARIÁVEIS DE AMBIENTE
+# 1. DEFINIR VALORES DAS VARIÁVEIS
 # ============================================
-log_step "Criando arquivo .env com valores das variáveis..."
+log_step "Configurando variáveis de ambiente..."
 
-# Verifica se as variáveis críticas estão definidas
-if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ]; then
-    log_error "❌ Variáveis de banco não definidas!"
-    log_error "DB_HOST: ${DB_HOST:-NÃO DEFINIDO}"
-    log_error "DB_DATABASE: ${DB_DATABASE:-NÃO DEFINIDO}"
-    log_error "Verifique as variáveis de ambiente no Render!"
-    exit 1
+# Verifica se as variáveis estão definidas, senão usa valores fixos
+# IMPORTANTE: Substitua pelos valores REAIS do seu banco no Render
+if [ -z "$DB_HOST" ] || [ "$DB_HOST" = '${DB_HOST}' ]; then
+    log_warn "DB_HOST não definido, usando valor fixo..."
+    DB_HOST="postgresql-smcomponentes.render.com"  # Substitua pelo seu host
 fi
 
-log_info "✅ Variáveis encontradas:"
+if [ -z "$DB_PORT" ] || [ "$DB_PORT" = '${DB_PORT}' ]; then
+    log_warn "DB_PORT não definido, usando valor fixo..."
+    DB_PORT="5432"
+fi
+
+if [ -z "$DB_DATABASE" ] || [ "$DB_DATABASE" = '${DB_DATABASE}' ]; then
+    log_warn "DB_DATABASE não definido, usando valor fixo..."
+    DB_DATABASE="smcomponentes_db"  # Substitua pelo nome do seu banco
+fi
+
+if [ -z "$DB_USERNAME" ] || [ "$DB_USERNAME" = '${DB_USERNAME}' ]; then
+    log_warn "DB_USERNAME não definido, usando valor fixo..."
+    DB_USERNAME="smcomponentes_user"  # Substitua pelo seu usuário
+fi
+
+if [ -z "$DB_PASSWORD" ] || [ "$DB_PASSWORD" = '${DB_PASSWORD}' ]; then
+    log_warn "DB_PASSWORD não definido, usando valor fixo..."
+    DB_PASSWORD="sua_senha_aqui"  # Substitua pela sua senha
+fi
+
+log_info "✅ Variáveis configuradas:"
 log_info "  DB_HOST: $DB_HOST"
-log_info "  DB_PORT: ${DB_PORT:-5432}"
+log_info "  DB_PORT: $DB_PORT"
 log_info "  DB_DATABASE: $DB_DATABASE"
-log_info "  DB_USERNAME: ${DB_USERNAME:-NÃO DEFINIDO}"
+log_info "  DB_USERNAME: $DB_USERNAME"
 log_info "  DB_CONNECTION: ${DB_CONNECTION:-pgsql}"
 
-# Cria .env diretamente com os valores
+# ============================================
+# 2. CRIAR .env
+# ============================================
+log_step "Criando arquivo .env..."
+
 cat > .env << EOF
 APP_NAME="${APP_NAME:-Loja Virtual SM Componentes}"
 APP_ENV="${APP_ENV:-production}"
@@ -94,128 +113,99 @@ REFRESH_DATABASE="${REFRESH_DATABASE:-false}"
 FORCE_SEEDERS="${FORCE_SEEDERS:-false}"
 EOF
 
-log_info "✅ .env criado com sucesso"
+log_info "✅ .env criado"
 
-# Mostra configuração do banco (sem a senha)
-log_info "📊 Configuração do banco:"
-grep "^DB_" .env | grep -v "PASSWORD" | while read -r line; do
+# Mostra configuração (sem senha)
+log_info "📊 Configuração:"
+grep -E "^(APP_ENV|APP_URL|DB_CONNECTION|DB_HOST|DB_PORT|DB_DATABASE|DB_USERNAME)=" .env | while read -r line; do
     log_info "  $line"
 done
 
 # ============================================
-# 2. GERAR APP_KEY (se não existir)
+# 3. GERAR APP_KEY
 # ============================================
 log_step "Verificando APP_KEY..."
 
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "base64:..." ] || [ "$APP_KEY" = "43bbe8c4f273807bc376b9809bf19ac8" ]; then
     log_warn "Gerando APP_KEY..."
     php artisan key:generate --force 2>/dev/null || true
-    # Pega a chave gerada do .env
     APP_KEY=$(grep "^APP_KEY=" .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-    if [ -n "$APP_KEY" ]; then
-        log_info "APP_KEY gerada: ${APP_KEY:0:15}..."
-    fi
+    log_info "APP_KEY gerada: ${APP_KEY:0:15}..."
 else
-    log_info "APP_KEY já definida: ${APP_KEY:0:15}..."
+    log_info "APP_KEY já definida"
 fi
 
 # ============================================
-# 3. CRIAR DIRETÓRIOS
+# 4. CRIAR DIRETÓRIOS
 # ============================================
 log_step "Criando diretórios..."
-
-mkdir -p storage/framework/cache
-mkdir -p storage/framework/sessions
-mkdir -p storage/framework/views
-mkdir -p storage/logs
-mkdir -p bootstrap/cache
-mkdir -p public/build
-
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache public/build
 chmod -R 775 storage bootstrap/cache public/build 2>/dev/null || true
 
 # ============================================
-# 4. AGUARDAR BANCO DE DADOS
+# 5. TESTAR CONEXÃO COM O BANCO
 # ============================================
-log_step "Aguardando banco de dados..."
+log_step "Testando conexão com o banco..."
 
 MAX_RETRIES=30
 RETRY=0
 DB_CONNECTED=false
 
-# Pega os valores do .env (ou das variáveis)
-DB_CONNECTION=$(grep ^DB_CONNECTION .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-DB_HOST=$(grep ^DB_HOST .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-DB_PORT=$(grep ^DB_PORT .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-DB_DATABASE=$(grep ^DB_DATABASE .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-DB_USERNAME=$(grep ^DB_USERNAME .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-DB_PASSWORD=$(grep ^DB_PASSWORD .env | cut -d '=' -f2- | tr -d '\r' | xargs)
-
-log_info "Testando conexão: $DB_CONNECTION://$DB_HOST:$DB_PORT/$DB_DATABASE"
-
-while [ $RETRY -lt $MAX_RETRIES ]; do
-    # Tenta conectar com PHP PDO
+while [ $RETRY -lt $MAX_RETRIES ] && [ "$DB_CONNECTED" = false ]; do
     if php -r "
         try {
-            \$pdo = new PDO('$DB_CONNECTION:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
+            \$pdo = new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
             echo 'OK';
         } catch (Exception \$e) {
             exit(1);
         }
     " 2>/dev/null | grep -q OK; then
         DB_CONNECTED=true
-        log_info "✅ Banco conectado!"
-        break
+        log_info "✅ Conexão com banco OK!"
+    else
+        RETRY=$((RETRY + 1))
+        log_warn "Aguardando banco... (${RETRY}/${MAX_RETRIES})"
+        sleep 2
     fi
-    
-    RETRY=$((RETRY + 1))
-    log_warn "Aguardando banco... (${RETRY}/${MAX_RETRIES})"
-    sleep 2
 done
 
 if [ "$DB_CONNECTED" = false ]; then
-    log_warn "⚠️ Não foi possível conectar ao banco. Continuando mesmo assim..."
+    log_warn "⚠️ Não foi possível conectar ao banco."
 fi
 
 # ============================================
-# 5. LIMPAR CACHE
+# 6. LIMPAR CACHE
 # ============================================
 log_step "Limpando cache..."
-
 php artisan config:clear 2>/dev/null || true
 php artisan cache:clear 2>/dev/null || true
 php artisan view:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
 
 # ============================================
-# 6. RODAR MIGRATIONS
+# 7. RODAR MIGRATIONS
 # ============================================
-log_step "Rodando migrations..."
-
 if [ "$DB_CONNECTED" = true ]; then
-    log_info "✅ Banco conectado. Executando migrações..."
+    log_step "Rodando migrations..."
     php artisan migrate --force 2>/dev/null || log_warn "⚠️ Migrations falharam"
     log_info "✅ Migrações concluídas"
 else
-    log_warn "⚠️ Banco não conectado. Pulando migrations."
+    log_warn "⚠️ Pulando migrations (banco não conectado)"
 fi
 
 # ============================================
-# 7. LINK STORAGE
+# 8. LINK STORAGE
 # ============================================
 log_step "Criando storage link..."
-
 if [ ! -L public/storage ]; then
     php artisan storage:link 2>/dev/null || true
-    log_info "Storage link criado"
-else
-    log_info "Storage link já existe"
 fi
 
 # ============================================
-# 8. OTIMIZAR (PRODUÇÃO)
+# 9. OTIMIZAR
 # ============================================
-if [ "${APP_ENV:-production}" = "production" ]; then
-    log_step "Ambiente PRODUÇÃO - Otimizando..."
+if [ "${APP_ENV:-production}" = "production" ] && [ "$DB_CONNECTED" = true ]; then
+    log_step "Otimizando para produção..."
     php artisan config:cache 2>/dev/null || true
     php artisan route:cache 2>/dev/null || true
     php artisan view:cache 2>/dev/null || true
@@ -223,18 +213,7 @@ if [ "${APP_ENV:-production}" = "production" ]; then
 fi
 
 # ============================================
-# 9. VERIFICAR CONEXÃO FINAL
-# ============================================
-log_step "Verificando conexão final..."
-
-if php artisan db:show 2>/dev/null; then
-    log_info "✅ Conexão com banco de dados OK"
-else
-    log_warn "⚠️ Conexão com banco de dados falhou"
-fi
-
-# ============================================
-# 10. RESUMO FINAL
+# 10. RESUMO
 # ============================================
 echo ""
 echo "============================================="
@@ -242,7 +221,6 @@ echo "  🚀 SM Componentes - Aplicação iniciada"
 echo "============================================="
 echo "  🌐 URL: ${APP_URL:-https://smcomponentes.onrender.com}"
 echo "  🔧 Ambiente: ${APP_ENV:-production}"
-echo "  🐘 PHP: $(php -r 'echo PHP_VERSION;')"
 echo "  🗄️  Banco: ${DB_CONNECTION:-pgsql}"
 echo "  📊 Conexão: $([ "$DB_CONNECTED" = true ] && echo '✅ OK' || echo '❌ FALHOU')"
 echo "============================================="
