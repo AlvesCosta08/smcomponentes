@@ -29,6 +29,13 @@ substitute_env_vars() {
         return 1
     fi
     
+    # Força PostgreSQL se estiver no Render
+    if [ -n "$RENDER" ] || [ -n "$DB_HOST" ]; then
+        log_info "🔧 Detectado ambiente Render - Forçando PostgreSQL"
+        # Substitui DB_CONNECTION para pgsql
+        sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/" .env
+    fi
+    
     # Lista de variáveis para substituir
     VARS=(
         "DB_HOST"
@@ -52,13 +59,36 @@ substitute_env_vars() {
     
     for VAR in "${VARS[@]}"; do
         if [ -n "${!VAR}" ]; then
+            log_info "Substituindo \${$VAR}..."
             # Escapa caracteres especiais para sed
             VALUE=$(echo "${!VAR}" | sed -e 's/[\/&]/\\&/g')
-            # Substitui ${VAR} ou VAR_PLACEHOLDER
+            # Substitui ${VAR}
             sed -i "s/\${$VAR}/$VALUE/g" .env
-            sed -i "s/${VAR}_PLACEHOLDER/$VALUE/g" .env
         fi
     done
+    
+    # Se DB_HOST não foi substituído, tenta usar valor do ambiente
+    if grep -q "\${DB_HOST}" .env; then
+        if [ -n "$DB_HOST" ]; then
+            log_info "Usando DB_HOST do ambiente: $DB_HOST"
+            sed -i "s/\${DB_HOST}/$DB_HOST/g" .env
+        fi
+    fi
+    
+    # Se DB_PORT não foi substituído, usa padrão
+    if grep -q "\${DB_PORT}" .env; then
+        DB_PORT_VALUE=${DB_PORT:-5432}
+        log_info "Usando DB_PORT: $DB_PORT_VALUE"
+        sed -i "s/\${DB_PORT}/$DB_PORT_VALUE/g" .env
+    fi
+    
+    # Se DB_DATABASE não foi substituído
+    if grep -q "\${DB_DATABASE}" .env; then
+        if [ -n "$DB_DATABASE" ]; then
+            log_info "Usando DB_DATABASE do ambiente: $DB_DATABASE"
+            sed -i "s/\${DB_DATABASE}/$DB_DATABASE/g" .env
+        fi
+    fi
     
     # Verifica se ainda há variáveis não substituídas
     if grep -q "\${" .env; then
@@ -70,6 +100,12 @@ substitute_env_vars() {
     else
         log_info "✅ Todas as variáveis foram substituídas"
     fi
+    
+    # Mostra configuração final do banco
+    log_info "📊 Configuração final do banco:"
+    grep "^DB_" .env | while read -r line; do
+        log_info "  $line"
+    done
 }
 
 # ============================================
@@ -103,7 +139,7 @@ wait_for_db() {
         MAX_RETRIES=30
         RETRY=0
         
-        # Usa PHP PDO para testar (mais confiável)
+        # Usa PHP PDO para testar
         while ! php -r "
             try {
                 \$pdo = new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
@@ -197,7 +233,6 @@ run_migrations_and_seeders() {
         if [ "$RUN_SEEDERS" = "true" ] || [ "$FORCE_SEEDERS" = "true" ] || [ "$APP_ENV" = "local" ] || [ "$APP_ENV" = "development" ]; then
             log_step "Executando seeders..."
             
-            # Verifica se deve forçar
             if [ "$FORCE_SEEDERS" = "true" ]; then
                 log_warn "⚠️ Forçando execução de seeders..."
                 php artisan db:seed --force || log_warn "⚠️ Falha ao executar seeders"
@@ -282,7 +317,7 @@ DB_PORT=${DB_PORT}
 DB_DATABASE=${DB_DATABASE}
 DB_USERNAME=${DB_USERNAME}
 DB_PASSWORD=${DB_PASSWORD}
-DB_SSLMODE=${DB_SSLMODE:-require}
+DB_SSLMODE=require
 
 CACHE_DRIVER=file
 SESSION_DRIVER=database
@@ -314,11 +349,11 @@ MERCADOPAGO_ENV=production
 
 VITE_APP_URL=${VITE_APP_URL}
 
-FORCE_HTTPS=${FORCE_HTTPS:-true}
+FORCE_HTTPS=true
 
-RUN_SEEDERS=${RUN_SEEDERS:-false}
-REFRESH_DATABASE=${REFRESH_DATABASE:-false}
-FORCE_SEEDERS=${FORCE_SEEDERS:-false}
+RUN_SEEDERS=false
+REFRESH_DATABASE=false
+FORCE_SEEDERS=false
 EOF
     fi
     log_info ".env criado"
