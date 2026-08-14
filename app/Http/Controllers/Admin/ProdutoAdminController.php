@@ -1,32 +1,32 @@
 <?php
+// app/Http/Controllers/Admin/ProdutoAdminController.php
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTOs\ProductDTO;
+use App\DTOs\Responses\ProductResponseDTO;
 use App\Http\Controllers\Controller;
-use App\Models\Produto;
-use App\Repositories\ProdutoRepository;
+use App\Http\Requests\Admin\ProdutoRequest;
+use App\Services\ProductService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class ProdutoAdminController extends Controller
 {
-    protected $produtoRepository;
-
-    public function __construct(ProdutoRepository $produtoRepository)
-    {
-        $this->produtoRepository = $produtoRepository;
-    }
+    public function __construct(
+        protected ProductService $productService
+    ) {}
 
     /**
      * Lista de produtos
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         try {
             // Filtros
-            $filtros = [
+            $filters = [
                 'categoria' => $request->get('categoria'),
                 'ativo' => $request->get('ativo'),
                 'estoque' => $request->get('estoque'),
@@ -38,23 +38,18 @@ class ProdutoAdminController extends Controller
             ];
 
             // Remover filtros vazios
-            $filtros = array_filter($filtros, function($value) {
+            $filters = array_filter($filters, function ($value) {
                 return $value !== null && $value !== '';
             });
 
-            // Buscar produtos
-            $produtos = $this->produtoRepository->listarProdutos($filtros, 20);
+            // Buscar produtos usando o Service
+            $produtos = $this->productService->listProducts($filters, 20);
 
             // Listar categorias para o filtro
-            $categorias = $this->produtoRepository->listarCategorias();
+            $categorias = $this->productService->getCategorias();
 
-            // Estatísticas - Garantir que todas as chaves existam
-            $estatisticas = $this->produtoRepository->obterEstatisticas();
-            
-            // Garantir que a chave 'disponiveis' exista para compatibilidade
-            if (!isset($estatisticas['disponiveis'])) {
-                $estatisticas['disponiveis'] = $estatisticas['com_estoque'] ?? 0;
-            }
+            // Estatísticas
+            $estatisticas = $this->productService->getStats();
 
             return view('admin.produtos.index', compact(
                 'produtos',
@@ -63,12 +58,8 @@ class ProdutoAdminController extends Controller
             ));
 
         } catch (\Exception $e) {
-            Log::error('Erro ao listar produtos: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            
-            // Dados vazios para fallback
+            Log::error('Erro ao listar produtos: ' . $e->getMessage());
+
             $produtos = collect();
             $categorias = collect();
             $estatisticas = [
@@ -94,10 +85,10 @@ class ProdutoAdminController extends Controller
     /**
      * Formulário de criação
      */
-    public function create()
+    public function create(): View
     {
         try {
-            $categorias = $this->produtoRepository->listarCategorias();
+            $categorias = $this->productService->getCategorias();
             return view('admin.produtos.create', compact('categorias'));
         } catch (\Exception $e) {
             Log::error('Erro ao abrir formulário de criação: ' . $e->getMessage());
@@ -110,52 +101,14 @@ class ProdutoAdminController extends Controller
     /**
      * Salvar novo produto
      */
-    public function store(Request $request)
+    public function store(ProdutoRequest $request): RedirectResponse
     {
         try {
-            $validated = $request->validate([
-                'descricao' => 'required|string|max:255',
-                'categoria' => 'required|string|max:100',
-                'referencia' => 'nullable|string|max:50',
-                'valor_unitario' => 'required|numeric|min:0',
-                'preco_promocional' => 'nullable|numeric|min:0',
-                'quantidade' => 'required|integer|min:0',
-                'estoque_minimo' => 'nullable|integer|min:0',
-                'ativo' => 'boolean',
-                'destaque' => 'boolean',
-                'imagem' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            ]);
+            // Criar DTO a partir do Request
+            $dto = ProductDTO::fromRequest($request);
 
-            // Upload da imagem
-            $imagem = null;
-            if ($request->hasFile('imagem')) {
-                $imagem = $request->file('imagem')->store('produtos', 'public');
-            }
-
-            // Gerar slug
-            $slug = Str::slug($request->descricao . '-' . ($request->referencia ?? 'produto'));
-            $slugOriginal = $slug;
-            $contador = 1;
-            while (Produto::where('slug', $slug)->exists()) {
-                $slug = $slugOriginal . '-' . $contador;
-                $contador++;
-            }
-
-            // Criar produto
-            $produto = $this->produtoRepository->criar([
-                'descricao' => $request->descricao,
-                'categoria' => $request->categoria,
-                'referencia' => $request->referencia,
-                'valor_unitario' => $request->valor_unitario,
-                'preco_promocional' => $request->preco_promocional,
-                'quantidade' => $request->quantidade,
-                'estoque_minimo' => $request->estoque_minimo ?? 5,
-                'ativo' => $request->has('ativo') ? 1 : 0,
-                'destaque' => $request->has('destaque') ? 1 : 0,
-                'imagem' => $imagem,
-                'slug' => $slug,
-                'disponibilidade' => $request->quantidade > 0 ? 'DISPONIVEL' : 'INDISPONIVEL',
-            ]);
+            // Criar produto via Service
+            $produto = $this->productService->createProduct($dto);
 
             return redirect()
                 ->route('admin.produtos.index')
@@ -167,10 +120,7 @@ class ProdutoAdminController extends Controller
                 ->withErrors($e->errors())
                 ->withInput();
         } catch (\Exception $e) {
-            Log::error('Erro ao criar produto: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
+            Log::error('Erro ao criar produto: ' . $e->getMessage());
             return redirect()
                 ->back()
                 ->withInput()
@@ -181,10 +131,11 @@ class ProdutoAdminController extends Controller
     /**
      * Mostrar produto
      */
-    public function show($id)
+    public function show(int $id): View|RedirectResponse
     {
         try {
-            $produto = $this->produtoRepository->buscarPorId($id);
+            $produto = $this->productService->getProductById($id);
+            
             if (!$produto) {
                 return redirect()
                     ->route('admin.produtos.index')
@@ -204,17 +155,18 @@ class ProdutoAdminController extends Controller
     /**
      * Formulário de edição
      */
-    public function edit($id)
+    public function edit(int $id): View|RedirectResponse
     {
         try {
-            $produto = $this->produtoRepository->buscarPorId($id);
+            $produto = $this->productService->getProductById($id);
+            
             if (!$produto) {
                 return redirect()
                     ->route('admin.produtos.index')
                     ->with('error', 'Produto não encontrado');
             }
 
-            $categorias = $this->produtoRepository->listarCategorias();
+            $categorias = $this->productService->getCategorias();
 
             return view('admin.produtos.edit', compact('produto', 'categorias'));
 
@@ -229,64 +181,14 @@ class ProdutoAdminController extends Controller
     /**
      * Atualizar produto
      */
-    public function update(Request $request, $id)
+    public function update(ProdutoRequest $request, int $id): RedirectResponse
     {
         try {
-            $validated = $request->validate([
-                'descricao' => 'required|string|max:255',
-                'categoria' => 'required|string|max:100',
-                'referencia' => 'nullable|string|max:50',
-                'valor_unitario' => 'required|numeric|min:0',
-                'preco_promocional' => 'nullable|numeric|min:0',
-                'quantidade' => 'required|integer|min:0',
-                'estoque_minimo' => 'nullable|integer|min:0',
-                'ativo' => 'boolean',
-                'destaque' => 'boolean',
-                'imagem' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            ]);
+            // Criar DTO a partir do Request para atualização
+            $dto = ProductDTO::fromRequestUpdate($request, $id);
 
-            $produto = $this->produtoRepository->buscarPorId($id);
-            if (!$produto) {
-                return redirect()
-                    ->route('admin.produtos.index')
-                    ->with('error', 'Produto não encontrado');
-            }
-
-            $dados = [
-                'descricao' => $request->descricao,
-                'categoria' => $request->categoria,
-                'referencia' => $request->referencia,
-                'valor_unitario' => $request->valor_unitario,
-                'preco_promocional' => $request->preco_promocional,
-                'quantidade' => $request->quantidade,
-                'estoque_minimo' => $request->estoque_minimo ?? 5,
-                'ativo' => $request->has('ativo') ? 1 : 0,
-                'destaque' => $request->has('destaque') ? 1 : 0,
-                'disponibilidade' => $request->quantidade > 0 ? 'DISPONIVEL' : 'INDISPONIVEL',
-            ];
-
-            // Upload da imagem
-            if ($request->hasFile('imagem')) {
-                // Remover imagem antiga
-                if ($produto->imagem && Storage::disk('public')->exists($produto->imagem)) {
-                    Storage::disk('public')->delete($produto->imagem);
-                }
-                $dados['imagem'] = $request->file('imagem')->store('produtos', 'public');
-            }
-
-            // Gerar slug se descrição mudou
-            if ($request->descricao !== $produto->descricao) {
-                $slug = Str::slug($request->descricao . '-' . ($request->referencia ?? 'produto'));
-                $slugOriginal = $slug;
-                $contador = 1;
-                while (Produto::where('slug', $slug)->where('id', '!=', $id)->exists()) {
-                    $slug = $slugOriginal . '-' . $contador;
-                    $contador++;
-                }
-                $dados['slug'] = $slug;
-            }
-
-            $this->produtoRepository->atualizar($id, $dados);
+            // Atualizar produto via Service
+            $produto = $this->productService->updateProduct($id, $dto);
 
             return redirect()
                 ->route('admin.produtos.index')
@@ -298,10 +200,7 @@ class ProdutoAdminController extends Controller
                 ->withErrors($e->errors())
                 ->withInput();
         } catch (\Exception $e) {
-            Log::error('Erro ao atualizar produto: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
+            Log::error('Erro ao atualizar produto: ' . $e->getMessage());
             return redirect()
                 ->back()
                 ->withInput()
@@ -312,22 +211,16 @@ class ProdutoAdminController extends Controller
     /**
      * Excluir produto
      */
-    public function destroy($id)
+    public function destroy(int $id): RedirectResponse
     {
         try {
-            $produto = $this->produtoRepository->buscarPorId($id);
-            if (!$produto) {
+            $deleted = $this->productService->deleteProduct($id);
+
+            if (!$deleted) {
                 return redirect()
                     ->route('admin.produtos.index')
                     ->with('error', 'Produto não encontrado');
             }
-
-            // Remover imagem
-            if ($produto->imagem && Storage::disk('public')->exists($produto->imagem)) {
-                Storage::disk('public')->delete($produto->imagem);
-            }
-
-            $this->produtoRepository->excluir($id);
 
             return redirect()
                 ->route('admin.produtos.index')
@@ -344,7 +237,7 @@ class ProdutoAdminController extends Controller
     /**
      * Ajustar estoque
      */
-    public function ajustarEstoque(Request $request, $id)
+    public function ajustarEstoque(Request $request, int $id): RedirectResponse
     {
         try {
             $request->validate([
@@ -352,16 +245,16 @@ class ProdutoAdminController extends Controller
                 'tipo' => 'required|in:adicionar,remover'
             ]);
 
-            $produto = $this->produtoRepository->ajustarEstoque(
+            $adjusted = $this->productService->adjustStock(
                 $id,
                 $request->quantidade,
                 $request->tipo
             );
 
-            if (!$produto) {
+            if (!$adjusted) {
                 return redirect()
                     ->back()
-                    ->with('error', 'Produto não encontrado');
+                    ->with('error', 'Erro ao ajustar estoque. Produto não encontrado.');
             }
 
             $mensagem = $request->tipo === 'adicionar' 
@@ -388,81 +281,112 @@ class ProdutoAdminController extends Controller
     /**
      * Exportar produtos
      */
-    public function export(Request $request)
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
     {
         try {
-            $filtros = [
+            $filters = [
                 'categoria' => $request->get('categoria'),
                 'ativo' => $request->get('ativo'),
                 'estoque' => $request->get('estoque'),
             ];
 
-            $filtros = array_filter($filtros, function($value) {
+            $filters = array_filter($filters, function ($value) {
                 return $value !== null && $value !== '';
             });
 
-            $produtos = $this->produtoRepository->listarProdutos($filtros, 9999);
+            $path = $this->productService->export($filters);
 
-            if ($produtos->isEmpty()) {
+            if (!file_exists($path)) {
                 return redirect()
                     ->back()
                     ->with('warning', 'Nenhum produto encontrado para exportar.');
             }
 
-            $filename = 'produtos_' . date('Y-m-d_H-i-s') . '.csv';
-
-            $headers = [
-                'Content-Type' => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            ];
-
-            $callback = function() use ($produtos) {
-                $handle = fopen('php://output', 'w');
-                fputs($handle, "\xEF\xBB\xBF");
-
-                // Cabeçalhos
-                fputcsv($handle, [
-                    'ID',
-                    'Referência',
-                    'Descrição',
-                    'Categoria',
-                    'Preço Unitário',
-                    'Preço Promocional',
-                    'Quantidade',
-                    'Estoque Mínimo',
-                    'Disponibilidade',
-                    'Status',
-                    'Destaque',
-                    'Data Criação'
-                ]);
-
-                foreach ($produtos as $produto) {
-                    fputcsv($handle, [
-                        $produto->id,
-                        $produto->referencia ?? 'N/A',
-                        $produto->descricao,
-                        $produto->categoria,
-                        number_format($produto->valor_unitario, 2, ',', '.'),
-                        $produto->preco_promocional ? number_format($produto->preco_promocional, 2, ',', '.') : 'N/A',
-                        $produto->quantidade,
-                        $produto->estoque_minimo ?? 0,
-                        $produto->disponibilidade ?? 'N/A',
-                        $produto->ativo ? 'Ativo' : 'Inativo',
-                        $produto->destaque ? 'Sim' : 'Não',
-                        $produto->created_at ? $produto->created_at->format('d/m/Y H:i') : 'N/A'
-                    ]);
-                }
-
-                fclose($handle);
-            };
-
-            return response()->stream($callback, 200, $headers);
+            return response()->download($path)->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
             Log::error('Erro ao exportar produtos: ' . $e->getMessage());
             return redirect()
                 ->back()
                 ->with('error', 'Erro ao exportar produtos: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Buscar produtos via AJAX
+     */
+    public function searchAjax(Request $request): JsonResponse
+    {
+        try {
+            $termo = $request->get('q');
+            
+            if (strlen($termo) < 2) {
+                return response()->json([]);
+            }
+
+            $produtos = $this->productService->search($termo, 10);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $produtos->items()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro na busca AJAX: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao buscar produtos'
+            ], 500);
+        }
+    }
+
+    /**
+     * Atualizar status em massa
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        try {
+            $request->validate([
+                'ids' => 'required|array',
+                'ids.*' => 'integer|exists:produtos,id',
+                'action' => 'required|in:ativar,desativar,destaque,remover_destaque'
+            ]);
+
+            $action = $request->action;
+            $ids = $request->ids;
+
+            switch ($action) {
+                case 'ativar':
+                    $this->productService->bulkUpdate($ids, ['ativo' => true]);
+                    $mensagem = 'Produtos ativados com sucesso!';
+                    break;
+                case 'desativar':
+                    $this->productService->bulkUpdate($ids, ['ativo' => false]);
+                    $mensagem = 'Produtos desativados com sucesso!';
+                    break;
+                case 'destaque':
+                    $this->productService->bulkUpdate($ids, ['destaque' => true]);
+                    $mensagem = 'Produtos marcados como destaque!';
+                    break;
+                case 'remover_destaque':
+                    $this->productService->bulkUpdate($ids, ['destaque' => false]);
+                    $mensagem = 'Produtos removidos do destaque!';
+                    break;
+                default:
+                    return redirect()
+                        ->back()
+                        ->with('error', 'Ação inválida');
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', $mensagem);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao executar ação em massa: ' . $e->getMessage());
+            return redirect()
+                ->back()
+                ->with('error', 'Erro ao executar ação: ' . $e->getMessage());
         }
     }
 }

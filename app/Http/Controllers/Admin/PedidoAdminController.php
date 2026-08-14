@@ -1,97 +1,67 @@
 <?php
+// app/Http/Controllers/Admin/PedidoAdminController.php
 
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdatePedidoStatusRequest;
 use App\Models\Pedido;
-use App\Models\PedidoItem;
+use App\Services\OrderAdminService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 use Carbon\Carbon;
 
 class PedidoAdminController extends Controller
 {
+    public function __construct(
+        protected OrderAdminService $orderAdminService
+    ) {}
+
     /**
      * Lista todos os pedidos
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         try {
-            $query = Pedido::with('user');
+            $filters = $request->only(['status', 'data_inicio', 'data_fim', 'search']);
+            $filters = array_filter($filters, function($value) {
+                return $value !== null && $value !== '';
+            });
+
+            $pedidos = $this->orderAdminService->listOrders($filters, 15);
             
-            // Filtro por status
-            if ($request->has('status') && $request->status != '') {
-                $query->where('status', $request->status);
-            }
+            // Estatísticas
+            $stats = $this->orderAdminService->getStats();
             
-            // Filtro por data
-            if ($request->has('data_inicio') && $request->data_inicio) {
-                $query->whereDate('created_at', '>=', $request->data_inicio);
-            }
-            
-            if ($request->has('data_fim') && $request->data_fim) {
-                $query->whereDate('created_at', '<=', $request->data_fim);
-            }
-            
-            // Busca por número do pedido ou cliente
-            if ($request->has('search') && $request->search) {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('numero_pedido', 'LIKE', "%{$search}%")
-                      ->orWhereHas('user', function($user) use ($search) {
-                          $user->where('name', 'LIKE', "%{$search}%")
-                               ->orWhere('email', 'LIKE', "%{$search}%");
-                      });
-                });
-            }
-            
-            $pedidos = $query->orderBy('created_at', 'desc')->paginate(15);
-            
-            // ===== ESTATÍSTICAS PARA O DASHBOARD =====
-            $totalPedidos = Pedido::count();
-            $totalFaturado = Pedido::where('status', 'entregue')->sum('total') ?? 0;
-            $pedidosPendentes = Pedido::where('status', 'pendente')->count();
-            $pedidosHoje = Pedido::whereDate('created_at', today())->count();
-            
-            // Status para o filtro
             $statusList = Pedido::statusLabels();
-            
+
             return view('admin.pedidos.index', compact(
                 'pedidos',
                 'statusList',
-                'totalPedidos',
-                'totalFaturado',
-                'pedidosPendentes',
-                'pedidosHoje'
+                'stats'
             ));
 
         } catch (\Exception $e) {
             Log::error('Erro ao listar pedidos: ' . $e->getMessage());
             
-            // Dados vazios para fallback
-            $pedidos = collect();
-            $statusList = Pedido::statusLabels();
-            $totalPedidos = 0;
-            $totalFaturado = 0;
-            $pedidosPendentes = 0;
-            $pedidosHoje = 0;
-
-            return view('admin.pedidos.index', compact(
-                'pedidos',
-                'statusList',
-                'totalPedidos',
-                'totalFaturado',
-                'pedidosPendentes',
-                'pedidosHoje'
-            ))->with('error', 'Erro ao carregar pedidos: ' . $e->getMessage());
+            return view('admin.pedidos.index', [
+                'pedidos' => collect(),
+                'statusList' => Pedido::statusLabels(),
+                'stats' => [
+                    'total' => 0,
+                    'faturado' => 0,
+                    'pendentes' => 0,
+                    'hoje' => 0,
+                ],
+            ])->with('error', 'Erro ao carregar pedidos: ' . $e->getMessage());
         }
     }
 
     /**
      * Mostra detalhes de um pedido específico
      */
-    public function show(Pedido $pedido)
+    public function show(Pedido $pedido): View|RedirectResponse
     {
         try {
             $pedido->load(['user', 'itens.produto']);
@@ -112,88 +82,19 @@ class PedidoAdminController extends Controller
     /**
      * Atualiza o status do pedido
      */
-    public function updateStatus(Request $request, Pedido $pedido)
+    public function updateStatus(UpdatePedidoStatusRequest $request, Pedido $pedido): RedirectResponse
     {
-        $request->validate([
-            'status' => 'required|in:pendente,pago,processando,enviado,entregue,cancelado'
-        ]);
-        
         try {
-            DB::beginTransaction();
-            
-            $statusAnterior = $pedido->status;
-            $novoStatus = $request->status;
-            
-            // 🔥 REGRA: Não permitir alterar pedidos já entregues ou cancelados
-            if ($statusAnterior === 'entregue') {
-                return redirect()->back()->with('error', 'Pedido já entregue não pode ser alterado.');
-            }
-            
-            if ($statusAnterior === 'cancelado') {
-                return redirect()->back()->with('error', 'Pedido cancelado não pode ser alterado.');
-            }
-            
-            // 🔥 REGRA: Verificar se pode cancelar
-            if ($novoStatus === 'cancelado' && !$pedido->podeCancelar()) {
-                return redirect()->back()->with('error', 'Este pedido não pode ser cancelado. Status atual: ' . $pedido->status_label);
-            }
-            
-            // ============================================
-            // LÓGICA DE TRANSIÇÃO DE STATUS
-            // ============================================
-            
-            // Se for cancelar, restaurar estoque
-            if ($novoStatus == 'cancelado' && $statusAnterior != 'cancelado') {
-                foreach ($pedido->itens as $item) {
-                    $produto = $item->produto;
-                    if ($produto) {
-                        $produto->increment('quantidade', $item->quantidade);
-                        // Atualizar disponibilidade se estoque > 0
-                        if ($produto->quantidade > 0 && $produto->disponibilidade == 'INDISPONIVEL') {
-                            $produto->disponibilidade = 'DISPONIVEL';
-                            $produto->save();
-                        }
-                    }
-                }
-            }
-            
-            // Se for confirmar pagamento
-            if ($novoStatus == 'pago' && $statusAnterior == 'pendente') {
-                $pedido->data_pagamento = now();
-                $pedido->status_pagamento = 'pago';
-            }
-            
-            // Se for processar
-            if ($novoStatus == 'processando' && in_array($statusAnterior, ['pendente', 'pago'])) {
-                // Lógica adicional se necessário
-            }
-            
-            // Se for enviar
-            if ($novoStatus == 'enviado' && $statusAnterior != 'enviado') {
-                $pedido->data_envio = now();
-            }
-            
-            // Se for entregar
-            if ($novoStatus == 'entregue' && $statusAnterior != 'entregue') {
-                $pedido->data_entrega = now();
-            }
-            
-            // Atualizar status
-            $pedido->status = $novoStatus;
-            $pedido->save();
-            
-            DB::commit();
+            $this->orderAdminService->updateStatus($pedido, $request->status);
             
             $statusLabels = Pedido::statusLabels();
-            $statusLabel = $statusLabels[$novoStatus] ?? $novoStatus;
+            $statusLabel = $statusLabels[$request->status] ?? $request->status;
             
             return redirect()
                 ->route('admin.pedidos.show', $pedido)
-                ->with('success', "Status do pedido #{$pedido->numero_pedido} alterado de '{$statusAnterior}' para '{$statusLabel}'");
+                ->with('success', "Status do pedido #{$pedido->numero_pedido} alterado para '{$statusLabel}'");
                 
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erro ao atualizar status do pedido: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Erro ao atualizar status: ' . $e->getMessage());
         }
     }
@@ -201,55 +102,32 @@ class PedidoAdminController extends Controller
     /**
      * Remove um pedido (apenas se cancelado)
      */
-    public function destroy(Pedido $pedido)
+    public function destroy(Pedido $pedido): RedirectResponse
     {
         try {
-            if ($pedido->status != 'cancelado') {
-                return redirect()->back()->with('error', 'Apenas pedidos cancelados podem ser excluídos.');
-            }
-            
-            DB::beginTransaction();
-            
-            // Remover itens
-            $pedido->itens()->delete();
-            
-            // Remover pedido
-            $pedido->delete();
-            
-            DB::commit();
+            $this->orderAdminService->deleteOrder($pedido);
             
             return redirect()
                 ->route('admin.pedidos.index')
                 ->with('success', "Pedido #{$pedido->numero_pedido} excluído com sucesso!");
                 
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erro ao excluir pedido: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Erro ao excluir pedido: ' . $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
     /**
      * Exporta pedidos para CSV
      */
-    public function export(Request $request)
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
     {
         try {
-            $query = Pedido::with('user');
-            
-            if ($request->has('status') && $request->status != '') {
-                $query->where('status', $request->status);
-            }
-            
-            if ($request->has('data_inicio') && $request->data_inicio) {
-                $query->whereDate('created_at', '>=', $request->data_inicio);
-            }
-            
-            if ($request->has('data_fim') && $request->data_fim) {
-                $query->whereDate('created_at', '<=', $request->data_fim);
-            }
-            
-            $pedidos = $query->orderBy('created_at', 'desc')->get();
+            $filters = $request->only(['status', 'data_inicio', 'data_fim']);
+            $filters = array_filter($filters, function($value) {
+                return $value !== null && $value !== '';
+            });
+
+            $pedidos = $this->orderAdminService->export($filters);
             
             if ($pedidos->isEmpty()) {
                 return redirect()->back()->with('warning', 'Nenhum pedido encontrado para exportar.');
@@ -267,27 +145,14 @@ class PedidoAdminController extends Controller
             
             $callback = function() use ($pedidos) {
                 $handle = fopen('php://output', 'w');
-                
-                // Adicionar BOM para UTF-8
                 fputs($handle, "\xEF\xBB\xBF");
                 
                 // Cabeçalhos
                 fputcsv($handle, [
-                    'ID',
-                    'Número do Pedido',
-                    'Cliente',
-                    'Email',
-                    'Telefone',
-                    'Subtotal',
-                    'Desconto',
-                    'Total',
-                    'Status',
-                    'Data do Pedido',
-                    'Data Pagamento',
-                    'Data Envio',
-                    'Data Entrega',
-                    'Forma Pagamento',
-                    'Status Pagamento'
+                    'ID', 'Número do Pedido', 'Cliente', 'Email', 'Telefone',
+                    'Subtotal', 'Desconto', 'Total', 'Status',
+                    'Data do Pedido', 'Data Pagamento', 'Data Envio',
+                    'Data Entrega', 'Forma Pagamento', 'Status Pagamento'
                 ]);
                 
                 $statusLabels = Pedido::statusLabels();
@@ -303,10 +168,10 @@ class PedidoAdminController extends Controller
                         number_format($pedido->desconto ?? 0, 2, ',', '.'),
                         number_format($pedido->total ?? 0, 2, ',', '.'),
                         $statusLabels[$pedido->status] ?? $pedido->status,
-                        $pedido->created_at ? $pedido->created_at->format('d/m/Y H:i') : 'N/A',
-                        $pedido->data_pagamento ? $pedido->data_pagamento->format('d/m/Y H:i') : 'N/A',
-                        $pedido->data_envio ? $pedido->data_envio->format('d/m/Y H:i') : 'N/A',
-                        $pedido->data_entrega ? $pedido->data_entrega->format('d/m/Y H:i') : 'N/A',
+                        $pedido->created_at?->format('d/m/Y H:i') ?? 'N/A',
+                        $pedido->data_pagamento?->format('d/m/Y H:i') ?? 'N/A',
+                        $pedido->data_envio?->format('d/m/Y H:i') ?? 'N/A',
+                        $pedido->data_entrega?->format('d/m/Y H:i') ?? 'N/A',
                         $pedido->forma_pagamento ?? 'N/A',
                         $pedido->status_pagamento ?? 'N/A'
                     ]);
@@ -326,10 +191,9 @@ class PedidoAdminController extends Controller
     /**
      * Relatório de vendas
      */
-    public function relatorio(Request $request)
+    public function relatorio(Request $request): View
     {
         try {
-            // Validação das datas
             $dataInicio = $request->get('data_inicio', now()->startOfMonth()->format('Y-m-d'));
             $dataFim = $request->get('data_fim', now()->format('Y-m-d'));
             
@@ -339,110 +203,43 @@ class PedidoAdminController extends Controller
                 $dataFim = now()->format('Y-m-d');
             }
             
-            // Converter para Carbon
-            $inicio = Carbon::parse($dataInicio)->startOfDay();
-            $fim = Carbon::parse($dataFim)->endOfDay();
+            $report = $this->orderAdminService->getSalesReport($dataInicio, $dataFim);
             
-            // Buscar pedidos entregues no período
-            $pedidos = Pedido::where('status', 'entregue')
-                ->whereBetween('created_at', [$inicio, $fim])
-                ->with('user')
-                ->orderBy('created_at', 'desc')
-                ->get();
-            
-            // Calcular totais
-            $totalVendas = $pedidos->sum('total') ?? 0;
-            $totalPedidos = $pedidos->count();
-            $mediaTicket = $totalPedidos > 0 ? $totalVendas / $totalPedidos : 0;
-            
-            // Vendas por dia
-            $vendasPorDia = $pedidos->groupBy(function($item) {
-                return $item->created_at->format('Y-m-d');
-            })->map(function($group) {
-                return [
-                    'data' => $group->first()->created_at->format('d/m/Y'),
-                    'total' => $group->sum('total'),
-                    'quantidade' => $group->count()
-                ];
-            })->values()->toArray();
-            
-            // Ordenar por data
-            usort($vendasPorDia, function($a, $b) {
-                return strtotime($a['data']) - strtotime($b['data']);
-            });
-            
-            return view('admin.pedidos.relatorio', compact(
-                'pedidos',
-                'totalVendas',
-                'totalPedidos',
-                'mediaTicket',
-                'dataInicio',
-                'dataFim',
-                'vendasPorDia'
-            ));
+            return view('admin.pedidos.relatorio', array_merge($report, [
+                'dataInicio' => $dataInicio,
+                'dataFim' => $dataFim,
+            ]));
 
         } catch (\Exception $e) {
             Log::error('Erro no relatório de pedidos: ' . $e->getMessage());
             
-            // Dados vazios para fallback
-            $pedidos = collect();
-            $totalVendas = 0;
-            $totalPedidos = 0;
-            $mediaTicket = 0;
-            $dataInicio = now()->startOfMonth()->format('Y-m-d');
-            $dataFim = now()->format('Y-m-d');
-            $vendasPorDia = [];
-
-            return view('admin.pedidos.relatorio', compact(
-                'pedidos',
-                'totalVendas',
-                'totalPedidos',
-                'mediaTicket',
-                'dataInicio',
-                'dataFim',
-                'vendasPorDia'
-            ))->with('error', 'Erro ao gerar relatório: ' . $e->getMessage());
+            return view('admin.pedidos.relatorio', [
+                'pedidos' => collect(),
+                'totalVendas' => 0,
+                'totalPedidos' => 0,
+                'mediaTicket' => 0,
+                'dataInicio' => now()->startOfMonth()->format('Y-m-d'),
+                'dataFim' => now()->format('Y-m-d'),
+                'vendasPorDia' => [],
+            ])->with('error', 'Erro ao gerar relatório: ' . $e->getMessage());
         }
     }
 
     /**
-     * Dashboard de pedidos
+     * Dashboard de pedidos (mantido para compatibilidade)
      */
-    public function dashboard()
+    public function dashboard(): View|RedirectResponse
     {
         try {
-            $totalPedidos = Pedido::count();
-            $totalEntregues = Pedido::where('status', 'entregue')->count();
-            $totalCancelados = Pedido::where('status', 'cancelado')->count();
-            $totalPendentes = Pedido::where('status', 'pendente')->count();
-            
-            $faturamentoTotal = Pedido::where('status', 'entregue')->sum('total') ?? 0;
-            $faturamentoMes = Pedido::where('status', 'entregue')
-                ->whereMonth('created_at', now()->month)
-                ->sum('total') ?? 0;
-            
-            $pedidosHoje = Pedido::whereDate('created_at', today())->count();
-            $faturamentoHoje = Pedido::whereDate('created_at', today())
-                ->where('status', 'entregue')
-                ->sum('total') ?? 0;
-            
-            // Últimos pedidos
+            $stats = $this->orderAdminService->getStats();
             $ultimosPedidos = Pedido::with('user')
                 ->orderBy('created_at', 'desc')
                 ->take(10)
                 ->get();
 
-            return view('admin.pedidos.dashboard', compact(
-                'totalPedidos',
-                'totalEntregues',
-                'totalCancelados',
-                'totalPendentes',
-                'faturamentoTotal',
-                'faturamentoMes',
-                'pedidosHoje',
-                'faturamentoHoje',
-                'ultimosPedidos'
-            ));
+            return view('admin.pedidos.dashboard', array_merge($stats, [
+                'ultimosPedidos' => $ultimosPedidos,
+            ]));
 
         } catch (\Exception $e) {
             Log::error('Erro no dashboard de pedidos: ' . $e->getMessage());
