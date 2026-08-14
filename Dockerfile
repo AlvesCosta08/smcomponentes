@@ -31,15 +31,25 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Definir diretório de trabalho
 WORKDIR /var/www/html
 
-# Copiar arquivos do projeto
-COPY . .
+# Copiar arquivos de dependência primeiro (melhor cache)
+COPY composer.json composer.lock ./
+
+# 🔥 CRIAR DIRETÓRIOS DE CACHE ANTES DO COMPOSER
+RUN mkdir -p storage/framework/cache \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
 
 # Instalar dependências do Laravel
 RUN composer install --no-interaction --optimize-autoloader
 
-# Configurar permissões
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Copiar o restante dos arquivos do projeto
+COPY . .
+
+# Configurar permissões finais
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Expor porta 8000
 EXPOSE 8000
