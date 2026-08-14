@@ -8,9 +8,11 @@ use App\Services\BannerService;
 use App\Services\DashboardService;
 use App\Services\OrderAdminService;
 use App\Services\OrderService;
+use App\Services\PaymentService;
 use App\Services\ProductService;
 use App\Services\StockService;
 use App\Services\UserService;
+use App\Services\WishlistService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -92,6 +94,18 @@ class AppServiceProvider extends ServiceProvider
             $this->app->singleton(BannerService::class, function ($app) {
                 Log::info('✅ BannerService registrado!');
                 return new BannerService();
+            });
+
+            // PaymentService (Mercado Pago)
+            $this->app->singleton(PaymentService::class, function ($app) {
+                Log::info('✅ PaymentService registrado!');
+                return new PaymentService();
+            });
+
+            // 🆕 WishlistService
+            $this->app->singleton(WishlistService::class, function ($app) {
+                Log::info('✅ WishlistService registrado!');
+                return new WishlistService();
             });
 
             Log::info('✅ Todos os services registrados com sucesso!');
@@ -184,6 +198,24 @@ class AppServiceProvider extends ServiceProvider
                     return substr($value, 0, 5) . '-' . substr($value, 5, 3);
                 }
                 return $value;
+            });
+        }
+
+        // Macro para formatação de data
+        if (!\Illuminate\Support\Str::hasMacro('data')) {
+            \Illuminate\Support\Str::macro('data', function ($value) {
+                if (!$value) return '';
+                $date = \Carbon\Carbon::parse($value);
+                return $date->format('d/m/Y');
+            });
+        }
+
+        // Macro para formatação de data e hora
+        if (!\Illuminate\Support\Str::hasMacro('datahora')) {
+            \Illuminate\Support\Str::macro('datahora', function ($value) {
+                if (!$value) return '';
+                $date = \Carbon\Carbon::parse($value);
+                return $date->format('d/m/Y H:i');
             });
         }
 

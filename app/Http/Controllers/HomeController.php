@@ -6,7 +6,9 @@ use App\Models\Banner;
 use App\Models\Produto;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class HomeController extends Controller
@@ -47,11 +49,6 @@ class HomeController extends Controller
             }
         );
 
-        /*
-         * Converte os arrays do cache em objetos simples.
-         */
-        
-        // 🔥 FIX: Valida e normaliza os dados dos banners
         if (is_string($bannersData)) {
             $bannersData = json_decode($bannersData, true) ?: [];
         }
@@ -62,19 +59,16 @@ class HomeController extends Controller
 
         $banners = collect($bannersData)
             ->map(function ($banner) {
-                // Se for string JSON, decodifica
                 if (is_string($banner)) {
                     $banner = json_decode($banner, true);
                 }
                 
-                // Se ainda não for array, pula
                 if (!is_array($banner)) {
                     return null;
                 }
                 
                 $obj = (object) $banner;
 
-                // ESTILO DO FUNDO
                 $obj->estilo_fundo = null;
 
                 if (!empty($banner['cor_fundo'])) {
@@ -89,7 +83,6 @@ class HomeController extends Controller
                     }
                 }
 
-                // URL DA IMAGEM
                 $obj->imagem_url = null;
 
                 if (!empty($banner['imagem'])) {
@@ -187,13 +180,6 @@ class HomeController extends Controller
 
     /**
      * Retorna um paginator utilizando cache.
-     *
-     * O cache armazena somente dados simples:
-     * - arrays
-     * - strings
-     * - números
-     *
-     * Não armazenamos o paginator nem Models Eloquent.
      */
     private function getCachedPaginator(
         string $cacheKey,
@@ -217,7 +203,6 @@ class HomeController extends Controller
                     $currentPage
                 );
 
-                // TRANSFORMA OS MODELS EM ARRAYS
                 $items = collect($paginator->items())
                     ->map(function ($produto) {
                         return $produto->toArray();
@@ -225,7 +210,6 @@ class HomeController extends Controller
                     ->values()
                     ->all();
 
-                // SOMENTE DADOS SIMPLES NO CACHE
                 return [
                     'items' => $items,
                     'total' => (int) $paginator->total(),
@@ -238,13 +222,9 @@ class HomeController extends Controller
             }
         );
 
-        // 🔥 FIX: Valida e normaliza os dados do cache
-        // Se o cache retornou dados corrompidos, força recriação
         if (!is_array($cachedData) || !isset($cachedData['items']) || !is_array($cachedData['items'])) {
-            // Força a recriação do cache removendo a chave
             Cache::forget($fullCacheKey);
             
-            // Recria o cache chamando a função novamente
             $cachedData = Cache::remember(
                 $fullCacheKey,
                 now()->addHour(),
@@ -277,40 +257,32 @@ class HomeController extends Controller
             );
         }
 
-        // 🔥 FIX: Garante que $cachedData['items'] seja um array válido
         $itemsArray = $cachedData['items'] ?? [];
         
-        // Se não for array, tenta converter
         if (!is_array($itemsArray)) {
             $itemsArray = [];
         }
 
-        // RECONSTRÓI OS PRODUTOS COMO OBJETOS SIMPLES
         $items = collect($itemsArray)
             ->map(function ($produto) {
-                // 🔥 FIX: Se for string JSON, decodifica
                 if (is_string($produto)) {
                     $produto = json_decode($produto, true);
                 }
                 
-                // Se for array, converte para objeto
                 if (is_array($produto)) {
                     return (object) $produto;
                 }
                 
-                // Se já for objeto, retorna como está
                 if (is_object($produto)) {
                     return $produto;
                 }
                 
-                // Fallback: retorna null para itens inválidos
                 return null;
             })
-            ->filter() // Remove nulos
-            ->values() // Reindexa
+            ->filter()
+            ->values()
             ->all();
 
-        // RECRIA O PAGINATOR
         return new LengthAwarePaginator(
             $items,
             $cachedData['total'] ?? 0,
@@ -325,30 +297,148 @@ class HomeController extends Controller
     }
 
     // ================================================================
-    // MÉTODOS CRUD
+    // 🔥 NOVOS MÉTODOS DE CACHE
     // ================================================================
 
-    public function create()
+    /**
+     * Limpar cache do sistema
+     */
+    public function clearCache()
     {
+        try {
+            Artisan::call('view:clear');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('event:clear');
+            Artisan::call('cache:clear');
+            
+            // Limpar caches específicos do sistema
+            Cache::flush();
+            
+            Log::info('Cache limpo pelo administrador', [
+                'usuario_id' => auth()->id(),
+                'email' => auth()->user()->email
+            ]);
+
+            return redirect()->back()->with('success', '✅ Cache limpo com sucesso!');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao limpar cache: ' . $e->getMessage(), [
+                'usuario_id' => auth()->id()
+            ]);
+            
+            return redirect()->back()->with('error', '❌ Erro ao limpar cache: ' . $e->getMessage());
+        }
     }
 
-    public function store(Request $request)
+    /**
+     * Limpar cache de banners
+     */
+    public function clearBannerCache()
     {
+        try {
+            Cache::forget('banners_ativos');
+            Cache::forget('banners');
+            Cache::forget('banners_active');
+            
+            Log::info('Cache de banners limpo', [
+                'usuario_id' => auth()->id()
+            ]);
+
+            return redirect()->back()->with('success', '✅ Cache de banners limpo com sucesso!');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao limpar cache de banners: ' . $e->getMessage());
+            
+            return redirect()->back()->with('error', '❌ Erro ao limpar cache de banners: ' . $e->getMessage());
+        }
     }
 
-    public function show(string $id)
+    /**
+     * Recarregar banners
+     */
+    public function reloadBanners()
     {
+        try {
+            // Limpar cache
+            Cache::forget('banners_ativos');
+            Cache::forget('banners');
+            Cache::forget('banners_active');
+            
+            // Recarregar banners
+            $banners = Banner::ativo()
+                ->ordenado()
+                ->get();
+            
+            Cache::put('banners_ativos', $banners, 3600);
+            
+            Log::info('Banners recarregados', [
+                'usuario_id' => auth()->id(),
+                'quantidade' => $banners->count()
+            ]);
+
+            return redirect()->back()->with('success', '✅ Banners recarregados com sucesso! (' . $banners->count() . ' banners)');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao recarregar banners: ' . $e->getMessage());
+            
+            return redirect()->back()->with('error', '❌ Erro ao recarregar banners: ' . $e->getMessage());
+        }
     }
 
-    public function edit(string $id)
+    /**
+     * Limpar cache de produtos
+     */
+    public function clearProductCache()
     {
+        try {
+            // Limpar caches de produtos
+            Cache::forget('produtos_destaque');
+            Cache::forget('ofertas_ativas');
+            Cache::forget('novos_produtos');
+            Cache::forget('mais_vendidos');
+            Cache::forget('produtos_disponiveis');
+            
+            Log::info('Cache de produtos limpo', [
+                'usuario_id' => auth()->id()
+            ]);
+
+            return redirect()->back()->with('success', '✅ Cache de produtos limpo com sucesso!');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao limpar cache de produtos: ' . $e->getMessage());
+            
+            return redirect()->back()->with('error', '❌ Erro ao limpar cache de produtos: ' . $e->getMessage());
+        }
     }
 
-    public function update(Request $request, string $id)
+    /**
+     * Limpar todos os caches
+     */
+    public function clearAllCache()
     {
-    }
+        try {
+            // Limpar cache do Laravel
+            Artisan::call('view:clear');
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('event:clear');
+            Artisan::call('cache:clear');
+            Artisan::call('optimize:clear');
+            
+            // Limpar cache do Redis/File
+            Cache::flush();
+            
+            Log::info('Todos os caches limpos', [
+                'usuario_id' => auth()->id()
+            ]);
 
-    public function destroy(string $id)
-    {
+            return redirect()->back()->with('success', '✅ Todos os caches foram limpos com sucesso!');
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao limpar todos os caches: ' . $e->getMessage());
+            
+            return redirect()->back()->with('error', '❌ Erro ao limpar caches: ' . $e->getMessage());
+        }
     }
 }

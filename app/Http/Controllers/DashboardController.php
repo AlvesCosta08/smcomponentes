@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    /**
+     * 🔥 ADICIONAR MIDDLEWARE DE AUTENTICAÇÃO
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -32,6 +40,7 @@ class DashboardController extends Controller
             ->get();
         
         return view('dashboard', compact(
+            'user',
             'totalPedidos',
             'pedidosPendentes',
             'totalGasto',

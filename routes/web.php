@@ -6,6 +6,7 @@ use App\Http\Controllers\CarrinhoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\ProdutoAdminController;
@@ -59,15 +60,47 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ============================================
-    // ROTAS DE CHECKOUT
+    // ROTAS DE CHECKOUT E PAGAMENTO
     // ============================================
     Route::prefix('checkout')->name('checkout.')->group(function () {
+        // Checkout
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
         Route::post('/processar', [CheckoutController::class, 'processar'])->name('processar');
+        
+        // Rotas de Pagamento
+        Route::get('/pix/{pedido}', [CheckoutController::class, 'pix'])->name('pix');
+        Route::get('/boleto/{pedido}', [CheckoutController::class, 'boleto'])->name('boleto');
+        Route::get('/cartao/{pedido}', [CheckoutController::class, 'cartao'])->name('cartao');
+        
+        // Status do Pagamento
         Route::get('/sucesso/{pedido}', [CheckoutController::class, 'sucesso'])->name('sucesso');
+        Route::get('/falha/{pedido}', [CheckoutController::class, 'falha'])->name('falha');
+        Route::get('/pendente/{pedido}', [CheckoutController::class, 'pendente'])->name('pendente');
+        
+        // Pedidos do Usuário
         Route::get('/pedidos', [CheckoutController::class, 'meusPedidos'])->name('pedidos');
         Route::get('/pedidos/{pedido}', [CheckoutController::class, 'detalhes'])->name('detalhes');
         Route::post('/pedidos/{pedido}/cancelar', [CheckoutController::class, 'cancelar'])->name('cancelar');
+    });
+
+    // ============================================
+    // ROTAS DA WISHLIST (LISTA DE DESEJOS)
+    // ============================================
+    Route::prefix('wishlist')->name('wishlist.')->group(function () {
+        // Páginas
+        Route::get('/', [WishlistController::class, 'index'])->name('index');
+        Route::get('/{id}', [WishlistController::class, 'show'])->name('show');
+        
+        // CRUD
+        Route::post('/', [WishlistController::class, 'store'])->name('store');
+        Route::put('/{id}', [WishlistController::class, 'update'])->name('update');
+        Route::delete('/{id}', [WishlistController::class, 'destroy'])->name('destroy');
+        
+        // Rotas AJAX
+        Route::post('/adicionar', [WishlistController::class, 'adicionar'])->name('adicionar');
+        Route::post('/remover', [WishlistController::class, 'remover'])->name('remover');
+        Route::post('/verificar', [WishlistController::class, 'verificar'])->name('verificar');
+        Route::post('/mover', [WishlistController::class, 'mover'])->name('mover');
     });
 });
 
@@ -92,13 +125,13 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
     });
 
     // ============================================
-    // ROTAS DE PRODUTOS (ADMIN) - CORRIGIDAS
+    // ROTAS DE PRODUTOS (ADMIN)
     // ============================================
     Route::prefix('produtos')->name('produtos.')->group(function () {
         Route::get('/', [ProdutoAdminController::class, 'index'])->name('index');
         Route::get('/create', [ProdutoAdminController::class, 'create'])->name('create');
         Route::post('/', [ProdutoAdminController::class, 'store'])->name('store');
-        Route::get('/export', [ProdutoAdminController::class, 'export'])->name('export'); // <-- ADICIONADO
+        Route::get('/export', [ProdutoAdminController::class, 'export'])->name('export');
         Route::get('/{id}', [ProdutoAdminController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [ProdutoAdminController::class, 'edit'])->name('edit');
         Route::put('/{id}', [ProdutoAdminController::class, 'update'])->name('update');

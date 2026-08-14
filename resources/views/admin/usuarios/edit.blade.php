@@ -57,13 +57,14 @@
                             <input type="password" name="password_confirmation" id="password_confirmation" class="form-control">
                         </div>
 
+                        {{-- 🔥 CORRIGIDO: Usar $role diretamente --}}
                         <div class="mb-3">
                             <label for="role" class="form-label">Role *</label>
                             <select name="role" id="role" class="form-select @error('role') is-invalid @enderror" required>
                                 <option value="">Selecione...</option>
                                 @foreach($roles as $role)
-                                    <option value="{{ $role->name }}" {{ old('role', $userRole) == $role->name ? 'selected' : '' }}>
-                                        {{ $role->name }}
+                                    <option value="{{ $role }}" {{ old('role', $userRole) == $role ? 'selected' : '' }}>
+                                        {{ $role }}
                                     </option>
                                 @endforeach
                             </select>

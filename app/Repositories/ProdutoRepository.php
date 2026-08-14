@@ -1,362 +1,413 @@
 <?php
+// app/Repositories/ProdutoRepository.php
 
 namespace App\Repositories;
 
 use App\Models\Produto;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class ProdutoRepository
 {
     /**
-     * Listar todas as categorias
-     * 
-     * @return \Illuminate\Support\Collection
+     * Encontrar produto por ID
      */
-    public function listarCategorias()
+    public function find(int $id): ?Produto
     {
-        try {
-            return Produto::distinct()
-                ->whereNotNull('categoria')
-                ->where('categoria', '!=', '')
-                ->orderBy('categoria')
-                ->pluck('categoria')
-                ->filter() // Remove valores vazios
-                ->values(); // Reindexa o array
-                
-        } catch (\Exception $e) {
-            Log::error('Erro ao listar categorias: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::find($id);
     }
 
     /**
-     * Obter estatísticas dos produtos
+     * Encontrar produto por ID ou lançar exceção
      */
-    public function obterEstatisticas(): array
+    public function findOrFail(int $id): Produto
     {
-        try {
-            return [
-                'total' => Produto::count(),
-                'ativos' => Produto::where('ativo', true)->count(),
-                'inativos' => Produto::where('ativo', false)->count(),
-                'com_estoque' => Produto::where('quantidade', '>', 0)->count(),
-                'sem_estoque' => Produto::where('quantidade', '<=', 0)->count(),
-                'estoque_baixo' => Produto::where('quantidade', '>', 0)
-                    ->whereColumn('quantidade', '<=', 'estoque_minimo')
-                    ->count(),
-                'em_destaque' => Produto::where('destaque', true)->count(),
-                'em_promocao' => Produto::whereNotNull('preco_promocional')
-                    ->where('preco_promocional', '>', 0)
-                    ->count(),
-            ];
-        } catch (\Exception $e) {
-            Log::error('Erro ao obter estatísticas: ' . $e->getMessage());
-            return [
-                'total' => 0,
-                'ativos' => 0,
-                'inativos' => 0,
-                'com_estoque' => 0,
-                'sem_estoque' => 0,
-                'estoque_baixo' => 0,
-                'em_destaque' => 0,
-                'em_promocao' => 0,
-            ];
-        }
+        return Produto::findOrFail($id);
     }
 
     /**
-     * Listar produtos com filtros
+     * Encontrar produto por slug
      */
-    public function listarProdutos($filtros = [], $porPagina = 15)
+    public function findBySlug(string $slug): ?Produto
     {
-        try {
-            $query = Produto::query();
-
-            // Filtro por categoria
-            if (!empty($filtros['categoria'])) {
-                $query->where('categoria', $filtros['categoria']);
-            }
-
-            // Filtro por status
-            if (isset($filtros['ativo']) && $filtros['ativo'] !== '') {
-                $query->where('ativo', $filtros['ativo']);
-            }
-
-            // Filtro por estoque
-            if (isset($filtros['estoque']) && $filtros['estoque'] !== '') {
-                if ($filtros['estoque'] === 'baixo') {
-                    $query->where('quantidade', '>', 0)
-                        ->whereColumn('quantidade', '<=', 'estoque_minimo');
-                } elseif ($filtros['estoque'] === 'zerado') {
-                    $query->where('quantidade', '<=', 0);
-                } elseif ($filtros['estoque'] === 'disponivel') {
-                    $query->where('quantidade', '>', 0);
-                }
-            }
-
-            // Filtro por destaque
-            if (isset($filtros['destaque']) && $filtros['destaque'] !== '') {
-                $query->where('destaque', $filtros['destaque']);
-            }
-
-            // Filtro por promoção
-            if (isset($filtros['promocao']) && $filtros['promocao'] !== '') {
-                if ($filtros['promocao']) {
-                    $query->whereNotNull('preco_promocional')
-                        ->where('preco_promocional', '>', 0);
-                } else {
-                    $query->where(function($q) {
-                        $q->whereNull('preco_promocional')
-                          ->orWhere('preco_promocional', '<=', 0);
-                    });
-                }
-            }
-
-            // Busca por texto
-            if (!empty($filtros['search'])) {
-                $search = $filtros['search'];
-                $query->where(function($q) use ($search) {
-                    $q->where('descricao', 'LIKE', "%{$search}%")
-                      ->orWhere('referencia', 'LIKE', "%{$search}%")
-                      ->orWhere('categoria', 'LIKE', "%{$search}%");
-                });
-            }
-
-            // Ordenação
-            $ordenarPor = $filtros['ordenar_por'] ?? 'created_at';
-            $ordenarDir = $filtros['ordenar_dir'] ?? 'desc';
-            $query->orderBy($ordenarPor, $ordenarDir);
-
-            return $query->paginate($porPagina);
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao listar produtos: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::where('slug', $slug)->first();
     }
 
     /**
-     * Buscar produto por ID
+     * Encontrar produto por referência
      */
-    public function buscarPorId($id)
+    public function findByReference(string $referencia): ?Produto
     {
-        try {
-            return Produto::findOrFail($id);
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produto por ID: ' . $e->getMessage());
-            return null;
-        }
+        return Produto::where('referencia', $referencia)->first();
     }
 
     /**
-     * Buscar produto por slug
+     * Criar novo produto
      */
-    public function buscarPorSlug($slug)
+    public function create(array $data): Produto
     {
-        try {
-            return Produto::where('slug', $slug)->firstOrFail();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produto por slug: ' . $e->getMessage());
-            return null;
+        if (!isset($data['ipi']) || $data['ipi'] === null) {
+            $data['ipi'] = 9.75;
         }
+
+        if (!isset($data['disponibilidade'])) {
+            $data['disponibilidade'] = 'DISPONÍVEL';
+        }
+
+        if (!isset($data['ativo'])) {
+            $data['ativo'] = true;
+        }
+
+        return Produto::create($data);
     }
 
     /**
-     * Criar um novo produto
+     * Atualizar produto
      */
-    public function criar(array $dados)
+    public function update(int $id, array $data): Produto
     {
-        try {
-            // Gerar slug se não for fornecido
-            if (empty($dados['slug'])) {
-                $dados['slug'] = \Illuminate\Support\Str::slug($dados['descricao'] . '-' . $dados['referencia']);
-            }
-
-            return Produto::create($dados);
-        } catch (\Exception $e) {
-            Log::error('Erro ao criar produto: ' . $e->getMessage());
-            throw $e;
+        $produto = $this->findOrFail($id);
+        
+        if (!isset($data['ipi']) || $data['ipi'] === null) {
+            $data['ipi'] = 9.75;
         }
+        
+        $produto->update($data);
+        return $produto->fresh();
     }
 
     /**
-     * Atualizar um produto
+     * Deletar produto (soft delete)
      */
-    public function atualizar($id, array $dados)
+    public function delete(int $id): bool
     {
-        try {
-            $produto = $this->buscarPorId($id);
-            if (!$produto) {
-                throw new \Exception('Produto não encontrado');
-            }
-
-            // Gerar slug se não for fornecido e descrição foi alterada
-            if (empty($dados['slug']) && isset($dados['descricao'])) {
-                $dados['slug'] = \Illuminate\Support\Str::slug($dados['descricao'] . '-' . $dados['referencia']);
-            }
-
-            $produto->update($dados);
-            return $produto;
-        } catch (\Exception $e) {
-            Log::error('Erro ao atualizar produto: ' . $e->getMessage());
-            throw $e;
-        }
+        $produto = $this->findOrFail($id);
+        return $produto->delete();
     }
 
     /**
-     * Excluir um produto (soft delete)
+     * Restaurar produto deletado
      */
-    public function excluir($id)
+    public function restore(int $id): bool
     {
-        try {
-            $produto = $this->buscarPorId($id);
-            if (!$produto) {
-                throw new \Exception('Produto não encontrado');
-            }
-
-            return $produto->delete();
-        } catch (\Exception $e) {
-            Log::error('Erro ao excluir produto: ' . $e->getMessage());
-            throw $e;
-        }
+        $produto = Produto::withTrashed()->findOrFail($id);
+        return $produto->restore();
     }
 
     /**
-     * Ajustar estoque do produto
+     * Deletar permanentemente
      */
-    public function ajustarEstoque($id, $quantidade, $tipo = 'adicionar')
+    public function forceDelete(int $id): bool
     {
-        try {
-            $produto = $this->buscarPorId($id);
-            if (!$produto) {
-                throw new \Exception('Produto não encontrado');
-            }
+        $produto = Produto::withTrashed()->findOrFail($id);
+        return $produto->forceDelete();
+    }
 
-            if ($tipo === 'adicionar') {
-                $produto->increment('quantidade', $quantidade);
+    /**
+     * Obter produtos com filtros (paginação)
+     */
+    public function getProdutosComFiltros(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Produto::query();
+
+        // Filtro por categoria
+        if (!empty($filters['categoria'])) {
+            $query->where('categoria', $filters['categoria']);
+        }
+
+        // Filtro por ativo
+        if (isset($filters['ativo']) && $filters['ativo'] !== '') {
+            $query->where('ativo', (bool) $filters['ativo']);
+        }
+
+        // Filtro por estoque
+        if (isset($filters['estoque'])) {
+            if ($filters['estoque'] === 'com_estoque') {
+                $query->where('quantidade', '>', 0);
+            } elseif ($filters['estoque'] === 'sem_estoque') {
+                $query->where('quantidade', '<=', 0);
+            } elseif ($filters['estoque'] === 'baixo_estoque') {
+                $query->where('quantidade', '<=', 5)->where('quantidade', '>', 0);
+            }
+        }
+
+        // Filtro por destaque
+        if (isset($filters['destaque']) && $filters['destaque'] !== '') {
+            $query->where('destaque', (bool) $filters['destaque']);
+        }
+
+        // Filtro por promoção
+        if (isset($filters['promocao']) && $filters['promocao'] !== '') {
+            if ($filters['promocao'] === 'com_promocao') {
+                $query->whereNotNull('preco_promocional')->where('preco_promocional', '>', 0);
             } else {
-                $produto->decrement('quantidade', $quantidade);
+                $query->whereNull('preco_promocional')->orWhere('preco_promocional', '<=', 0);
             }
-
-            // Atualizar disponibilidade
-            $produto->disponibilidade = $produto->quantidade > 0 ? 'DISPONIVEL' : 'INDISPONIVEL';
-            $produto->save();
-
-            return $produto;
-        } catch (\Exception $e) {
-            Log::error('Erro ao ajustar estoque: ' . $e->getMessage());
-            throw $e;
         }
+
+        // Filtro por novo
+        if (isset($filters['novo']) && $filters['novo'] !== '') {
+            $query->where('novo', (bool) $filters['novo']);
+        }
+
+        // Filtro por mais_vendido
+        if (isset($filters['mais_vendido']) && $filters['mais_vendido'] !== '') {
+            $query->where('mais_vendido', (bool) $filters['mais_vendido']);
+        }
+
+        // Busca por termo
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('descricao', 'LIKE', "%{$search}%")
+                  ->orWhere('categoria', 'LIKE', "%{$search}%")
+                  ->orWhere('referencia', 'LIKE', "%{$search}%")
+                  ->orWhere('slug', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Filtro por data
+        if (!empty($filters['data_inicio']) && !empty($filters['data_fim'])) {
+            $query->whereBetween('created_at', [$filters['data_inicio'], $filters['data_fim']]);
+        }
+
+        // Filtro por data_compra
+        if (!empty($filters['data_compra_inicio']) && !empty($filters['data_compra_fim'])) {
+            $query->whereBetween('data_compra', [$filters['data_compra_inicio'], $filters['data_compra_fim']]);
+        }
+
+        // Filtro por valor
+        if (isset($filters['valor_min']) && isset($filters['valor_max'])) {
+            $query->whereBetween('valor_atacado', [$filters['valor_min'], $filters['valor_max']]);
+        }
+
+        // Ordenação
+        $ordenarPor = $filters['ordenar_por'] ?? 'created_at';
+        $ordenarDir = $filters['ordenar_dir'] ?? 'desc';
+        $query->orderBy($ordenarPor, $ordenarDir);
+
+        return $query->paginate($perPage);
     }
 
     /**
-     * Obter produtos com estoque baixo
+     * Obter todas as categorias
      */
-    public function produtosEstoqueBaixo($limite = 10)
+    public function getCategorias(): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->where('quantidade', '>', 0)
-                ->whereColumn('quantidade', '<=', 'estoque_minimo')
-                ->orderBy('quantidade', 'asc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos com estoque baixo: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::select('categoria')
+            ->distinct()
+            ->whereNotNull('categoria')
+            ->where('categoria', '!=', '')
+            ->orderBy('categoria')
+            ->pluck('categoria');
     }
 
     /**
-     * Obter produtos sem estoque
+     * Contar produtos por categoria
      */
-    public function produtosSemEstoque($limite = 10)
+    public function countByCategory(): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->where('quantidade', '<=', 0)
-                ->orderBy('quantidade', 'asc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos sem estoque: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::where('ativo', true)
+            ->select('categoria', \DB::raw('count(*) as total'))
+            ->groupBy('categoria')
+            ->orderBy('total', 'desc')
+            ->get();
     }
 
     /**
-     * Obter produtos em destaque
+     * Buscar produtos com estoque baixo
      */
-    public function produtosDestaque($limite = 8)
+    public function getLowStock(int $limit = 5): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->where('destaque', true)
-                ->where('quantidade', '>', 0)
-                ->orderBy('created_at', 'desc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos em destaque: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::where('ativo', true)
+            ->where('quantidade', '<=', 5)
+            ->where('quantidade', '>', 0)
+            ->orderBy('quantidade', 'asc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
-     * Obter produtos em promoção
+     * Buscar produtos sem estoque
      */
-    public function produtosPromocao($limite = 8)
+    public function getOutOfStock(): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->whereNotNull('preco_promocional')
-                ->where('preco_promocional', '>', 0)
-                ->where('quantidade', '>', 0)
-                ->orderBy('created_at', 'desc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos em promoção: ' . $e->getMessage());
-            return collect([]);
-        }
+        return Produto::where('ativo', true)
+            ->where('quantidade', '<=', 0)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Buscar produtos em destaque
+     */
+    public function getDestaques(int $limit = 6): Collection
+    {
+        return Produto::where('ativo', true)
+            ->where('destaque', true)
+            ->where('quantidade', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Buscar produtos em promoção
+     */
+    public function getOfertas(int $limit = 6): Collection
+    {
+        return Produto::where('ativo', true)
+            ->whereNotNull('preco_promocional')
+            ->where('preco_promocional', '>', 0)
+            ->where('quantidade', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Buscar produtos novos
+     */
+    public function getNovos(int $limit = 6): Collection
+    {
+        return Produto::where('ativo', true)
+            ->where('novo', true)
+            ->where('quantidade', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Buscar produtos mais vendidos
+     */
+    public function getMaisVendidos(int $limit = 6): Collection
+    {
+        return Produto::where('ativo', true)
+            ->where('mais_vendido', true)
+            ->where('quantidade', '>', 0)
+            ->orderBy('visualizacoes', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
      * Buscar produtos por categoria
      */
-    public function buscarPorCategoria($categoria, $limite = 12)
+    public function getByCategoria(string $categoria, int $limit = null): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->where('categoria', $categoria)
-                ->where('quantidade', '>', 0)
-                ->orderBy('created_at', 'desc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos por categoria: ' . $e->getMessage());
-            return collect([]);
+        $query = Produto::where('categoria', $categoria)
+            ->where('ativo', true)
+            ->where('quantidade', '>', 0);
+
+        if ($limit) {
+            $query->limit($limit);
         }
+
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**
-     * Buscar produtos similares
+     * Buscar produtos relacionados
      */
-    public function produtosSimilares($produto, $limite = 4)
+    public function getRelacionados(int $produtoId, string $categoria, int $limit = 6): Collection
     {
-        try {
-            return Produto::where('ativo', true)
-                ->where('id', '!=', $produto->id)
-                ->where('categoria', $produto->categoria)
-                ->where('quantidade', '>', 0)
-                ->orderBy('created_at', 'desc')
-                ->limit($limite)
-                ->get();
-        } catch (\Exception $e) {
-            Log::error('Erro ao buscar produtos similares: ' . $e->getMessage());
-            return collect([]);
+        return Produto::where('categoria', $categoria)
+            ->where('id', '!=', $produtoId)
+            ->where('ativo', true)
+            ->where('quantidade', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Buscar produtos por termo (search)
+     */
+    public function search(string $termo, int $limit = 15): Collection
+    {
+        return Produto::where('ativo', true)
+            ->where('quantidade', '>', 0)
+            ->where(function ($query) use ($termo) {
+                $query->where('descricao', 'LIKE', "%{$termo}%")
+                    ->orWhere('categoria', 'LIKE', "%{$termo}%")
+                    ->orWhere('referencia', 'LIKE', "%{$termo}%")
+                    ->orWhere('slug', 'LIKE', "%{$termo}%");
+            })
+            ->orderBy('descricao', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Contar produtos ativos
+     */
+    public function countAtivos(): int
+    {
+        return Produto::where('ativo', true)->count();
+    }
+
+    /**
+     * Contar produtos inativos
+     */
+    public function countInativos(): int
+    {
+        return Produto::where('ativo', false)->count();
+    }
+
+    /**
+     * Contar produtos com estoque
+     */
+    public function countComEstoque(): int
+    {
+        return Produto::where('quantidade', '>', 0)->count();
+    }
+
+    /**
+     * Contar produtos sem estoque
+     */
+    public function countSemEstoque(): int
+    {
+        return Produto::where('quantidade', '<=', 0)->count();
+    }
+
+    /**
+     * Atualizar em massa
+     */
+    public function bulkUpdate(array $ids, array $data): int
+    {
+        return Produto::whereIn('id', $ids)->update($data);
+    }
+
+    /**
+     * Verificar se produto existe
+     */
+    public function exists(int $id): bool
+    {
+        return Produto::where('id', $id)->exists();
+    }
+
+    /**
+     * Verificar se slug existe
+     */
+    public function slugExists(string $slug, ?int $excludeId = null): bool
+    {
+        $query = Produto::where('slug', $slug);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
         }
+        return $query->exists();
+    }
+
+    /**
+     * Verificar se referência existe
+     */
+    public function referenciaExists(string $referencia, ?int $excludeId = null): bool
+    {
+        $query = Produto::where('referencia', $referencia);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+        return $query->exists();
     }
 }

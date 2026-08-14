@@ -32,7 +32,6 @@ class ProductService
             perPage: $perPage
         );
 
-        // Transformar cada produto em DTO
         $products->getCollection()->transform(function ($product) {
             return ProductResponseDTO::fromModel($product);
         });
@@ -67,10 +66,17 @@ class ProductService
             return null;
         }
 
-        // Incrementar visualizações
         $this->incrementarVisualizacoes($produto->id);
 
         return ProductResponseDTO::fromModel($produto);
+    }
+
+    /**
+     * Buscar produto por slug (alias)
+     */
+    public function findBySlug(string $slug): ?ProductResponseDTO
+    {
+        return $this->getProductBySlug($slug);
     }
 
     /**
@@ -88,6 +94,10 @@ class ProductService
         return ProductResponseDTO::fromModel($produto);
     }
 
+    // ============================================
+    // CRUD
+    // ============================================
+
     /**
      * Criar novo produto
      */
@@ -96,36 +106,13 @@ class ProductService
         try {
             DB::beginTransaction();
 
-            // Upload da imagem
+            $data = $dto->toArray();
+
             if ($dto->imagem_file) {
-                $dto->imagem = $this->uploadImage($dto->imagem_file, 'produtos');
+                $data['imagem'] = $this->uploadImage($dto->imagem_file, 'produtos');
             }
 
-            // Criar produto usando o repositório
-            $produto = $this->repository->create([
-                'descricao' => $dto->descricao,
-                'categoria' => $dto->categoria,
-                'referencia' => $dto->referencia,
-                'slug' => $dto->slug,
-                'tipo' => $dto->tipo,
-                'disponibilidade' => $dto->disponibilidade,
-                'imagem' => $dto->imagem,
-                'quantidade' => $dto->quantidade,
-                'estoque_minimo' => $dto->estoque_minimo,
-                'valor_atacado' => $dto->valor_atacado,
-                'valor_compra' => $dto->valor_compra,
-                'valor_unitario' => $dto->valor_unitario,
-                'valor_custo' => $dto->valor_custo,
-                'preco_promocional' => $dto->preco_promocional,
-                'ipi' => $dto->ipi,
-                'percentual_custo' => $dto->percentual_custo,
-                'margem_lucro' => $dto->margem_lucro,
-                'ativo' => $dto->ativo,
-                'destaque' => $dto->destaque,
-                'data_compra' => $dto->data_compra,
-                'novo' => $dto->novo ?? false,
-                'mais_vendido' => $dto->mais_vendido ?? false,
-            ]);
+            $produto = $this->repository->create($data);
 
             DB::commit();
 
@@ -155,41 +142,16 @@ class ProductService
             DB::beginTransaction();
 
             $produto = $this->repository->findOrFail($id);
+            $data = $dto->toArray();
 
-            // Upload da nova imagem se enviada
             if ($dto->imagem_file) {
-                // Remover imagem antiga
                 if ($produto->imagem) {
                     $this->deleteImage($produto->imagem, 'produtos');
                 }
-                $dto->imagem = $this->uploadImage($dto->imagem_file, 'produtos');
+                $data['imagem'] = $this->uploadImage($dto->imagem_file, 'produtos');
             }
 
-            // Atualizar produto
-            $updated = $this->repository->update($id, [
-                'descricao' => $dto->descricao ?? $produto->descricao,
-                'categoria' => $dto->categoria ?? $produto->categoria,
-                'referencia' => $dto->referencia ?? $produto->referencia,
-                'slug' => $dto->slug ?? $produto->slug,
-                'tipo' => $dto->tipo ?? $produto->tipo,
-                'disponibilidade' => $dto->disponibilidade ?? $produto->disponibilidade,
-                'imagem' => $dto->imagem ?? $produto->imagem,
-                'quantidade' => $dto->quantidade ?? $produto->quantidade,
-                'estoque_minimo' => $dto->estoque_minimo ?? $produto->estoque_minimo,
-                'valor_atacado' => $dto->valor_atacado ?? $produto->valor_atacado,
-                'valor_compra' => $dto->valor_compra ?? $produto->valor_compra,
-                'valor_unitario' => $dto->valor_unitario ?? $produto->valor_unitario,
-                'valor_custo' => $dto->valor_custo ?? $produto->valor_custo,
-                'preco_promocional' => $dto->preco_promocional ?? $produto->preco_promocional,
-                'ipi' => $dto->ipi ?? $produto->ipi,
-                'percentual_custo' => $dto->percentual_custo ?? $produto->percentual_custo,
-                'margem_lucro' => $dto->margem_lucro ?? $produto->margem_lucro,
-                'ativo' => $dto->ativo ?? $produto->ativo,
-                'destaque' => $dto->destaque ?? $produto->destaque,
-                'data_compra' => $dto->data_compra ?? $produto->data_compra,
-                'novo' => $dto->novo ?? $produto->novo,
-                'mais_vendido' => $dto->mais_vendido ?? $produto->mais_vendido,
-            ]);
+            $updated = $this->repository->update($id, $data);
 
             DB::commit();
 
@@ -220,7 +182,6 @@ class ProductService
 
             $produto = $this->repository->findOrFail($id);
             
-            // Remover imagem
             if ($produto->imagem) {
                 $this->deleteImage($produto->imagem, 'produtos');
             }
@@ -305,6 +266,10 @@ class ProductService
         }
     }
 
+    // ============================================
+    // ESTATÍSTICAS E LISTAGENS
+    // ============================================
+
     /**
      * Obter estatísticas dos produtos
      */
@@ -323,26 +288,39 @@ class ProductService
                 ->count(),
             'disponiveis' => Produto::where('ativo', true)
                 ->where('quantidade', '>', 0)
-                ->where('disponibilidade', 'DISPONIVEL')
+                ->where('disponibilidade', 'DISPONÍVEL')
                 ->count(),
         ];
     }
 
     /**
-     * Buscar produtos relacionados
+     * Obter lista de categorias
      */
-    public function getRelacionados(int $produtoId, string $categoria, int $limit = 6): array
+    public function getCategorias(): Collection
     {
-        return Produto::where('categoria', $categoria)
-            ->where('id', '!=', $produtoId)
-            ->where('ativo', true)
-            ->where('disponibilidade', 'DISPONIVEL')
-            ->where('quantidade', '>', 0)
-            ->take($limit)
+        return Produto::where('ativo', true)
+            ->select('categoria')
+            ->distinct()
+            ->orderBy('categoria')
+            ->pluck('categoria');
+    }
+
+    /**
+     * Contar produtos por categoria
+     */
+    public function countByCategory(): array
+    {
+        return Produto::where('ativo', true)
+            ->select('categoria', DB::raw('count(*) as total'))
+            ->groupBy('categoria')
+            ->orderBy('total', 'desc')
             ->get()
-            ->map(fn($produto) => ProductResponseDTO::fromModel($produto))
             ->toArray();
     }
+
+    // ============================================
+    // FILTROS E BUSCAS
+    // ============================================
 
     /**
      * Buscar produtos por termo (search)
@@ -358,7 +336,7 @@ class ProductService
             })
             ->orderByRaw("
                 CASE 
-                    WHEN disponibilidade = 'DISPONIVEL' THEN 1
+                    WHEN disponibilidade = 'DISPONÍVEL' THEN 1
                     WHEN disponibilidade = 'EST.BAIXO' THEN 2
                     ELSE 3
                 END
@@ -366,13 +344,57 @@ class ProductService
             ->orderBy('descricao', 'asc')
             ->paginate($perPage);
 
-        // Transformar para DTO
         $products->getCollection()->transform(function ($product) {
             return ProductResponseDTO::fromModel($product);
         });
 
         return $products;
     }
+
+    /**
+     * Buscar produtos por categoria
+     */
+    public function getByCategoria(string $categoria, int $perPage = 15): LengthAwarePaginator
+    {
+        $products = Produto::where('categoria', 'LIKE', '%' . $categoria . '%')
+            ->where('ativo', true)
+            ->where('quantidade', '>', 0)
+            ->orderByRaw("
+                CASE 
+                    WHEN disponibilidade = 'DISPONÍVEL' THEN 1
+                    WHEN disponibilidade = 'EST.BAIXO' THEN 2
+                    ELSE 3
+                END
+            ")
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        $products->getCollection()->transform(function ($product) {
+            return ProductResponseDTO::fromModel($product);
+        });
+
+        return $products;
+    }
+
+    /**
+     * Buscar produtos relacionados
+     */
+    public function getRelacionados(int $produtoId, string $categoria, int $limit = 6): array
+    {
+        return Produto::where('categoria', $categoria)
+            ->where('id', '!=', $produtoId)
+            ->where('ativo', true)
+            ->where('disponibilidade', 'DISPONÍVEL')
+            ->where('quantidade', '>', 0)
+            ->take($limit)
+            ->get()
+            ->map(fn($produto) => ProductResponseDTO::fromModel($produto))
+            ->toArray();
+    }
+
+    // ============================================
+    // PRODUTOS EM DESTAQUE, OFERTAS, NOVOS
+    // ============================================
 
     /**
      * Obter produtos em destaque
@@ -426,108 +448,9 @@ class ProductService
         return $products;
     }
 
-    /**
-     * Buscar produtos por categoria
-     */
-    public function getByCategoria(string $categoria, int $perPage = 15): LengthAwarePaginator
-    {
-        $products = Produto::where('categoria', 'LIKE', '%' . $categoria . '%')
-            ->where('ativo', true)
-            ->where('quantidade', '>', 0)
-            ->orderByRaw("
-                CASE 
-                    WHEN disponibilidade = 'DISPONIVEL' THEN 1
-                    WHEN disponibilidade = 'EST.BAIXO' THEN 2
-                    ELSE 3
-                END
-            ")
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage);
-
-        $products->getCollection()->transform(function ($product) {
-            return ProductResponseDTO::fromModel($product);
-        });
-
-        return $products;
-    }
-
-    /**
-     * Exportar produtos para CSV
-     */
-    public function export(array $filters = []): string
-    {
-        $produtos = $this->repository->getProdutosComFiltros($filters, 9999);
-        
-        $filename = 'produtos_' . date('Y-m-d_His') . '.csv';
-        $path = storage_path('app/exports/' . $filename);
-        
-        // Garantir que o diretório existe
-        if (!is_dir(dirname($path))) {
-            mkdir(dirname($path), 0755, true);
-        }
-
-        $handle = fopen($path, 'w');
-        
-        // Cabeçalhos
-        fputcsv($handle, [
-            'ID', 'Descrição', 'Categoria', 'Referência', 
-            'Quantidade', 'Valor Unitário', 'Preço Promocional',
-            'Disponibilidade', 'Status', 'Criado em'
-        ]);
-
-        // Dados
-        foreach ($produtos as $produto) {
-            fputcsv($handle, [
-                $produto->id,
-                $produto->descricao,
-                $produto->categoria,
-                $produto->referencia,
-                $produto->quantidade,
-                $produto->valor_unitario,
-                $produto->preco_promocional,
-                $produto->disponibilidade,
-                $produto->ativo ? 'Ativo' : 'Inativo',
-                $produto->created_at->format('d/m/Y H:i')
-            ]);
-        }
-
-        fclose($handle);
-
-        return $path;
-    }
-
-    /**
-     * Verificar se produto existe
-     */
-    public function exists(int $id): bool
-    {
-        return $this->repository->find($id) !== null;
-    }
-
-    /**
-     * Contar produtos por categoria
-     */
-    public function countByCategory(): array
-    {
-        return Produto::where('ativo', true)
-            ->select('categoria', DB::raw('count(*) as total'))
-            ->groupBy('categoria')
-            ->orderBy('total', 'desc')
-            ->get()
-            ->toArray();
-    }
-
-    /**
-     * Obter lista de categorias
-     */
-    public function getCategorias(): Collection
-    {
-        return Produto::where('ativo', true)
-            ->select('categoria')
-            ->distinct()
-            ->orderBy('categoria')
-            ->pluck('categoria');
-    }
+    // ============================================
+    // AÇÕES EM MASSA
+    // ============================================
 
     /**
      * Atualizar múltiplos produtos (ação em massa)
@@ -570,11 +493,9 @@ class ProductService
 
             $original = $this->repository->findOrFail($id);
 
-            // Criar dados duplicados
             $data = $original->toArray();
             unset($data['id'], $data['created_at'], $data['updated_at'], $data['deleted_at']);
             
-            // Gerar novo slug
             $slug = $original->slug . '-copia';
             $slugOriginal = $slug;
             $contador = 1;
@@ -584,9 +505,12 @@ class ProductService
             }
             $data['slug'] = $slug;
             
-            // Gerar nova referência (SKU)
             if ($original->referencia) {
                 $data['referencia'] = $original->referencia . '-COPIA';
+            }
+
+            if (!isset($data['ipi']) || $data['ipi'] === null) {
+                $data['ipi'] = 9.75;
             }
 
             $produto = $this->repository->create($data);
@@ -610,11 +534,78 @@ class ProductService
         }
     }
 
+    // ============================================
+    // EXPORTAÇÃO
+    // ============================================
+
+    /**
+     * Exportar produtos para CSV (com IPI)
+     */
+    public function export(array $filters = []): string
+    {
+        $produtos = $this->repository->getProdutosComFiltros($filters, 9999);
+        
+        $filename = 'produtos_' . date('Y-m-d_His') . '.csv';
+        $path = storage_path('app/exports/' . $filename);
+        
+        if (!is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        $handle = fopen($path, 'w');
+        
+        fputcsv($handle, [
+            'ID', 
+            'Descrição', 
+            'Categoria', 
+            'Referência', 
+            'Quantidade', 
+            'Valor Atacado', 
+            'Valor Unitário',
+            'IPI (%)',
+            'Preço com IPI',
+            'Preço Promocional',
+            'Disponibilidade', 
+            'Status', 
+            'Criado em'
+        ]);
+
+        foreach ($produtos as $produto) {
+            fputcsv($handle, [
+                $produto->id,
+                $produto->descricao,
+                $produto->categoria,
+                $produto->referencia,
+                $produto->quantidade,
+                number_format($produto->valor_atacado ?? 0, 2, ',', '.'),
+                number_format($produto->valor_unitario ?? 0, 2, ',', '.'),
+                $produto->ipi ?? 9.75,
+                number_format($produto->preco_com_ipi ?? 0, 2, ',', '.'),
+                $produto->preco_promocional ? number_format($produto->preco_promocional, 2, ',', '.') : '',
+                $produto->disponibilidade,
+                $produto->ativo ? 'Ativo' : 'Inativo',
+                $produto->created_at?->format('d/m/Y H:i')
+            ]);
+        }
+
+        fclose($handle);
+
+        return $path;
+    }
+
     /**
      * Obter produtos com filtros para exportação
      */
     public function getForExport(array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
         return $this->repository->getProdutosComFiltros($filters, 9999);
+    }
+
+    /**
+     * Verificar se produto existe
+     */
+    public function exists(int $id): bool
+    {
+        return $this->repository->find($id) !== null;
     }
 }

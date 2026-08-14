@@ -22,16 +22,27 @@ class ProdutoRequest extends FormRequest
         $rules = [
             'descricao' => 'required|string|max:255',
             'categoria' => 'required|string|max:100',
-            'valor_unitario' => 'required|numeric|min:0',
-            'preco_promocional' => 'nullable|numeric|min:0|lt:valor_unitario',
-            'quantidade' => 'required|integer|min:0',
-            'disponibilidade' => 'required|in:DISPONÍVEL,INDISPONÍVEL',
             'referencia' => 'nullable|string|max:50',
+            'valor_atacado' => 'required|numeric|min:0',
+            'valor_unitario' => 'nullable|numeric|min:0',
+            'valor_compra' => 'nullable|numeric|min:0',
+            'valor_custo' => 'nullable|numeric|min:0',
+            'preco_promocional' => 'nullable|numeric|min:0|lt:valor_atacado',
+            'ipi' => 'nullable|numeric|min:0|max:100',
+            'quantidade' => 'required|integer|min:0',
+            'estoque_minimo' => 'nullable|integer|min:0',
+            'disponibilidade' => 'required|in:DISPONÍVEL,INDISPONÍVEL',
+            'tipo' => 'nullable|string|max:50',
+            'data_compra' => 'nullable|date',
+            'percentual_custo' => 'nullable|numeric|min:0',
+            'margem_lucro' => 'nullable|numeric|min:0',
             'imagem' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'ativo' => 'boolean'
+            'ativo' => 'boolean',
+            'destaque' => 'boolean',
+            'novo' => 'boolean',
+            'mais_vendido' => 'boolean',
         ];
 
-        // Na atualização, tornamos a imagem opcional
         if ($this->isMethod('put') || $this->isMethod('patch')) {
             $rules['imagem'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
         }
@@ -47,10 +58,13 @@ class ProdutoRequest extends FormRequest
         return [
             'descricao.required' => 'A descrição é obrigatória.',
             'categoria.required' => 'A categoria é obrigatória.',
-            'valor_unitario.required' => 'O valor unitário é obrigatório.',
-            'valor_unitario.numeric' => 'O valor unitário deve ser um número.',
-            'valor_unitario.min' => 'O valor unitário não pode ser negativo.',
-            'preco_promocional.lt' => 'O preço promocional deve ser menor que o valor unitário.',
+            'valor_atacado.required' => 'O preço de atacado é obrigatório.',
+            'valor_atacado.numeric' => 'O preço de atacado deve ser um número.',
+            'valor_atacado.min' => 'O preço de atacado não pode ser negativo.',
+            'preco_promocional.lt' => 'O preço promocional deve ser menor que o preço de atacado.',
+            'ipi.numeric' => 'O IPI deve ser um número.',
+            'ipi.min' => 'O IPI não pode ser negativo.',
+            'ipi.max' => 'O IPI não pode ser maior que 100%.',
             'quantidade.required' => 'A quantidade é obrigatória.',
             'quantidade.integer' => 'A quantidade deve ser um número inteiro.',
             'quantidade.min' => 'A quantidade não pode ser negativa.',
@@ -67,14 +81,28 @@ class ProdutoRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Garantir que preco_promocional seja null se vazio
         if (empty($this->preco_promocional)) {
             $this->merge(['preco_promocional' => null]);
         }
 
-        // Garantir que ativo seja boolean
+        if (empty($this->ipi) && $this->ipi !== '0') {
+            $this->merge(['ipi' => 9.75]);
+        }
+
         if ($this->has('ativo')) {
             $this->merge(['ativo' => filter_var($this->ativo, FILTER_VALIDATE_BOOLEAN)]);
+        }
+
+        if ($this->has('destaque')) {
+            $this->merge(['destaque' => filter_var($this->destaque, FILTER_VALIDATE_BOOLEAN)]);
+        }
+
+        if ($this->has('novo')) {
+            $this->merge(['novo' => filter_var($this->novo, FILTER_VALIDATE_BOOLEAN)]);
+        }
+
+        if ($this->has('mais_vendido')) {
+            $this->merge(['mais_vendido' => filter_var($this->mais_vendido, FILTER_VALIDATE_BOOLEAN)]);
         }
     }
 }

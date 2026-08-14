@@ -9,8 +9,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RoleSeeder::class,
-            ProdutoSeeder::class,
+            RoleSeeder::class,          // Roles e usuários admin/funcionario/cliente
+            ProdutoSeeder::class,       // Produtos (1668+ produtos)
+            ClienteSeederFinal::class,  // 🆕 Clientes do CSV
         ]);
     }
 }

@@ -17,10 +17,48 @@ abstract class TestCase extends BaseTestCase
         // Reset cached roles and permissions
         app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Garantir que a role Cliente existe
-        Role::firstOrCreate(['name' => 'Cliente', 'guard_name' => 'web']);
-        
+        // Verificar se a tabela roles existe antes de criar
+        try {
+            // Garantir que a role Cliente existe
+            Role::firstOrCreate([
+                'name' => 'Cliente',
+                'guard_name' => 'web'
+            ]);
+
+            // Garantir que a role Admin existe
+            Role::firstOrCreate([
+                'name' => 'Admin',
+                'guard_name' => 'web'
+            ]);
+
+            // Garantir que a role Funcionario existe
+            Role::firstOrCreate([
+                'name' => 'Funcionario',
+                'guard_name' => 'web'
+            ]);
+        } catch (\Exception $e) {
+            // Se a tabela não existe, criar via migração
+            $this->createPermissionTables();
+            
+            // Tentar novamente
+            Role::firstOrCreate([
+                'name' => 'Cliente',
+                'guard_name' => 'web'
+            ]);
+        }
+
         // Limpar cache novamente
         app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    /**
+     * Criar tabelas de permissão se não existirem
+     */
+    protected function createPermissionTables(): void
+    {
+        \Illuminate\Support\Facades\Artisan::call('migrate', [
+            '--path' => 'vendor/spatie/laravel-permission/database/migrations',
+            '--force' => true,
+        ]);
     }
 }

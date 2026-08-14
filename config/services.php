@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mercado Pago
+    |--------------------------------------------------------------------------
+    |
+    | Configuração da integração com o Mercado Pago para pagamentos
+    |
+    */
+
+    'mercadopago' => [
+        'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
+        'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+        'webhook_url' => env('MERCADOPAGO_WEBHOOK_URL'),
+        'env' => env('MERCADOPAGO_ENV', 'sandbox'),
+    ],
+
 ];

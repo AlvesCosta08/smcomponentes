@@ -82,8 +82,31 @@
                         @enderror
                     </div>
 
-                    <!-- Preço Promocional -->
+                    <!-- IPI (%) - NOVO CAMPO -->
                     <div class="col-md-4 mb-3">
+                        <label for="ipi" class="form-label">IPI (%)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" name="ipi" id="ipi" class="form-control @error('ipi') is-invalid @enderror" value="{{ old('ipi', 9.75) }}" min="0">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="text-muted">Alíquota do IPI (ex: 9.75 para 9,75%)</small>
+                        @error('ipi')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <!-- Preço com IPI - CALCULADO AUTOMATICAMENTE -->
+                    <div class="col-md-4 mb-3">
+                        <label for="preco_com_ipi" class="form-label">Preço com IPI</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="text" id="preco_com_ipi" class="form-control" readonly style="background-color: #f8f9fa; font-weight: bold; color: #0d6efd;">
+                        </div>
+                        <small class="text-muted">Calculado automaticamente: valor unitário × (1 + IPI/100)</small>
+                    </div>
+
+                    <!-- Preço Promocional -->
+                    <div class="col-md-6 mb-3">
                         <label for="preco_promocional" class="form-label">Preço Promocional</label>
                         <div class="input-group">
                             <span class="input-group-text">R$</span>
@@ -95,7 +118,7 @@
                     </div>
 
                     <!-- Ativo -->
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-6 mb-3">
                         <label for="ativo" class="form-label">Status</label>
                         <select name="ativo" id="ativo" class="form-select @error('ativo') is-invalid @enderror">
                             <option value="1" {{ old('ativo', 1) == 1 ? 'selected' : '' }}>Ativo</option>
@@ -134,6 +157,7 @@
 
 @push('scripts')
 <script>
+    // Preview da imagem
     document.getElementById('imagem').addEventListener('change', function(e) {
         const preview = document.getElementById('imagePreview');
         preview.innerHTML = '';
@@ -151,6 +175,32 @@
             reader.readAsDataURL(this.files[0]);
         }
     });
+
+    // Cálculo automático do Preço com IPI
+    function calcularPrecoComIPI() {
+        const valorUnitario = parseFloat(document.getElementById('valor_unitario').value) || 0;
+        const ipi = parseFloat(document.getElementById('ipi').value) || 0;
+        
+        // Fórmula: Valor com IPI = Valor Unitário × (1 + IPI/100)
+        const precoComIPI = valorUnitario * (1 + (ipi / 100));
+        
+        // Exibe o resultado formatado
+        const campoPrecoComIPI = document.getElementById('preco_com_ipi');
+        if (precoComIPI > 0) {
+            campoPrecoComIPI.value = precoComIPI.toFixed(2);
+            campoPrecoComIPI.style.color = '#0d6efd';
+        } else {
+            campoPrecoComIPI.value = '';
+            campoPrecoComIPI.style.color = '#6c757d';
+        }
+    }
+
+    // Event listeners para atualizar o cálculo
+    document.getElementById('valor_unitario').addEventListener('input', calcularPrecoComIPI);
+    document.getElementById('ipi').addEventListener('input', calcularPrecoComIPI);
+
+    // Executa o cálculo ao carregar a página (se houver valores)
+    document.addEventListener('DOMContentLoaded', calcularPrecoComIPI);
 </script>
 @endpush
 @endsection

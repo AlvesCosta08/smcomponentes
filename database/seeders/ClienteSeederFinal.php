@@ -25,20 +25,18 @@ class ClienteSeederFinal extends Seeder
         
         $file = fopen($path, 'r');
         
-        // Pular cabeçalho (primeira linha)
+        // Pular cabeçalho
         $header = fgetcsv($file, 0, ',');
-        
         $this->command->info("📋 Cabeçalho: " . json_encode($header));
         
         $count = 0;
         $skipped = 0;
         $line = 1;
-        $emailsGerados = [];
+        $cpfCnpfUsados = [];
 
         while (($row = fgetcsv($file, 0, ',')) !== false) {
             $line++;
             
-            // Verificar se a linha tem dados
             if (count($row) < 2 || empty(trim($row[0] ?? ''))) {
                 $skipped++;
                 continue;
@@ -56,19 +54,15 @@ class ClienteSeederFinal extends Seeder
             $telefone = trim($row[8] ?? '');
             $celular = trim($row[9] ?? '');
             
-            // Se não tiver nome, pular
             if (empty($nomeFantasia)) {
                 $skipped++;
                 continue;
             }
             
-            // Gerar email se estiver vazio
+            // Gerar email se vazio
             if (empty($email)) {
-                // Gerar email a partir do nome
                 $baseEmail = Str::slug($nomeFantasia, '.');
                 $email = $baseEmail . '@cliente.com';
-                
-                // Garantir unicidade
                 $counter = 1;
                 $emailOriginal = $email;
                 while (User::where('email', $email)->exists()) {
@@ -77,18 +71,52 @@ class ClienteSeederFinal extends Seeder
                 }
             }
             
-            // Verificar se o email já existe
+            // Verificar email duplicado
             if (User::where('email', $email)->exists()) {
                 $skipped++;
                 continue;
             }
             
+            // Processar CPF/CNPJ - REMOVER caracteres especiais
+            $cnpjCpf = preg_replace('/[^0-9]/', '', $cnpjCpf);
+            
+            // 🔥 SE CPF/CNPJ ESTIVER VAZIO OU JÁ USADO, NÃO INSERIR
+            $cpf = null;
+            $cnpj = null;
+            
+            if (!empty($cnpjCpf)) {
+                // Verificar se já foi usado nesta execução
+                if (in_array($cnpjCpf, $cpfCnpfUsados)) {
+                    $this->command->warn("⚠️ CPF/CNPJ duplicado ignorado: {$cnpjCpf} (linha {$line})");
+                    $skipped++;
+                    continue;
+                }
+                
+                // Verificar se já existe no banco
+                $exists = User::where('cpf', $cnpjCpf)->orWhere('cnpj', $cnpjCpf)->exists();
+                if ($exists) {
+                    $this->command->warn("⚠️ CPF/CNPJ já existe no banco: {$cnpjCpf} (linha {$line})");
+                    $skipped++;
+                    continue;
+                }
+                
+                // Definir se é CPF ou CNPJ
+                if (strlen($cnpjCpf) <= 11) {
+                    $cpf = $cnpjCpf;
+                } else {
+                    $cnpj = $cnpjCpf;
+                }
+                
+                // Armazenar para evitar duplicatas na mesma execução
+                $cpfCnpfUsados[] = $cnpjCpf;
+            }
+            
             // Processar cidade/estado
             $cidade = null;
             $estado = null;
-            if (!empty($cidadeEstado)) {
-                $parts = explode('-', $cidadeEstado);
-                if (count($parts) === 2) {
+            if (!empty($cidadeEstado) && $cidadeEstado !== 'FALTA PREENCHER') {
+                $parts = preg_split('/[-,]/', $cidadeEstado);
+                if (count($parts) >= 2) {
                     $cidade = trim($parts[0]);
                     $estado = trim($parts[1]);
                 } else {
@@ -100,16 +128,11 @@ class ClienteSeederFinal extends Seeder
             $logradouro = null;
             $numero = null;
             $bairro = null;
-            if (!empty($endereco)) {
-                // Tentar extrair número
+            if (!empty($endereco) && $endereco !== 'FALTA PREENCHER') {
                 preg_match('/(\d+)/', $endereco, $numMatches);
                 $numero = $numMatches[1] ?? null;
-                
-                // Extrair logradouro (parte antes do número)
                 $logradouro = preg_replace('/\s*\d+.*$/', '', $endereco);
                 $logradouro = trim($logradouro);
-                
-                // Extrair bairro
                 $parts = explode(',', $endereco);
                 if (count($parts) > 1) {
                     $bairro = trim($parts[1] ?? '');
@@ -119,35 +142,45 @@ class ClienteSeederFinal extends Seeder
             // Limpar telefones
             $telefone = preg_replace('/[^0-9]/', '', $telefone);
             $celular = preg_replace('/[^0-9]/', '', $celular);
-            
-            // Se não tiver celular, usar telefone
             if (empty($celular) && !empty($telefone)) {
                 $celular = $telefone;
             }
             
+            // Limpar CEP
+            $cep = preg_replace('/[^0-9]/', '', $cep);
+            if (empty($cep) || $cep === 'FALTA PREENCHER') {
+                $cep = null;
+            }
+            
+            // IE vazia
+            if (empty($ie) || $ie === 'FALTA PREENCHER' || $ie === 'ISENTO') {
+                $ie = null;
+            }
+            
             try {
-                // Criar o usuário
-                $user = User::create([
+                $userData = [
                     'name' => $nomeFantasia,
                     'email' => $email,
                     'password' => Hash::make('password'),
-                    'ie' => $ie !== 'ISENTO' ? $ie : null,
-                    'telefone' => $telefone,
-                    'celular' => $celular,
-                    'cpf' => preg_replace('/[^0-9]/', '', $cnpjCpf),
-                    'logradouro' => $logradouro,
-                    'numero' => $numero,
-                    'bairro' => $bairro,
-                    'cidade' => $cidade,
-                    'estado' => $estado,
-                    'cep' => preg_replace('/[^0-9]/', '', $cep),
-                    'ativo' => true,
                     'email_verified_at' => now(),
-                ]);
+                    'ativo' => true,
+                ];
                 
-                // Atribuir role Cliente
+                // Adicionar campos apenas se tiverem valor
+                if ($ie !== null) $userData['ie'] = $ie;
+                if (!empty($telefone)) $userData['telefone'] = $telefone;
+                if (!empty($celular)) $userData['celular'] = $celular;
+                if ($cpf !== null) $userData['cpf'] = $cpf;
+                if ($cnpj !== null) $userData['cnpj'] = $cnpj;
+                if (!empty($logradouro)) $userData['logradouro'] = $logradouro;
+                if (!empty($numero)) $userData['numero'] = $numero;
+                if (!empty($bairro)) $userData['bairro'] = $bairro;
+                if (!empty($cidade)) $userData['cidade'] = $cidade;
+                if (!empty($estado)) $userData['estado'] = $estado;
+                if (!empty($cep)) $userData['cep'] = $cep;
+                
+                $user = User::create($userData);
                 $user->assignRole($role);
-                
                 $count++;
                 
                 if ($count % 10 === 0) {
@@ -155,7 +188,7 @@ class ClienteSeederFinal extends Seeder
                 }
                 
             } catch (\Exception $e) {
-                $this->command->error("❌ Erro linha {$line} ({$email}): " . $e->getMessage());
+                $this->command->error("❌ Erro linha {$line}: " . $e->getMessage());
                 $skipped++;
             }
         }

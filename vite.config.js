@@ -11,18 +11,36 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    // 🔥 ESSENCIAL: base para URLs relativas
+    base: '/build/',
     server: {
-        host: 'localhost',  // ← ALTERADO: 127.0.0.1 → localhost
+        host: 'localhost',
         port: 5173,
-        https: false,
         cors: true,
-        hmr: {
-            host: 'localhost',  // ← ALTERADO: 127.0.0.1 → localhost
+    },
+    build: {
+        assetsDir: 'build',
+        manifest: true,
+        rollupOptions: {
+            output: {
+                assetFileNames: 'assets/[name]-[hash].[ext]',
+                chunkFileNames: 'assets/[name]-[hash].js',
+                entryFileNames: 'assets/[name]-[hash].js',
+            },
+        },
+        // 🔥 Forçar URLs relativas
+        resolve: {
+            alias: {
+                '~bootstrap-icons': '/node_modules/bootstrap-icons',
+            },
         },
     },
-    preview: {
-        host: 'localhost',  // ← ALTERADO: 127.0.0.1 → localhost
-        port: 5173,
-        https: false,
+    // 🔥 Configurar CSS para usar URLs relativas
+    css: {
+        preprocessorOptions: {
+            scss: {
+                additionalData: `$font-url: '/build/assets/';`,
+            },
+        },
     },
 });

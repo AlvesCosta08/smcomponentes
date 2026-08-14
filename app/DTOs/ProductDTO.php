@@ -34,6 +34,8 @@ class ProductDTO
         public readonly ?int $visualizacoes = 0,
         public readonly ?bool $novo = false,
         public readonly ?bool $mais_vendido = false,
+        public readonly ?string $created_at = null,
+        public readonly ?string $updated_at = null,
     ) {}
 
     /**
@@ -58,7 +60,7 @@ class ProductDTO
             valor_unitario: $request->has('valor_unitario') ? (float) $request->input('valor_unitario') : null,
             valor_custo: $request->has('valor_custo') ? (float) $request->input('valor_custo') : null,
             preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : null,
-            ipi: $request->has('ipi') ? (float) $request->input('ipi') : null,
+            ipi: $request->has('ipi') ? (float) $request->input('ipi') : 9.75,
             percentual_custo: $request->has('percentual_custo') ? (float) $request->input('percentual_custo') : null,
             margem_lucro: $request->has('margem_lucro') ? (float) $request->input('margem_lucro') : null,
             ativo: filter_var($request->input('ativo', true), FILTER_VALIDATE_BOOLEAN),
@@ -67,6 +69,8 @@ class ProductDTO
             visualizacoes: 0,
             novo: filter_var($request->input('novo', false), FILTER_VALIDATE_BOOLEAN),
             mais_vendido: filter_var($request->input('mais_vendido', false), FILTER_VALIDATE_BOOLEAN),
+            created_at: null,
+            updated_at: null,
         );
     }
 
@@ -92,7 +96,7 @@ class ProductDTO
             valor_unitario: $request->has('valor_unitario') ? (float) $request->input('valor_unitario') : null,
             valor_custo: $request->has('valor_custo') ? (float) $request->input('valor_custo') : null,
             preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : null,
-            ipi: $request->has('ipi') ? (float) $request->input('ipi') : null,
+            ipi: $request->has('ipi') ? (float) $request->input('ipi') : 9.75,
             percentual_custo: $request->has('percentual_custo') ? (float) $request->input('percentual_custo') : null,
             margem_lucro: $request->has('margem_lucro') ? (float) $request->input('margem_lucro') : null,
             ativo: filter_var($request->input('ativo', true), FILTER_VALIDATE_BOOLEAN),
@@ -101,6 +105,8 @@ class ProductDTO
             visualizacoes: (int) $request->input('visualizacoes', 0),
             novo: filter_var($request->input('novo', false), FILTER_VALIDATE_BOOLEAN),
             mais_vendido: filter_var($request->input('mais_vendido', false), FILTER_VALIDATE_BOOLEAN),
+            created_at: null,
+            updated_at: null,
         );
     }
 
@@ -126,7 +132,7 @@ class ProductDTO
             valor_unitario: $produto->valor_unitario,
             valor_custo: $produto->valor_custo,
             preco_promocional: $produto->preco_promocional,
-            ipi: $produto->ipi,
+            ipi: $produto->ipi ?? 9.75,
             percentual_custo: $produto->percentual_custo,
             margem_lucro: $produto->margem_lucro,
             ativo: (bool) $produto->ativo,
@@ -135,6 +141,8 @@ class ProductDTO
             visualizacoes: $produto->visualizacoes ?? 0,
             novo: $produto->novo ?? false,
             mais_vendido: $produto->mais_vendido ?? false,
+            created_at: $produto->created_at ? $produto->created_at->toDateTimeString() : null,
+            updated_at: $produto->updated_at ? $produto->updated_at->toDateTimeString() : null,
         );
     }
 
@@ -168,7 +176,10 @@ class ProductDTO
             'visualizacoes' => $this->visualizacoes,
             'novo' => $this->novo,
             'mais_vendido' => $this->mais_vendido,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'preco_formatado' => $this->getPrecoFormatado(),
+            'preco_atacado_formatado' => $this->getPrecoAtacadoFormatado(),
             'preco_promocional_formatado' => $this->getPrecoPromocionalFormatado(),
             'tem_promocao' => $this->temPromocao(),
             'status' => $this->getStatus(),
@@ -176,13 +187,22 @@ class ProductDTO
         ];
     }
 
-    /**
-     * Métodos auxiliares (mantendo compatibilidade com o Model)
-     */
+    // ============================================
+    // MÉTODOS AUXILIARES
+    // ============================================
+
     public function getPrecoFormatado(): string
     {
         if ($this->valor_unitario) {
             return 'R$ ' . number_format($this->valor_unitario, 2, ',', '.');
+        }
+        return 'R$ 0,00';
+    }
+
+    public function getPrecoAtacadoFormatado(): string
+    {
+        if ($this->valor_atacado) {
+            return 'R$ ' . number_format($this->valor_atacado, 2, ',', '.');
         }
         return 'R$ 0,00';
     }
@@ -199,8 +219,8 @@ class ProductDTO
     {
         return $this->preco_promocional !== null 
             && $this->preco_promocional > 0 
-            && $this->valor_unitario !== null
-            && $this->preco_promocional < $this->valor_unitario;
+            && $this->valor_atacado !== null
+            && $this->preco_promocional < $this->valor_atacado;
     }
 
     public function getStatus(): string
@@ -230,5 +250,21 @@ class ProductDTO
             return asset('storage/produtos/' . $this->imagem);
         }
         return asset('images/produto-placeholder.jpg');
+    }
+
+    public function getCreatedAtFormatted(): string
+    {
+        if ($this->created_at) {
+            return \Carbon\Carbon::parse($this->created_at)->format('d/m/Y H:i');
+        }
+        return '-';
+    }
+
+    public function getUpdatedAtFormatted(): string
+    {
+        if ($this->updated_at) {
+            return \Carbon\Carbon::parse($this->updated_at)->format('d/m/Y H:i');
+        }
+        return '-';
     }
 }

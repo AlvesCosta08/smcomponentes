@@ -16,6 +16,7 @@ class Produto extends Model
         'descricao',
         'categoria',
         'valor_unitario',
+        'valor_atacado', // 🔥 ADICIONADO
         'preco_promocional',
         'quantidade',
         'estoque',
@@ -29,14 +30,17 @@ class Produto extends Model
         'destaque',
         'novo',
         'mais_vendido',
+        'ipi',
     ];
 
     protected $casts = [
         'ativo' => 'boolean',
         'valor_unitario' => 'decimal:2',
+        'valor_atacado' => 'decimal:2', // 🔥 ADICIONADO
         'preco_promocional' => 'decimal:2',
         'quantidade' => 'integer',
         'visualizacoes' => 'integer',
+        'ipi' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -44,8 +48,120 @@ class Produto extends Model
 
     protected $appends = [
         'preco_formatado',
-        'preco_promocional_formatado'
+        'preco_atacado_formatado', // 🔥 NOVO
+        'preco_promocional_formatado',
+        'preco_com_ipi',
+        'preco_com_ipi_formatado',
     ];
+
+    /**
+     * 🔥 Accessor: Preço Unitário formatado
+     */
+    public function getPrecoFormatadoAttribute(): string
+    {
+        return 'R$ ' . number_format($this->valor_unitario, 2, ',', '.');
+    }
+
+    /**
+     * 🔥 Accessor: Preço Atacado formatado
+     */
+    public function getPrecoAtacadoFormatadoAttribute(): string
+    {
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
+    }
+
+    /**
+     * 🔥 Accessor: Preço Promocional formatado
+     */
+    public function getPrecoPromocionalFormatadoAttribute(): string
+    {
+        if ($this->preco_promocional) {
+            return 'R$ ' . number_format($this->preco_promocional, 2, ',', '.');
+        }
+        return '';
+    }
+
+    /**
+     * 🔥 Accessor: Preço com IPI (calculado sobre o valor_atacado)
+     */
+    public function getPrecoComIpiAttribute(): float
+    {
+        // Usa valor_atacado como base (preço de venda no atacado)
+        $base = $this->valor_atacado ?? $this->valor_unitario;
+        
+        if (!$base || $base <= 0) {
+            return 0;
+        }
+        
+        $ipi = $this->ipi ?? 9.75;
+        return round($base * (1 + ($ipi / 100)), 2);
+    }
+
+    /**
+     * 🔥 Accessor: Preço com IPI formatado
+     */
+    public function getPrecoComIpiFormatadoAttribute(): string
+    {
+        return 'R$ ' . number_format($this->preco_com_ipi, 2, ',', '.');
+    }
+
+    /**
+     * 🔥 Accessor: IPI formatado para exibição
+     */
+    public function getIpiFormatadoAttribute(): string
+    {
+        return number_format($this->ipi ?? 0, 2) . '%';
+    }
+
+    /**
+     * 🔥 Accessor: Verifica se o produto tem IPI
+     */
+    public function getTemIpiAttribute(): bool
+    {
+        return ($this->ipi ?? 0) > 0;
+    }
+
+    /**
+     * 🔥 Accessor: Verifica se tem preço promocional
+     */
+    public function getTemPromocaoAttribute(): bool
+    {
+        return $this->preco_promocional !== null 
+            && $this->preco_promocional > 0 
+            && $this->preco_promocional < $this->valor_atacado;
+    }
+
+    /**
+     * 🔥 Accessor: URL da imagem
+     */
+    public function getImagemUrlAttribute(): string
+    {
+        if ($this->imagem) {
+            return asset('storage/produtos/' . $this->imagem);
+        }
+        return asset('images/produto-placeholder.jpg');
+    }
+
+    /**
+     * 🔥 Accessor: Status de disponibilidade
+     */
+    public function getStatusAttribute(): string
+    {
+        if (!$this->ativo) {
+            return 'Inativo';
+        }
+        if ($this->quantidade <= 0) {
+            return 'Esgotado';
+        }
+        if ($this->disponibilidade === 'INDISPONÍVEL') {
+            return 'Indisponível';
+        }
+        return 'Disponível';
+    }
+
+    // ==============================================
+    // Escopos
+    // ==============================================
 
     /**
      * 🔥 Escopo para produtos disponíveis (TODOS)
@@ -128,62 +244,9 @@ class Produto extends Model
         });
     }
 
-    /**
-     * 🔥 Accessor: Preço formatado
-     */
-    public function getPrecoFormatadoAttribute(): string
-    {
-        return 'R$ ' . number_format($this->valor_unitario, 2, ',', '.');
-    }
-
-    /**
-     * 🔥 Accessor: Preço promocional formatado
-     */
-    public function getPrecoPromocionalFormatadoAttribute(): string
-    {
-        if ($this->preco_promocional) {
-            return 'R$ ' . number_format($this->preco_promocional, 2, ',', '.');
-        }
-        return '';
-    }
-
-    /**
-     * 🔥 Accessor: Verifica se tem preço promocional
-     */
-    public function getTemPromocaoAttribute(): bool
-    {
-        return $this->preco_promocional !== null 
-            && $this->preco_promocional > 0 
-            && $this->preco_promocional < $this->valor_unitario;
-    }
-
-    /**
-     * 🔥 Accessor: URL da imagem
-     */
-    public function getImagemUrlAttribute(): string
-    {
-        if ($this->imagem) {
-            return asset('storage/produtos/' . $this->imagem);
-        }
-        return asset('images/produto-placeholder.jpg');
-    }
-
-    /**
-     * 🔥 Accessor: Status de disponibilidade
-     */
-    public function getStatusAttribute(): string
-    {
-        if (!$this->ativo) {
-            return 'Inativo';
-        }
-        if ($this->quantidade <= 0) {
-            return 'Esgotado';
-        }
-        if ($this->disponibilidade === 'INDISPONÍVEL') {
-            return 'Indisponível';
-        }
-        return 'Disponível';
-    }
+    // ==============================================
+    // Métodos
+    // ==============================================
 
     /**
      * 🔥 Método: Verifica se o produto está disponível

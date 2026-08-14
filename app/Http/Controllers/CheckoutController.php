@@ -6,14 +6,18 @@ namespace App\Http\Controllers;
 use App\DTOs\OrderDTO;
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Pedido;
+use App\Models\Produto;
 use App\Services\OrderService;
+use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CheckoutController extends Controller
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected PaymentService $paymentService
     ) {}
 
     /**
@@ -31,7 +35,7 @@ class CheckoutController extends Controller
         // Verificar estoque dos produtos
         try {
             foreach ($carrinho as $id => $item) {
-                $produto = \App\Models\Produto::find($id);
+                $produto = Produto::find($id);
                 if (!$produto || !$produto->temEstoque($item['quantidade'])) {
                     return redirect()->route('carrinho.index')
                         ->with('error', "Produto '{$item['nome']}' não tem estoque suficiente!");
@@ -77,19 +81,141 @@ class CheckoutController extends Controller
             // Limpar carrinho
             session()->forget('carrinho');
 
-            // Redirecionar para sucesso
-            return redirect()->route('checkout.sucesso', $pedido)
-                ->with('success', 'Pedido realizado com sucesso!');
+            // ============================================
+            // REDIRECIONAR PARA O MÉTODO DE PAGAMENTO
+            // ============================================
+            
+            switch ($dto->forma_pagamento) {
+                case 'pix':
+                    // Gerar PIX
+                    $pixData = $this->paymentService->generatePix($pedido);
+                    session()->put('pix_data', $pixData);
+                    return redirect()->route('checkout.pix', $pedido)
+                        ->with('pix_data', $pixData);
+
+                case 'boleto':
+                    // Gerar Boleto
+                    $boletoData = $this->paymentService->generateBoleto($pedido);
+                    session()->put('boleto_data', $boletoData);
+                    return redirect()->route('checkout.boleto', $pedido)
+                        ->with('boleto_data', $boletoData);
+
+                case 'cartao':
+                    // Criar preferência para Cartão
+                    $preference = $this->paymentService->createPreference($pedido);
+                    session()->put('preference', $preference);
+                    return redirect()->route('checkout.cartao', $pedido)
+                        ->with('preference', $preference);
+
+                default:
+                    return redirect()->route('checkout.sucesso', $pedido)
+                        ->with('success', 'Pedido realizado com sucesso!');
+            }
 
         } catch (\App\Exceptions\OutOfStockException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
+            \Log::error('Erro ao processar pedido: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->with('error', 'Erro ao processar pedido: ' . $e->getMessage());
         }
     }
 
+    // ============================================
+    // MÉTODOS DE PAGAMENTO
+    // ============================================
+
     /**
-     * Página de sucesso após pedido
+     * Página de pagamento PIX
+     */
+    public function pix(Pedido $pedido): View|RedirectResponse
+    {
+        // Verificar se o pedido pertence ao usuário
+        if ($pedido->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Verificar se o pedido já foi pago
+        if ($pedido->status === 'pago') {
+            return redirect()->route('checkout.sucesso', $pedido)
+                ->with('info', 'Este pedido já foi pago!');
+        }
+
+        // Buscar dados do PIX
+        $pixData = session()->get('pix_data');
+        
+        if (!$pixData) {
+            // Gerar novamente se não estiver na sessão
+            $pixData = $this->paymentService->generatePix($pedido);
+            session()->put('pix_data', $pixData);
+        }
+
+        return view('checkout.pagamento.pix', compact('pedido', 'pixData'));
+    }
+
+    /**
+     * Página de pagamento Boleto
+     */
+    public function boleto(Pedido $pedido): View|RedirectResponse
+    {
+        // Verificar se o pedido pertence ao usuário
+        if ($pedido->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Verificar se o pedido já foi pago
+        if ($pedido->status === 'pago') {
+            return redirect()->route('checkout.sucesso', $pedido)
+                ->with('info', 'Este pedido já foi pago!');
+        }
+
+        // Buscar dados do Boleto
+        $boletoData = session()->get('boleto_data');
+        
+        if (!$boletoData) {
+            // Gerar novamente se não estiver na sessão
+            $boletoData = $this->paymentService->generateBoleto($pedido);
+            session()->put('boleto_data', $boletoData);
+        }
+
+        return view('checkout.pagamento.boleto', compact('pedido', 'boletoData'));
+    }
+
+    /**
+     * Página de pagamento Cartão de Crédito
+     */
+    public function cartao(Pedido $pedido): View|RedirectResponse
+    {
+        // Verificar se o pedido pertence ao usuário
+        if ($pedido->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Verificar se o pedido já foi pago
+        if ($pedido->status === 'pago') {
+            return redirect()->route('checkout.sucesso', $pedido)
+                ->with('info', 'Este pedido já foi pago!');
+        }
+
+        // Buscar preferência do Mercado Pago
+        $preference = session()->get('preference');
+        
+        if (!$preference) {
+            // Criar preferência novamente se não estiver na sessão
+            $preference = $this->paymentService->createPreference($pedido);
+            session()->put('preference', $preference);
+        }
+
+        return view('checkout.pagamento.cartao', compact('pedido', 'preference'));
+    }
+
+    // ============================================
+    // STATUS DO PAGAMENTO
+    // ============================================
+
+    /**
+     * Página de sucesso após pagamento
      */
     public function sucesso(Pedido $pedido): View|RedirectResponse
     {
@@ -98,9 +224,64 @@ class CheckoutController extends Controller
             abort(403);
         }
 
+        // Verificar status do pagamento
+        if ($pedido->status_pagamento !== 'pago' && $pedido->status !== 'pago') {
+            // Verificar status no gateway
+            $status = $this->paymentService->checkPaymentStatus($pedido);
+            
+            if ($status === 'approved') {
+                $pedido->status = 'pago';
+                $pedido->status_pagamento = 'approved';
+                $pedido->data_pagamento = now();
+                $pedido->save();
+            } else {
+                // Se não estiver pago, redirecionar para pendente
+                return redirect()->route('checkout.pendente', $pedido)
+                    ->with('warning', 'Seu pagamento ainda não foi confirmado.');
+            }
+        }
+
         $pedido->load('itens');
-        return view('checkout.sucesso', compact('pedido'));
+        return view('checkout.pagamento.sucesso', compact('pedido'));
     }
+
+    /**
+     * Página de falha no pagamento
+     */
+    public function falha(Pedido $pedido): View|RedirectResponse
+    {
+        // Verificar se o pedido pertence ao usuário
+        if ($pedido->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $error = session()->get('error', 'Ocorreu um erro ao processar seu pagamento.');
+        
+        return view('checkout.pagamento.falha', compact('pedido', 'error'));
+    }
+
+    /**
+     * Página de pagamento pendente
+     */
+    public function pendente(Pedido $pedido): View|RedirectResponse
+    {
+        // Verificar se o pedido pertence ao usuário
+        if ($pedido->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Verificar se o pedido já foi pago
+        if ($pedido->status === 'pago') {
+            return redirect()->route('checkout.sucesso', $pedido)
+                ->with('info', 'Seu pagamento foi confirmado!');
+        }
+
+        return view('checkout.pagamento.pendente', compact('pedido'));
+    }
+
+    // ============================================
+    // PEDIDOS DO USUÁRIO
+    // ============================================
 
     /**
      * Página de pedidos do usuário
@@ -141,7 +322,9 @@ class CheckoutController extends Controller
         }
     }
 
-    // ===== MÉTODOS PRIVADOS =====
+    // ============================================
+    // MÉTODOS PRIVADOS
+    // ============================================
 
     /**
      * Calcular subtotal do carrinho

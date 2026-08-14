@@ -7,12 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log; // 🔥 ADICIONAR ESTE IMPORT
 
 class DashboardController extends Controller
 {
     public function __construct(
         protected DashboardService $dashboardService
-    ) {}
+    ) {
+        // 🔥 ADICIONAR MIDDLEWARE
+        $this->middleware(['auth', 'role:Admin']);
+    }
 
     /**
      * Mostrar dashboard administrativo
