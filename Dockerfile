@@ -31,21 +31,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Definir diretório de trabalho
 WORKDIR /var/www/html
 
-# Copiar arquivos de dependência primeiro (melhor cache)
-COPY composer.json composer.lock ./
+# 🔥 COPIA TODOS OS ARQUIVOS PRIMEIRO
+COPY . .
 
-# 🔥 CRIAR DIRETÓRIOS DE CACHE ANTES DO COMPOSER
+# 🔥 CRIAR DIRETÓRIOS DE CACHE
 RUN mkdir -p storage/framework/cache \
     && mkdir -p storage/framework/sessions \
     && mkdir -p storage/framework/views \
     && mkdir -p bootstrap/cache \
     && chmod -R 777 storage bootstrap/cache
 
-# Instalar dependências do Laravel
+# 🔥 Instalar dependências do Laravel (AGORA O ARTISAN EXISTE)
 RUN composer install --no-interaction --optimize-autoloader
-
-# Copiar o restante dos arquivos do projeto
-COPY . .
 
 # Configurar permissões finais
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
