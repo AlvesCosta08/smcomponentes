@@ -31,6 +31,7 @@ RUN apt-get update && apt-get install -y \
     libxpm-dev \
     libicu-dev \
     libsodium-dev \
+    postgresql-client \
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g npm@10.8.2

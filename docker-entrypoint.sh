@@ -37,13 +37,36 @@ wait_for_db() {
         return 0
     fi
 
-    # Aguarda até 60 segundos
-    MAX_RETRIES=30
-    RETRY=0
-
-    case "$DB_CONNECTION" in
-        pgsql|postgres|pgsql_pdo)
-            log_info "Testando conexão PostgreSQL: $DB_HOST:$DB_PORT"
+    # Se for PostgreSQL no Render, usa pg_isready
+    if [[ "$DB_CONNECTION" == "pgsql" ]] || [[ "$DB_CONNECTION" == "postgres" ]] || [[ "$DB_CONNECTION" == "pgsql_pdo" ]]; then
+        log_info "Testando conexão PostgreSQL: $DB_HOST:$DB_PORT"
+        
+        # Instala pg_isready se não existir
+        if ! command -v pg_isready &> /dev/null; then
+            log_warn "pg_isready não encontrado, usando fallback com PHP"
+            # Fallback usando PHP PDO
+            MAX_RETRIES=30
+            RETRY=0
+            while ! php -r "
+                try {
+                    \$pdo = new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD');
+                    echo 'OK';
+                } catch (Exception \$e) {
+                    exit(1);
+                }
+            " 2>/dev/null | grep -q OK; do
+                RETRY=$((RETRY + 1))
+                if [ $RETRY -ge $MAX_RETRIES ]; then
+                    log_error "Timeout ao conectar ao PostgreSQL"
+                    return 1
+                fi
+                log_warn "Aguardando PostgreSQL... (${RETRY}/${MAX_RETRIES})"
+                sleep 2
+            done
+        else
+            # Usa pg_isready
+            MAX_RETRIES=30
+            RETRY=0
             while ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" > /dev/null 2>&1; do
                 RETRY=$((RETRY + 1))
                 if [ $RETRY -ge $MAX_RETRIES ]; then
@@ -53,25 +76,31 @@ wait_for_db() {
                 log_warn "Aguardando PostgreSQL... (${RETRY}/${MAX_RETRIES})"
                 sleep 2
             done
-            log_info "✅ PostgreSQL conectado!"
-            ;;
-        mysql|mysqli|mysql_pdo)
-            log_info "Testando conexão MySQL: $DB_HOST:$DB_PORT"
-            while ! mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" --silent > /dev/null 2>&1; do
-                RETRY=$((RETRY + 1))
-                if [ $RETRY -ge $MAX_RETRIES ]; then
-                    log_error "Timeout ao conectar ao MySQL"
-                    return 1
-                fi
-                log_warn "Aguardando MySQL... (${RETRY}/${MAX_RETRIES})"
-                sleep 2
-            done
-            log_info "✅ MySQL conectado!"
-            ;;
-        *)
-            log_warn "Conexão '$DB_CONNECTION' não suportada para espera automática"
-            ;;
-    esac
+        fi
+        log_info "✅ PostgreSQL conectado!"
+        return 0
+    fi
+
+    # Para MySQL
+    if [[ "$DB_CONNECTION" == "mysql" ]] || [[ "$DB_CONNECTION" == "mysqli" ]] || [[ "$DB_CONNECTION" == "mysql_pdo" ]]; then
+        log_info "Testando conexão MySQL: $DB_HOST:$DB_PORT"
+        MAX_RETRIES=30
+        RETRY=0
+        while ! mysqladmin ping -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" --silent > /dev/null 2>&1; do
+            RETRY=$((RETRY + 1))
+            if [ $RETRY -ge $MAX_RETRIES ]; then
+                log_error "Timeout ao conectar ao MySQL"
+                return 1
+            fi
+            log_warn "Aguardando MySQL... (${RETRY}/${MAX_RETRIES})"
+            sleep 2
+        done
+        log_info "✅ MySQL conectado!"
+        return 0
+    fi
+
+    log_warn "Conexão '$DB_CONNECTION' não suportada para espera automática"
+    return 0
 }
 
 # ============================================
@@ -91,11 +120,11 @@ APP_ENV=local
 APP_DEBUG=true
 APP_URL=http://localhost:8000
 
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
+DB_PORT=5432
 DB_DATABASE=laravel
-DB_USERNAME=root
+DB_USERNAME=postgres
 DB_PASSWORD=
 
 SESSION_DRIVER=file
@@ -139,7 +168,7 @@ chown -R www-data:www-data storage bootstrap/cache public/build 2>/dev/null || t
 # ============================================
 # 4. AGUARDAR BANCO DE DADOS
 # ============================================
-wait_for_db
+wait_for_db || true  # Continua mesmo se falhar
 
 # ============================================
 # 5. LIMPAR CACHE
@@ -156,9 +185,10 @@ php artisan route:clear || true
 # ============================================
 log_step "Rodando migrations..."
 
-if php artisan migrate:status > /dev/null 2>&1; then
+# Tenta conectar ao banco
+if php artisan db:show > /dev/null 2>&1; then
     log_info "✅ Banco conectado. Executando migrations..."
-    php artisan migrate --force
+    php artisan migrate --force || log_warn "⚠️ Migrations falharam"
     log_info "Migrations concluídas"
 else
     log_warn "⚠️ Banco não conectado. Pulando migrations."
@@ -197,10 +227,10 @@ fi
 if grep -q "APP_ENV=production" .env; then
     log_step "Ambiente PRODUÇÃO - Otimizando..."
 
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-    php artisan event:cache
+    php artisan config:cache || true
+    php artisan route:cache || true
+    php artisan view:cache || true
+    php artisan event:cache || true
 
     # Compilar assets
     if [ -f package.json ] && [ -d node_modules ]; then
@@ -237,6 +267,7 @@ echo "  🐘 PHP: $(php -r 'echo PHP_VERSION;')"
 echo "  📦 Laravel: $(php artisan --version | cut -d' ' -f2 || echo 'N/A')"
 echo "  📦 Node: $(node -v 2>/dev/null || echo 'N/A')"
 echo "  📦 NPM: $(npm -v 2>/dev/null || echo 'N/A')"
+echo "  🗄️  Banco: $(grep ^DB_CONNECTION .env | cut -d '=' -f2 | tr -d '\r' || echo 'N/A')"
 echo "============================================="
 echo ""
 
