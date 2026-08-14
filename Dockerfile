@@ -10,7 +10,6 @@ ENV NODE_VERSION=20
 # INSTALAR DEPENDÊNCIAS DO SISTEMA
 # ============================================
 RUN apt-get update && apt-get install -y \
-    # Dependências básicas
     git \
     curl \
     wget \
@@ -20,7 +19,6 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     apt-transport-https \
     lsb-release \
-    # Dependências PHP
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -33,10 +31,9 @@ RUN apt-get update && apt-get install -y \
     libxpm-dev \
     libicu-dev \
     libsodium-dev \
-    # Dependências para Node/npm
     && curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && npm install -g npm@10.8.2
 
 # ============================================
 # INSTALAR EXTENSÕES PHP
@@ -74,6 +71,7 @@ RUN npm install -g \
     vite \
     laravel-vite-plugin \
     @vitejs/plugin-vue \
+    --legacy-peer-deps \
     && npm cache clean --force
 
 # ============================================
@@ -100,7 +98,7 @@ RUN composer install \
 # ============================================
 # INSTALAR DEPENDÊNCIAS NODE
 # ============================================
-RUN npm ci --no-audit --no-fund --prefer-offline \
+RUN npm ci --no-audit --no-fund --prefer-offline --legacy-peer-deps \
     && npm cache clean --force
 
 # ============================================
