@@ -51,7 +51,7 @@ substitute_env_vars() {
     )
     
     for VAR in "${VARS[@]}"; do
-        if [ ! -z "${!VAR}" ]; then
+        if [ -n "${!VAR}" ]; then
             # Escapa caracteres especiais para sed
             VALUE=$(echo "${!VAR}" | sed -e 's/[\/&]/\\&/g')
             # Substitui ${VAR} ou VAR_PLACEHOLDER
@@ -63,7 +63,7 @@ substitute_env_vars() {
     # Verifica se ainda há variáveis não substituídas
     if grep -q "\${" .env; then
         log_warn "⚠️ Ainda há variáveis não substituídas no .env"
-        grep "\${" .env | while read line; do
+        grep "\${" .env | while read -r line; do
             log_warn "  $line"
         done
         log_warn "⚠️ O aplicativo pode não funcionar corretamente!"
@@ -91,13 +91,13 @@ wait_for_db() {
     log_info "DB_PORT: $DB_PORT"
     log_info "DB_DATABASE: $DB_DATABASE"
 
-    if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ] || [[ "$DB_HOST" == *"PLACEHOLDER"* ]] || [[ "$DB_HOST" == *"${"* ]]; then
+    if [ -z "$DB_HOST" ] || [ -z "$DB_DATABASE" ] || echo "$DB_HOST" | grep -q "PLACEHOLDER" || echo "$DB_HOST" | grep -q "\${"; then
         log_warn "Variáveis de banco não configuradas corretamente. Pulando verificação..."
         return 0
     fi
 
     # Para PostgreSQL
-    if [[ "$DB_CONNECTION" == "pgsql" ]] || [[ "$DB_CONNECTION" == "postgres" ]]; then
+    if [ "$DB_CONNECTION" = "pgsql" ] || [ "$DB_CONNECTION" = "postgres" ]; then
         log_info "Testando conexão PostgreSQL: $DB_HOST:$DB_PORT"
         
         MAX_RETRIES=30
@@ -127,7 +127,7 @@ wait_for_db() {
     fi
 
     # Para MySQL
-    if [[ "$DB_CONNECTION" == "mysql" ]] || [[ "$DB_CONNECTION" == "mysqli" ]]; then
+    if [ "$DB_CONNECTION" = "mysql" ] || [ "$DB_CONNECTION" = "mysqli" ]; then
         log_info "Testando conexão MySQL: $DB_HOST:$DB_PORT"
         
         MAX_RETRIES=30
