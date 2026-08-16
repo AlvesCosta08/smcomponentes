@@ -7,6 +7,7 @@ use App\Models\Banner;
 use App\Services\Traits\ImageUploadTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class BannerService
 {
@@ -77,9 +78,13 @@ class BannerService
 
             // Upload da nova imagem
             if (isset($data['imagem_file'])) {
-                if ($banner->imagem) {
-                    $this->deleteImage($banner->imagem, 'banners');
+                // CORREÇÃO: Limpa a URL do banco antes de verificar se existe
+                $currentImage = $this->sanitizeImagePath($banner->imagem);
+
+                if ($currentImage) {
+                    $this->deleteImage($currentImage, 'banners');
                 }
+                
                 $data['imagem'] = $this->uploadImage($data['imagem_file'], 'banners');
                 unset($data['imagem_file']);
             }
@@ -112,7 +117,11 @@ class BannerService
 
             // Remover imagem
             if ($banner->imagem) {
-                $this->deleteImage($banner->imagem, 'banners');
+                // CORREÇÃO: Limpa a URL do banco antes de verificar se existe
+                $currentImage = $this->sanitizeImagePath($banner->imagem);
+                if ($currentImage) {
+                    $this->deleteImage($currentImage, 'banners');
+                }
             }
 
             $deleted = $banner->delete();
@@ -168,5 +177,27 @@ class BannerService
     {
         $banner->ativo = !$banner->ativo;
         return $banner->save();
+    }
+
+    // ============================================================
+    // 🔧 FUNÇÃO AUXILIAR ADICIONADA (AQUI ESTÁ A CORREÇÃO)
+    // ============================================================
+    /**
+     * Remove a URL completa e deixa apenas o caminho relativo.
+     * Ex: 'http://localhost:8000/storage/banners/nome.jpg' vira 'banners/nome.jpg'
+     */
+    private function sanitizeImagePath($path)
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        // Remove tudo antes de 'banners/'
+        if (str_contains($path, 'banners/')) {
+            $parts = explode('banners/', $path);
+            return 'banners/' . end($parts);
+        }
+
+        return $path;
     }
 }

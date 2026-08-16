@@ -18,10 +18,16 @@
         <!-- Imagem -->
         <div class="col-md-5">
             <div class="product-image-container">
-                <img src="{{ $produto->getImagemUrl() }}" 
-                     alt="{{ $produto->descricao }}" 
-                     class="img-fluid rounded-3 w-100"
-                     style="object-fit: contain; max-height: 400px; background: #f8f9fa; padding: 20px;">
+                @if($produto->imagem)
+                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                         alt="{{ $produto->descricao }}" 
+                         class="img-fluid rounded-3 w-100"
+                         style="object-fit: contain; max-height: 400px; background: #f8f9fa; padding: 20px;">
+                @else
+                    <div class="d-flex align-items-center justify-content-center w-100" style="height: 300px; background: #f8f9fa;">
+                        <i class="bi bi-image" style="font-size: 4rem; color: #ccc;"></i>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -42,34 +48,47 @@
                 </p>
             @endif
             
-            <!-- 🔥 CORRIGIDO: isDisponivel() -->
+            <!-- ✅ STATUS - VERIFICAÇÃO DIRETA (CORRIGIDO) -->
             <div class="mb-3">
-                <span class="badge bg-{{ $produto->isDisponivel() ? 'success' : 'danger' }} fs-6">
-                    {{ $produto->isDisponivel() ? '✓ Disponível' : '✗ Indisponível' }}
-                </span>
+                @php
+                    $disponivel = ($produto->disponibilidade === 'DISPONIVEL' && $produto->quantidade > 0 && $produto->ativo);
+                @endphp
+                
+                @if($disponivel)
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-check-circle"></i> ✓ Disponível
+                    </span>
+                @elseif($produto->disponibilidade === 'EST.BAIXO' && $produto->quantidade > 0)
+                    <span class="badge bg-warning text-dark fs-6">
+                        <i class="bi bi-exclamation-triangle"></i> ⚠ Estoque Baixo
+                    </span>
+                @else
+                    <span class="badge bg-danger fs-6">
+                        <i class="bi bi-x-circle"></i> ✗ Indisponível
+                    </span>
+                @endif
                 <span class="badge bg-secondary ms-2">Estoque: {{ $produto->quantidade }} unidades</span>
-                <span class="badge bg-{{ $produto->getStatus() === 'Disponível' ? 'success' : 'warning' }} ms-2">
-                    {{ $produto->getStatus() }}
-                </span>
             </div>
             
-            <!-- 🔥 CORRIGIDO: getPrecoFormatado() e temPromocao() -->
+            <!-- ✅ PREÇO - VERIFICAÇÃO DIRETA -->
             <div class="mb-4">
-                @if($produto->temPromocao())
-                    <h2 class="price text-success">{{ $produto->getPrecoPromocionalFormatado() }}</h2>
+                @if($produto->preco_promocional && $produto->preco_promocional > 0 && $produto->preco_promocional < $produto->valor_unitario)
+                    <h2 class="price text-success">
+                        R$ {{ number_format($produto->preco_promocional, 2, ',', '.') }}
+                    </h2>
                     <p class="text-muted">
                         <span class="old-price text-decoration-line-through text-danger">
-                            {{ $produto->getPrecoFormatado() }}
+                            R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}
                         </span>
                         <span class="badge bg-danger ms-2">Promoção</span>
                     </p>
                 @else
-                    <h2 class="price">{{ $produto->getPrecoFormatado() }}</h2>
+                    <h2 class="price">R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}</h2>
                 @endif
             </div>
 
-            <!-- Botão Adicionar ao Carrinho -->
-            @if($produto->isDisponivel())
+            <!-- ✅ BOTÃO - VERIFICAÇÃO DIRETA -->
+            @if($produto->disponibilidade === 'DISPONIVEL' && $produto->quantidade > 0 && $produto->ativo)
                 <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2">
                     @csrf
                     <input type="hidden" name="produto_id" value="{{ $produto->id }}">
@@ -106,22 +125,30 @@
     @endif
 
     <!-- Produtos Relacionados -->
-    @if(!empty($relacionados) && count($relacionados) > 0)
+    @if(isset($relacionados) && count($relacionados) > 0)
         <hr class="my-5">
         <h3 class="mb-4">Produtos Relacionados</h3>
         <div class="row g-3">
             @foreach($relacionados as $relacionado)
                 <div class="col-6 col-md-3">
                     <div class="card h-100 shadow-sm hover-card">
-                        <img src="{{ $relacionado->getImagemUrl() }}" 
-                             class="card-img-top" 
-                             alt="{{ $relacionado->descricao }}"
-                             style="height: 150px; object-fit: contain; padding: 10px; background: #f8f9fa;">
+                        @if($relacionado->imagem)
+                            <img src="{{ asset('storage/' . $relacionado->imagem) }}" 
+                                 class="card-img-top" 
+                                 alt="{{ $relacionado->descricao }}"
+                                 style="height: 150px; object-fit: contain; padding: 10px; background: #f8f9fa;">
+                        @else
+                            <div class="d-flex align-items-center justify-content-center" style="height: 150px; background: #f8f9fa;">
+                                <i class="bi bi-image" style="font-size: 2rem; color: #ccc;"></i>
+                            </div>
+                        @endif
                         <div class="card-body">
                             <h6 class="card-title text-truncate" title="{{ $relacionado->descricao }}">
                                 {{ $relacionado->descricao }}
                             </h6>
-                            <p class="card-text text-primary fw-bold">{{ $relacionado->getPrecoFormatado() }}</p>
+                            <p class="card-text text-primary fw-bold">
+                                R$ {{ number_format($relacionado->valor_unitario, 2, ',', '.') }}
+                            </p>
                             <a href="{{ route('produtos.show', $relacionado->slug) }}" class="btn btn-sm btn-outline-primary w-100">
                                 Ver Produto
                             </a>
@@ -137,6 +164,7 @@
     .price {
         font-weight: 700;
         font-size: 2rem;
+        color: #0d6efd;
     }
     .old-price {
         font-size: 1.1rem;

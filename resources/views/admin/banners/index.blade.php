@@ -1,3 +1,4 @@
+{{-- admin/banners/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Gerenciar Banners - Admin')
@@ -55,8 +56,8 @@
                                         {{ $banner->ordem }}
                                     </td>
                                     <td>
-                                        @if($banner->imagem)
-                                            <img src="{{ asset('storage/' . $banner->imagem) }}" 
+                                        @if($banner->imagem_url)
+                                            <img src="{{ $banner->imagem_url }}" 
                                                  alt="{{ $banner->titulo }}"
                                                  style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px;">
                                         @else

@@ -24,6 +24,15 @@
     {{-- ════════════════════════════════════════════════════ --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    {{-- Bootstrap Icons --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    {{-- Bootstrap 5 CSS --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    {{-- Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+    
     {{-- Vite Assets --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
@@ -194,78 +203,43 @@
         }
 
         /* ============================================
-           NAVBAR - Psicologia: Confiança e Poder
+           NAVBAR - NOVA VERSÃO COM ALPINE.JS
            ============================================ */
-        .navbar-custom {
+        .nav-main {
             background: var(--gradient-primary);
             box-shadow: 0 4px 20px rgba(30, 58, 138, 0.3);
-            padding: 12px 0;
-            transition: all var(--transition-speed) ease;
-            min-height: 72px;
             position: sticky;
             top: 0;
             z-index: 1050;
+            border-bottom: 3px solid transparent;
+            border-image: linear-gradient(90deg, var(--color-secondary-500), var(--color-purple-500)) 1;
         }
 
-        .navbar-custom::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--color-secondary-500), var(--color-purple-500), transparent);
-            opacity: 0.5;
-        }
-
-        .navbar-custom .navbar-brand {
-            font-weight: 800;
-            font-size: 1.3rem;
-            letter-spacing: -0.5px;
-            color: #ffffff;
-            padding: 0;
-            transition: transform var(--transition-speed) ease;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .navbar-custom .navbar-brand:hover {
-            transform: scale(1.03);
-            color: #ffffff;
-        }
-
-        .navbar-custom .navbar-brand i {
-            font-size: 1.6rem;
-            margin-right: 10px;
-            color: var(--color-secondary-500);
-            filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.3));
-            transition: transform var(--transition-speed) ease;
-        }
-
-        .navbar-custom .navbar-brand:hover i {
-            transform: rotate(-15deg) scale(1.1);
-        }
-
-        .navbar-custom .nav-link {
+        .nav-link-custom {
             color: rgba(255, 255, 255, 0.85);
-            font-weight: 500;
-            padding: 8px 18px;
+            text-decoration: none;
+            padding: 8px 16px;
             border-radius: var(--border-radius-sm);
             transition: all var(--transition-speed) ease;
-            position: relative;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .navbar-custom .nav-link:hover {
+        .nav-link-custom:hover {
             color: #ffffff;
             background: rgba(255, 255, 255, 0.12);
             transform: translateY(-1px);
         }
 
-        .navbar-custom .nav-link.active {
+        .nav-link-custom.active {
             color: #ffffff;
             background: rgba(255, 255, 255, 0.18);
+            position: relative;
         }
 
-        .navbar-custom .nav-link.active::after {
+        .nav-link-custom.active::after {
             content: '';
             position: absolute;
             bottom: 4px;
@@ -276,6 +250,44 @@
             background: var(--color-secondary-500);
             border-radius: 3px;
             box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+
+        .nav-link-custom i {
+            font-size: 1.1rem;
+        }
+
+        /* Mobile menu */
+        .nav-main .d-md-none {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .nav-main .d-md-none .nav-link-custom {
+            padding: 12px 16px;
+            border-radius: var(--border-radius-sm);
+            width: 100%;
+        }
+
+        .nav-main .d-md-none .nav-link-custom:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-main .d-md-none .nav-link-custom.active::after {
+            display: none;
+        }
+
+        /* Botão hamburger */
+        .nav-main .btn-link {
+            color: #ffffff !important;
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .nav-main .btn-link:hover {
+            transform: scale(1.1);
         }
 
         /* ============================================
@@ -801,31 +813,12 @@
            RESPONSIVIDADE
            ============================================ */
         @media (max-width: 991.98px) {
-            .navbar-custom .navbar-collapse {
-                background: rgba(15, 23, 42, 0.98);
-                backdrop-filter: blur(20px);
-                padding: 20px;
-                border-radius: var(--border-radius);
-                margin-top: 12px;
-                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.06);
-            }
-
             .search-form .form-control {
                 width: 100%;
             }
 
             .search-form .form-control:focus {
                 width: 100%;
-            }
-
-            .navbar-custom .nav-link {
-                padding: 12px 16px;
-                border-radius: var(--border-radius-sm);
-            }
-
-            .navbar-custom .nav-link.active::after {
-                display: none;
             }
 
             .btn-action {
@@ -856,19 +849,6 @@
 
             .top-bar .divider {
                 margin: 0 6px;
-            }
-
-            .navbar-custom {
-                padding: 8px 0;
-                min-height: 60px;
-            }
-
-            .navbar-custom .navbar-brand {
-                font-size: 1.1rem;
-            }
-
-            .navbar-custom .navbar-brand i {
-                font-size: 1.3rem;
             }
 
             .float-btn-whatsapp {
@@ -913,10 +893,6 @@
         @media (max-width: 575.98px) {
             .top-bar {
                 display: none !important;
-            }
-
-            .navbar-custom .navbar-brand {
-                font-size: 0.95rem;
             }
 
             .float-btn-whatsapp {
@@ -1172,66 +1148,6 @@
             box-shadow: none;
             transform: none;
         }
-
-        /* ============================================
-           CUSTOM - BANNER SLIDE
-           ============================================ */
-        .banner-slide {
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .banner-slide::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 40%;
-            height: 200%;
-            background: rgba(255,255,255,0.05);
-            transform: rotate(-15deg);
-            pointer-events: none;
-        }
-
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            background-size: 50% 50%;
-            width: 48px;
-            height: 48px;
-        }
-
-        .carousel-indicators button {
-            width: 12px !important;
-            height: 12px !important;
-            border-radius: 50% !important;
-            border: 2px solid rgba(255,255,255,0.6) !important;
-            margin: 0 6px !important;
-        }
-
-        .carousel-indicators .active {
-            background: #fff !important;
-            border-color: #fff !important;
-        }
-
-        .carousel-item {
-            transition: transform 0.6s ease-in-out;
-        }
-
-        .carousel-item .banner-slide {
-            animation: fadeSlide 0.8s ease;
-        }
-
-        @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
     </style>
     
     @stack('styles')
@@ -1263,101 +1179,148 @@
     </div>
 
     {{-- ============================================
-         NAVBAR - Psicologia: Confiança e Poder
+         NAVBAR - NOVA VERSÃO COM ALPINE.JS
          ============================================ --}}
-    <nav class="navbar navbar-expand-lg navbar-custom" role="navigation" aria-label="Navegação principal">
+    <nav x-data="{ open: false }" class="nav-main">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('home') }}" aria-label="SM Componentes - Página inicial">
-                <i class="bi bi-plug" aria-hidden="true"></i> 
-                <span class="d-none d-sm-inline">SM Componentes</span>
-                <span class="d-inline d-sm-none">SM</span>
-            </a>
-            
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}" aria-current="page">
-                            <i class="bi bi-house" aria-hidden="true"></i> Início
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('produtos.*') ? 'active' : '' }}" href="{{ route('produtos.index') }}">
-                            <i class="bi bi-grid" aria-hidden="true"></i> Produtos
-                        </a>
-                    </li>
+            <div class="d-flex justify-content-between align-items-center py-2">
+                <!-- Brand / Logo -->
+                <a href="{{ route('home') }}" class="navbar-brand fw-bold text-white" style="font-size: 1.3rem;">
+                    <i class="bi bi-plug" style="color: var(--color-secondary-500);"></i>
+                    <span class="d-none d-sm-inline">SM Componentes</span>
+                    <span class="d-inline d-sm-none">SM</span>
+                </a>
+
+                <!-- Desktop Navigation -->
+                <div class="d-none d-md-flex gap-2">
+                    <a href="{{ route('home') }}" class="nav-link-custom {{ request()->routeIs('home') ? 'active' : '' }}">
+                        <i class="bi bi-house"></i> Início
+                    </a>
+                    <a href="{{ route('produtos.index') }}" class="nav-link-custom {{ request()->routeIs('produtos.index') ? 'active' : '' }}">
+                        <i class="bi bi-grid"></i> Produtos
+                    </a>
                     @auth
                         @if(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Funcionario'))
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('admin.dashboard') }}">
-                                    <i class="bi bi-speedometer2" aria-hidden="true"></i> Admin
-                                </a>
-                            </li>
+                            <a href="{{ route('admin.dashboard') }}" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                                <i class="bi bi-speedometer2"></i> Admin
+                            </a>
                         @endif
                     @endauth
-                </ul>
-                
-                {{-- 🔥 Busca --}}
-                <form class="search-form d-flex me-3 mb-2 mb-lg-0" action="{{ route('produtos.buscar') }}" method="GET" role="search">
-                    <div class="input-group">
-                        <input class="form-control" type="search" name="q" placeholder="Buscar produtos..." 
-                               value="{{ request('q') }}" aria-label="Buscar produtos" id="search-input">
-                        <button class="btn btn-search" type="submit" aria-label="Buscar">
-                            <i class="bi bi-search" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </form>
-                
-                {{-- Carrinho - Psicologia: Urgência --}}
-                <div class="cart-wrapper">
-                    <a href="{{ route('carrinho.index') }}" class="cart-btn" aria-label="Ver carrinho">
-                        <i class="bi bi-cart3" aria-hidden="true"></i>
-                        <span class="cart-badge" id="cart-count" aria-live="polite">0</span>
-                    </a>
                 </div>
-                
-                {{-- Autenticação --}}
-                @auth
-                    <div class="dropdown">
-                        <button class="btn btn-action btn-action-outline dropdown-toggle" data-bs-toggle="dropdown" 
-                                aria-expanded="false" id="userDropdown" aria-label="Menu do usuário">
-                            <i class="bi bi-person-circle" aria-hidden="true"></i> 
-                            <span class="d-none d-sm-inline">{{ Str::limit(Auth::user()->name, 14) }}</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-custom" aria-labelledby="userDropdown">
-                            <li>
-                                <a class="dropdown-item dropdown-item-custom" href="{{ route('profile.edit') }}">
-                                    <i class="bi bi-gear" aria-hidden="true"></i> Perfil
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item dropdown-item-custom" href="{{ route('dashboard') }}">
-                                    <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider-custom"></li>
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item dropdown-item-custom text-danger">
-                                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
+
+                <!-- Desktop Right: Busca + Carrinho + User -->
+                <div class="d-none d-md-flex align-items-center gap-2">
+                    {{-- Busca --}}
+                    <form class="search-form d-flex" action="{{ route('produtos.buscar') }}" method="GET" role="search">
+                        <div class="input-group">
+                            <input class="form-control" type="search" name="q" placeholder="Buscar produtos..." 
+                                   value="{{ request('q') }}" aria-label="Buscar produtos" id="search-input">
+                            <button class="btn btn-search" type="submit" aria-label="Buscar">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    {{-- Carrinho --}}
+                    <div class="cart-wrapper">
+                        <a href="{{ route('carrinho.index') }}" class="cart-btn" aria-label="Ver carrinho">
+                            <i class="bi bi-cart3" aria-hidden="true"></i>
+                            <span class="cart-badge" id="cart-count" aria-live="polite">0</span>
+                        </a>
                     </div>
-                @else
-                    <a href="{{ route('login') }}" class="btn btn-action btn-action-outline me-2">
-                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Entrar
+
+                    {{-- User / Auth --}}
+                    @auth
+                        <div class="dropdown">
+                            <button class="btn btn-action btn-action-outline dropdown-toggle" data-bs-toggle="dropdown" 
+                                    aria-expanded="false" id="userDropdown" aria-label="Menu do usuário">
+                                <i class="bi bi-person-circle" aria-hidden="true"></i> 
+                                <span class="d-none d-xl-inline">{{ Str::limit(Auth::user()->name, 14) }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-custom" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item dropdown-item-custom" href="{{ route('profile.edit') }}">
+                                        <i class="bi bi-gear" aria-hidden="true"></i> Perfil
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item dropdown-item-custom" href="{{ route('dashboard') }}">
+                                        <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider-custom"></li>
+                                <li>
+                                    <form action="{{ route('logout') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item dropdown-item-custom text-danger">
+                                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-action btn-action-outline">
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Entrar
+                        </a>
+                        <a href="{{ route('register') }}" class="btn btn-action btn-action-primary">
+                            <i class="bi bi-person-plus" aria-hidden="true"></i> Cadastrar
+                        </a>
+                    @endauth
+                </div>
+
+                <!-- Mobile Hamburger -->
+                <button @click="open = !open" class="d-md-none btn btn-link text-white p-0" style="font-size: 1.5rem;">
+                    <i class="bi" :class="open ? 'bi-x-lg' : 'bi-list'"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Navigation -->
+            <div x-show="open" x-transition:enter.duration.300ms.opacity class="d-md-none pb-3" style="display: none;">
+                <div class="d-flex flex-column gap-2">
+                    {{-- Busca Mobile --}}
+                    <form class="search-form d-flex w-100" action="{{ route('produtos.buscar') }}" method="GET" role="search">
+                        <div class="input-group">
+                            <input class="form-control" type="search" name="q" placeholder="Buscar produtos..." 
+                                   value="{{ request('q') }}" aria-label="Buscar produtos">
+                            <button class="btn btn-search" type="submit" aria-label="Buscar">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    {{-- Links --}}
+                    <a href="{{ route('home') }}" class="nav-link-custom {{ request()->routeIs('home') ? 'active' : '' }}">
+                        <i class="bi bi-house"></i> Início
                     </a>
-                    <a href="{{ route('register') }}" class="btn btn-action btn-action-primary">
-                        <i class="bi bi-person-plus" aria-hidden="true"></i> Cadastrar
+                    <a href="{{ route('produtos.index') }}" class="nav-link-custom {{ request()->routeIs('produtos.index') ? 'active' : '' }}">
+                        <i class="bi bi-grid"></i> Produtos
                     </a>
-                @endauth
+                    @auth
+                        @if(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Funcionario'))
+                            <a href="{{ route('admin.dashboard') }}" class="nav-link-custom {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                                <i class="bi bi-speedometer2"></i> Admin
+                            </a>
+                        @endif
+                        <hr class="my-2" style="border-color: rgba(255,255,255,0.1);">
+                        <span class="text-white-50 small px-2">
+                            <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                        </span>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="nav-link-custom text-danger border-0 bg-transparent w-100 text-start">
+                                <i class="bi bi-box-arrow-right"></i> Sair
+                            </button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="nav-link-custom">
+                            <i class="bi bi-box-arrow-in-right"></i> Entrar
+                        </a>
+                        <a href="{{ route('register') }}" class="nav-link-custom">
+                            <i class="bi bi-person-plus"></i> Registrar
+                        </a>
+                    @endauth
+                </div>
             </div>
         </div>
     </nav>
@@ -1403,6 +1366,7 @@
          CONTEÚDO PRINCIPAL
          ============================================ --}}
     <main role="main">
+        {{-- Yield para conteúdo das páginas --}}
         @yield('content')
     </main>
 
@@ -1495,83 +1459,109 @@
         <i class="bi bi-instagram" aria-hidden="true"></i>
     </a>
 
+    {{-- ============================================
+         SCRIPTS
+         ============================================ --}}
+    
+    {{-- jQuery (necessário para alguns plugins) --}}
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js" 
+            integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" 
+            crossorigin="anonymous">
+    </script>
+
+    {{-- Bootstrap 5 --}}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous">
+    </script>
+
+    {{-- Script Personalizado --}}
     <script>
         /**
-         * Atualiza o contador do carrinho
+         * 🚀 INICIALIZAÇÃO COMPLETA DO SITE
+         * ============================================
+         * 1. Contador do Carrinho (AJAX)
+         * 2. Busca com Debounce
+         * 3. BFCache (voltar página)
          */
-        function updateCartCount() {
-            const badge = document.getElementById('cart-count');
-            if (!badge) return;
+        (function() {
+            'use strict';
 
-            fetch('{{ route("carrinho.count") }}')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    const count = data.count || 0;
-                    badge.textContent = count;
-                    badge.style.display = count > 0 ? 'flex' : 'none';
-                })
-                .catch(error => {
-                    console.debug('Erro ao atualizar carrinho:', error);
-                });
-        }
+            // ============================================
+            // 1. 🛒 ATUALIZAR CONTADOR DO CARRINHO
+            // ============================================
+            function updateCartCount() {
+                const badge = document.getElementById('cart-count');
+                if (!badge) return;
 
-        /**
-         * Debounce para busca
-         */
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            // Atualizar contador do carrinho
-            updateCartCount();
-
-            // Atualizar a cada 30 segundos
-            setInterval(updateCartCount, 30000);
-
-            // Busca com debounce
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                const handleSearch = debounce((event) => {
-                    const form = event.target.closest('form');
-                    if (form && event.target.value.length >= 2) {
-                        form.submit();
-                    }
-                }, 300);
-                searchInput.addEventListener('input', handleSearch);
+                fetch('{{ route("carrinho.count") }}')
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Erro na resposta');
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        const count = data.count || 0;
+                        badge.textContent = count;
+                        badge.style.display = count > 0 ? 'flex' : 'none';
+                    })
+                    .catch(function(error) {
+                        console.debug('ℹ️ Carrinho vazio ou indisponível:', error.message);
+                    });
             }
 
-            // Fechar dropdown ao clicar fora
-            document.addEventListener('click', (event) => {
-                const dropdown = document.querySelector('.dropdown');
-                if (dropdown && !dropdown.contains(event.target)) {
-                    const menu = dropdown.querySelector('.dropdown-menu');
-                    if (menu) {
-                        const bsDropdown = bootstrap.Dropdown.getInstance(dropdown.querySelector('.dropdown-toggle'));
-                        if (bsDropdown) bsDropdown.hide();
+            // ============================================
+            // 2. 🔍 BUSCA COM DEBOUNCE (300ms)
+            // ============================================
+            function setupSearch() {
+                const searchInput = document.getElementById('search-input');
+                if (!searchInput) return;
+
+                let timeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(timeout);
+                    const value = this.value.trim();
+                    if (value.length >= 2) {
+                        timeout = setTimeout(function() {
+                            const form = searchInput.closest('form');
+                            if (form) form.submit();
+                        }, 300);
                     }
+                });
+            }
+
+            // ============================================
+            // 3. 🚀 INICIALIZAR TUDO
+            // ============================================
+            function init() {
+                console.log('📦 DOM carregado, inicializando...');
+                
+                updateCartCount();
+                setupSearch();
+
+                // Atualiza carrinho a cada 30 segundos
+                setInterval(updateCartCount, 30000);
+
+                console.log('🚀 Scripts carregados com sucesso!');
+            }
+
+            // Aguarda o DOM estar pronto
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // ============================================
+            // 4. 🔄 ATUALIZAR CARRINHO AO VOLTAR (BFCache)
+            // ============================================
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    console.log('🔄 Página restaurada do cache, atualizando carrinho...');
+                    updateCartCount();
                 }
             });
-        });
 
-        // Atualizar contador quando a página for restaurada pelo BFCache
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                updateCartCount();
-            }
-        });
+        })();
     </script>
     
     @stack('scripts')

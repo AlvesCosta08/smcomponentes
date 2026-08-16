@@ -19,80 +19,50 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         // ============================================================
-        // BANNERS
+        // BANNERS - CORRIGIDO DEFINITIVAMENTE
         // ============================================================
 
-        $bannersData = Cache::remember(
-            'banners_ativos',
-            now()->addHour(),
-            function () {
-                return Banner::ativo()
-                    ->ordenado()
-                    ->get()
-                    ->map(function (Banner $banner) {
-                        return [
-                            'id' => $banner->id,
-                            'titulo' => $banner->titulo,
-                            'subtitulo' => $banner->subtitulo,
-                            'descricao' => $banner->descricao,
-                            'imagem' => $banner->imagem,
-                            'tipo' => $banner->tipo,
-                            'link' => $banner->link,
-                            'texto_botao' => $banner->texto_botao,
-                            'cor_fundo' => $banner->cor_fundo,
-                            'cor_texto' => $banner->cor_texto,
-                            'cor_botao' => $banner->cor_botao,
-                        ];
-                    })
-                    ->values()
-                    ->all();
+        // Buscar banners do banco
+        $bannersFromDb = Banner::ativo()
+            ->ordenado()
+            ->get();
+
+        // Criar a variável $banners como Collection de stdClass
+        $banners = collect();
+
+        if ($bannersFromDb->isEmpty()) {
+            // Banner padrão
+            $bannerDefault = new \stdClass();
+            $bannerDefault->id = null;
+            $bannerDefault->titulo = 'SM Componentes';
+            $bannerDefault->subtitulo = 'Qualidade em Componentes Eletrônicos';
+            $bannerDefault->descricao = 'Encontre os melhores componentes para seus projetos';
+            $bannerDefault->imagem_url = null;
+            $bannerDefault->link = route('produtos.index');
+            $bannerDefault->texto_botao = 'Ver Produtos';
+            $bannerDefault->cor_texto = '#ffffff';
+            $bannerDefault->cor_botao = 'light';
+            $bannerDefault->estilo_fundo = 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+            
+            $banners->push($bannerDefault);
+        } else {
+            // Converter cada banner para stdClass
+            foreach ($bannersFromDb as $banner) {
+                $obj = new \stdClass();
+                $obj->id = $banner->id;
+                $obj->titulo = $banner->titulo;
+                $obj->subtitulo = $banner->subtitulo;
+                $obj->descricao = $banner->descricao;
+                $obj->imagem_url = $this->getImageUrl($banner->imagem);
+                $obj->link = $banner->link;
+                $obj->texto_botao = $banner->texto_botao;
+                $obj->cor_texto = $banner->cor_texto ?? '#ffffff';
+                $obj->cor_botao = $banner->cor_botao ?? 'primary';
+                $obj->estilo_fundo = $this->getEstiloFundo($banner->cor_fundo);
+                
+                $banners->push($obj);
             }
-        );
-
-        if (is_string($bannersData)) {
-            $bannersData = json_decode($bannersData, true) ?: [];
         }
-        
-        if (!is_array($bannersData)) {
-            $bannersData = [];
-        }
-
-        $banners = collect($bannersData)
-            ->map(function ($banner) {
-                if (is_string($banner)) {
-                    $banner = json_decode($banner, true);
-                }
-                
-                if (!is_array($banner)) {
-                    return null;
-                }
-                
-                $obj = (object) $banner;
-
-                $obj->estilo_fundo = null;
-
-                if (!empty($banner['cor_fundo'])) {
-                    $corFundo = trim($banner['cor_fundo']);
-
-                    if (str_starts_with($corFundo, '#')) {
-                        $obj->estilo_fundo = "background-color: {$corFundo};";
-                    } elseif (str_contains($corFundo, 'gradient')) {
-                        $obj->estilo_fundo = "background: {$corFundo};";
-                    } else {
-                        $obj->estilo_fundo = "background: {$corFundo};";
-                    }
-                }
-
-                $obj->imagem_url = null;
-
-                if (!empty($banner['imagem'])) {
-                    $obj->imagem_url = Storage::disk('public')->url($banner['imagem']);
-                }
-
-                return $obj;
-            })
-            ->filter()
-            ->values();
 
         // ============================================================
         // PRODUTOS EM DESTAQUE
@@ -176,6 +146,55 @@ class HomeController extends Controller
             'novosProdutos',
             'maisVendidos'
         ));
+    }
+
+    /**
+     * Método auxiliar: Gerar URL da imagem
+     */
+    private function getImageUrl($imagem)
+    {
+        if (empty($imagem)) {
+            return null;
+        }
+
+        // Se já for URL completa (http/https)
+        if (filter_var($imagem, FILTER_VALIDATE_URL)) {
+            return $imagem;
+        }
+
+        // Remove o prefixo 'banners/' se já existir
+        $cleanPath = str_replace('banners/', '', $imagem);
+        $storagePath = 'banners/' . $cleanPath;
+
+        // Verifica se o arquivo existe no storage
+        if (Storage::disk('public')->exists($storagePath)) {
+            return Storage::disk('public')->url($storagePath);
+        }
+
+        // Fallback
+        return asset('storage/' . $storagePath);
+    }
+
+    /**
+     * Método auxiliar: Gerar estilo de fundo
+     */
+    private function getEstiloFundo($corFundo)
+    {
+        if (empty($corFundo)) {
+            return 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+        }
+
+        $corFundo = trim($corFundo);
+
+        if (str_starts_with($corFundo, '#')) {
+            return "background-color: {$corFundo};";
+        }
+
+        if (str_contains($corFundo, 'gradient')) {
+            return "background: {$corFundo};";
+        }
+
+        return "background: {$corFundo};";
     }
 
     /**
@@ -297,7 +316,7 @@ class HomeController extends Controller
     }
 
     // ================================================================
-    // 🔥 NOVOS MÉTODOS DE CACHE
+    // MÉTODOS DE CACHE
     // ================================================================
 
     /**
@@ -312,7 +331,6 @@ class HomeController extends Controller
             Artisan::call('event:clear');
             Artisan::call('cache:clear');
             
-            // Limpar caches específicos do sistema
             Cache::flush();
             
             Log::info('Cache limpo pelo administrador', [
@@ -360,12 +378,10 @@ class HomeController extends Controller
     public function reloadBanners()
     {
         try {
-            // Limpar cache
             Cache::forget('banners_ativos');
             Cache::forget('banners');
             Cache::forget('banners_active');
             
-            // Recarregar banners
             $banners = Banner::ativo()
                 ->ordenado()
                 ->get();
@@ -392,7 +408,6 @@ class HomeController extends Controller
     public function clearProductCache()
     {
         try {
-            // Limpar caches de produtos
             Cache::forget('produtos_destaque');
             Cache::forget('ofertas_ativas');
             Cache::forget('novos_produtos');
@@ -418,7 +433,6 @@ class HomeController extends Controller
     public function clearAllCache()
     {
         try {
-            // Limpar cache do Laravel
             Artisan::call('view:clear');
             Artisan::call('config:clear');
             Artisan::call('route:clear');
@@ -426,7 +440,6 @@ class HomeController extends Controller
             Artisan::call('cache:clear');
             Artisan::call('optimize:clear');
             
-            // Limpar cache do Redis/File
             Cache::flush();
             
             Log::info('Todos os caches limpos', [

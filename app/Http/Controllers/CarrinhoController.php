@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Session;
 
 class CarrinhoController extends Controller
 {
-    // 🔥 NOVO: Limite máximo de itens no carrinho
     const MAX_ITEMS = 50;
     const MAX_QUANTITY_PER_ITEM = 999;
 
@@ -21,17 +20,15 @@ class CarrinhoController extends Controller
             $produto = Produto::find($item['produto_id']);
             if ($produto) {
                 $item['nome'] = $produto->descricao;
-                $item['preco'] = $produto->preco_atual;
+                $item['preco'] = $produto->valor_unitario;
                 $item['subtotal'] = $item['preco'] * $item['quantidade'];
                 $total += $item['subtotal'];
-                $item['estoque'] = $produto->quantidade; // 🔥 NOVO: Mostra estoque disponível
+                $item['estoque'] = $produto->quantidade;
             } else {
-                // 🔥 NOVO: Remove produtos que não existem mais
                 unset($item);
             }
         }
 
-        // Reindexa o array
         $carrinho = array_values($carrinho);
         Session::put('carrinho', $carrinho);
 
@@ -47,7 +44,7 @@ class CarrinhoController extends Controller
 
         $produto = Produto::find($request->produto_id);
 
-        if (!$produto->esta_disponivel) {
+        if (!$produto->isDisponivel()) {
             return back()->with('error', 'Produto indisponível!');
         }
 
@@ -57,18 +54,15 @@ class CarrinhoController extends Controller
 
         $carrinho = Session::get('carrinho', []);
 
-        // 🔥 NOVO: Verifica limite máximo de itens
         if (count($carrinho) >= self::MAX_ITEMS) {
             return back()->with('error', 'Carrinho cheio! Limite de ' . self::MAX_ITEMS . ' itens.');
         }
 
-        // Verifica se o produto já está no carrinho
         $found = false;
         foreach ($carrinho as &$item) {
             if ($item['produto_id'] == $request->produto_id) {
                 $novaQuantidade = $item['quantidade'] + $request->quantidade;
 
-                // 🔥 NOVO: Verifica limite por item
                 if ($novaQuantidade > self::MAX_QUANTITY_PER_ITEM) {
                     return back()->with('error', 'Quantidade máxima por item é ' . self::MAX_QUANTITY_PER_ITEM);
                 }
@@ -91,7 +85,6 @@ class CarrinhoController extends Controller
 
         Session::put('carrinho', $carrinho);
 
-        // 🔥 NOVO: Retorna JSON para requisições AJAX
         if ($request->ajax()) {
             $totalItems = array_sum(array_column($carrinho, 'quantidade'));
             return response()->json([
@@ -143,14 +136,13 @@ class CarrinhoController extends Controller
             $carrinho[$index]['quantidade'] = $request->quantidade;
             Session::put('carrinho', $carrinho);
 
-            // 🔥 NOVO: Retorna JSON para requisições AJAX
             if ($request->ajax()) {
                 $totalItems = array_sum(array_column($carrinho, 'quantidade'));
                 return response()->json([
                     'success' => true,
                     'message' => 'Carrinho atualizado!',
                     'count' => $totalItems,
-                    'item_total' => $carrinho[$index]['quantidade'] * $produto->preco_atual
+                    'item_total' => $carrinho[$index]['quantidade'] * $produto->valor_unitario
                 ]);
             }
 
@@ -160,7 +152,6 @@ class CarrinhoController extends Controller
         return back()->with('error', 'Item não encontrado!');
     }
 
-    // 🔥 NOVO: Limpar carrinho
     public function limpar(Request $request)
     {
         Session::forget('carrinho');
@@ -176,7 +167,6 @@ class CarrinhoController extends Controller
         return redirect()->route('carrinho.index')->with('success', 'Carrinho limpo!');
     }
 
-    // 🔥 NOVO: Verificar se carrinho está vazio
     public function isEmpty()
     {
         $carrinho = Session::get('carrinho', []);
@@ -191,7 +181,6 @@ class CarrinhoController extends Controller
         return response()->json(['count' => $count]);
     }
 
-    // 🔥 NOVO: Obter total do carrinho
     public function total()
     {
         $carrinho = Session::get('carrinho', []);
@@ -200,7 +189,7 @@ class CarrinhoController extends Controller
         foreach ($carrinho as $item) {
             $produto = Produto::find($item['produto_id']);
             if ($produto) {
-                $total += $produto->preco_atual * $item['quantidade'];
+                $total += $produto->valor_unitario * $item['quantidade'];
             }
         }
 

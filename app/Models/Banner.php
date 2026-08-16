@@ -1,4 +1,5 @@
 <?php
+// app/Models/Banner.php
 
 namespace App\Models;
 
@@ -49,17 +50,39 @@ class Banner extends Model
         return $query->orderBy('ordem');
     }
 
-    // Accessors
+    /**
+     * Accessor CORRIGIDO - Retorna a URL completa da imagem
+     */
     public function getImagemUrlAttribute()
     {
-        if ($this->imagem && Storage::disk('public')->exists($this->imagem)) {
-            return Storage::url($this->imagem);
+        if (!$this->imagem) {
+            return null;
         }
+
+        // Se já for URL completa (http/https)
+        if (filter_var($this->imagem, FILTER_VALIDATE_URL)) {
+            return $this->imagem;
+        }
+
+        // Se for caminho do storage
+        if (Storage::disk('public')->exists($this->imagem)) {
+            return asset('storage/' . $this->imagem);
+        }
+
+        // Se for caminho direto na pasta public
+        if (file_exists(public_path($this->imagem))) {
+            return asset($this->imagem);
+        }
+
         return null;
     }
 
     public function getEstiloFundoAttribute()
     {
+        if (!$this->cor_fundo) {
+            return 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+        }
+        
         if (str_starts_with($this->cor_fundo, '#')) {
             return "background-color: {$this->cor_fundo};";
         }
@@ -69,6 +92,6 @@ class Banner extends Model
             return "background: {$this->cor_fundo};";
         }
         
-        return '';
+        return "background: {$this->cor_fundo};";
     }
 }

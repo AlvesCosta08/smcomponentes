@@ -20,9 +20,9 @@
                     <div class="col-md-6 mb-3">
                         <label for="tipo" class="form-label">Tipo do Banner *</label>
                         <select name="tipo" id="tipo" class="form-select @error('tipo') is-invalid @enderror" required>
-                            <option value="imagem">Imagem</option>
-                            <option value="texto">Somente Texto</option>
-                            <option value="misto">Misto (Texto + Imagem)</option>
+                            <option value="imagem" {{ old('tipo') == 'imagem' ? 'selected' : '' }}>Imagem</option>
+                            <option value="texto" {{ old('tipo') == 'texto' ? 'selected' : '' }}>Somente Texto</option>
+                            <option value="misto" {{ old('tipo') == 'misto' ? 'selected' : '' }}>Misto (Texto + Imagem)</option>
                         </select>
                         @error('tipo')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -33,7 +33,7 @@
                         <label for="ativo" class="form-label">Status</label>
                         <div class="form-check form-switch mt-2">
                             <input type="hidden" name="ativo" value="0">
-                            <input type="checkbox" name="ativo" id="ativo" class="form-check-input" value="1" checked>
+                            <input type="checkbox" name="ativo" id="ativo" class="form-check-input" value="1" {{ old('ativo', true) ? 'checked' : '' }}>
                             <label class="form-check-label" for="ativo">Ativo</label>
                         </div>
                     </div>
@@ -77,7 +77,7 @@
                     <div class="col-md-6 mb-3">
                         <label for="cor_fundo" class="form-label">Cor do Fundo</label>
                         <input type="text" name="cor_fundo" id="cor_fundo" class="form-control @error('cor_fundo') is-invalid @enderror" 
-                               value="{{ old('cor_fundo', '#0d6efd') }}" placeholder="#0d6efd ou linear-gradient(...)">
+                               value="{{ old('cor_fundo', '#0b1a33') }}" placeholder="#0d6efd ou linear-gradient(...)">
                         <small class="text-muted">Use hexadecimal ou gradiente CSS</small>
                         @error('cor_fundo')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -114,14 +114,14 @@
                     <div class="col-md-3 mb-3">
                         <label for="cor_botao" class="form-label">Cor do Botão</label>
                         <select name="cor_botao" id="cor_botao" class="form-select @error('cor_botao') is-invalid @enderror">
-                            <option value="primary">Primário</option>
-                            <option value="secondary">Secundário</option>
-                            <option value="success">Sucesso</option>
-                            <option value="danger">Perigo</option>
-                            <option value="warning">Atenção</option>
-                            <option value="info">Info</option>
-                            <option value="light">Claro</option>
-                            <option value="dark">Escuro</option>
+                            <option value="primary" {{ old('cor_botao') == 'primary' ? 'selected' : '' }}>Primário</option>
+                            <option value="secondary" {{ old('cor_botao') == 'secondary' ? 'selected' : '' }}>Secundário</option>
+                            <option value="success" {{ old('cor_botao') == 'success' ? 'selected' : '' }}>Sucesso</option>
+                            <option value="danger" {{ old('cor_botao') == 'danger' ? 'selected' : '' }}>Perigo</option>
+                            <option value="warning" {{ old('cor_botao') == 'warning' ? 'selected' : '' }}>Atenção</option>
+                            <option value="info" {{ old('cor_botao') == 'info' ? 'selected' : '' }}>Info</option>
+                            <option value="light" {{ old('cor_botao') == 'light' ? 'selected' : '' }}>Claro</option>
+                            <option value="dark" {{ old('cor_botao') == 'dark' ? 'selected' : '' }}>Escuro</option>
                         </select>
                         @error('cor_botao')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -131,7 +131,7 @@
                     <div class="col-md-6 mb-3">
                         <label for="ordem" class="form-label">Ordem</label>
                         <input type="number" name="ordem" id="ordem" class="form-control @error('ordem') is-invalid @enderror" 
-                               value="{{ old('ordem', $bannersMaxOrder ?? 1) }}">
+                               value="{{ old('ordem', ($bannersMaxOrder ?? 0) + 1) }}">
                         <small class="text-muted">Deixe em branco para adicionar ao final</small>
                         @error('ordem')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -153,7 +153,6 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Preview da imagem
         document.getElementById('imagem').addEventListener('change', function(e) {
             const preview = document.getElementById('previewImagem');
             const img = preview.querySelector('img');
@@ -170,9 +169,10 @@
             }
         });
 
-        // Mostrar/ocultar campo de imagem baseado no tipo
         document.getElementById('tipo').addEventListener('change', function() {
             const campoImagem = document.getElementById('campoImagem');
+            const required = this.value !== 'texto';
+            document.getElementById('imagem').required = required;
             if (this.value === 'texto') {
                 campoImagem.style.display = 'none';
             } else {

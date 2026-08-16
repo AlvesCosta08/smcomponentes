@@ -10,7 +10,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,          // Roles e usuários admin/funcionario/cliente
-            ProdutoSeeder::class,       // Produtos (1668+ produtos)
+            ProdutoSeeder::class, 
+            AdminUserSeeder::class,      // Produtos (1668+ produtos)
             ClienteSeederFinal::class,  // 🆕 Clientes do CSV
         ]);
     }

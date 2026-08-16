@@ -10,13 +10,18 @@ class Produto extends Model
 {
     use HasFactory, SoftDeletes;
 
+    // 🔥 CONSTANTES PARA DISPONIBILIDADE
+    const DISPONIVEL = 'DISPONIVEL';
+    const INDISPONIVEL = 'INDISPONIVEL';
+    const ESTOQUE_BAIXO = 'EST.BAIXO';
+
     protected $table = 'produtos';
 
     protected $fillable = [
         'descricao',
         'categoria',
         'valor_unitario',
-        'valor_atacado', // 🔥 ADICIONADO
+        'valor_atacado',
         'preco_promocional',
         'quantidade',
         'estoque',
@@ -36,7 +41,7 @@ class Produto extends Model
     protected $casts = [
         'ativo' => 'boolean',
         'valor_unitario' => 'decimal:2',
-        'valor_atacado' => 'decimal:2', // 🔥 ADICIONADO
+        'valor_atacado' => 'decimal:2',
         'preco_promocional' => 'decimal:2',
         'quantidade' => 'integer',
         'visualizacoes' => 'integer',
@@ -48,7 +53,7 @@ class Produto extends Model
 
     protected $appends = [
         'preco_formatado',
-        'preco_atacado_formatado', // 🔥 NOVO
+        'preco_atacado_formatado',
         'preco_promocional_formatado',
         'preco_com_ipi',
         'preco_com_ipi_formatado',
@@ -86,7 +91,6 @@ class Produto extends Model
      */
     public function getPrecoComIpiAttribute(): float
     {
-        // Usa valor_atacado como base (preço de venda no atacado)
         $base = $this->valor_atacado ?? $this->valor_unitario;
         
         if (!$base || $base <= 0) {
@@ -153,8 +157,11 @@ class Produto extends Model
         if ($this->quantidade <= 0) {
             return 'Esgotado';
         }
-        if ($this->disponibilidade === 'INDISPONÍVEL') {
+        if ($this->disponibilidade === self::INDISPONIVEL) {
             return 'Indisponível';
+        }
+        if ($this->disponibilidade === self::ESTOQUE_BAIXO) {
+            return 'Estoque Baixo';
         }
         return 'Disponível';
     }
@@ -164,12 +171,12 @@ class Produto extends Model
     // ==============================================
 
     /**
-     * 🔥 Escopo para produtos disponíveis (TODOS)
+     * 🔥 Escopo para produtos disponíveis
      */
     public function scopeDisponivel($query)
     {
         return $query->where('ativo', true)
-            ->where('disponibilidade', 'DISPONÍVEL')
+            ->where('disponibilidade', self::DISPONIVEL)
             ->where('quantidade', '>', 0);
     }
 
@@ -254,7 +261,7 @@ class Produto extends Model
     public function isDisponivel(): bool
     {
         return $this->ativo 
-            && $this->disponibilidade === 'DISPONÍVEL'
+            && $this->disponibilidade === self::DISPONIVEL
             && $this->quantidade > 0;
     }
 
@@ -278,7 +285,9 @@ class Produto extends Model
         $this->quantidade -= $quantidade;
         
         if ($this->quantidade <= 0) {
-            $this->disponibilidade = 'INDISPONÍVEL';
+            $this->disponibilidade = self::INDISPONIVEL;
+        } elseif ($this->quantidade <= 10) {
+            $this->disponibilidade = self::ESTOQUE_BAIXO;
         }
         
         return $this->save();
@@ -291,8 +300,10 @@ class Produto extends Model
     {
         $this->quantidade += $quantidade;
         
-        if ($this->disponibilidade === 'INDISPONÍVEL' && $this->quantidade > 0) {
-            $this->disponibilidade = 'DISPONÍVEL';
+        if ($this->disponibilidade === self::INDISPONIVEL && $this->quantidade > 0) {
+            $this->disponibilidade = self::DISPONIVEL;
+        } elseif ($this->quantidade > 10) {
+            $this->disponibilidade = self::DISPONIVEL;
         }
         
         return $this->save();
@@ -304,6 +315,24 @@ class Produto extends Model
     public function incrementarVisualizacoes(): void
     {
         $this->increment('visualizacoes');
+    }
+
+    /**
+     * 🔥 Método: Atualizar disponibilidade baseado no estoque
+     */
+    public function atualizarDisponibilidade(): bool
+    {
+        if (!$this->ativo) {
+            $this->disponibilidade = self::INDISPONIVEL;
+        } elseif ($this->quantidade <= 0) {
+            $this->disponibilidade = self::INDISPONIVEL;
+        } elseif ($this->quantidade <= 5) {
+            $this->disponibilidade = self::ESTOQUE_BAIXO;
+        } else {
+            $this->disponibilidade = self::DISPONIVEL;
+        }
+        
+        return $this->save();
     }
 
     /**

@@ -1,3 +1,4 @@
+{{-- admin/banners/edit.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Editar Banner - Admin')
@@ -42,14 +43,17 @@
 
                     <div class="col-12 mb-3" id="campoImagem">
                         <label for="imagem" class="form-label">Imagem do Banner</label>
-                        @if($banner->imagem)
+                        
+                        @if($banner->imagem_url)
                             <div class="mb-2">
-                                <img src="{{ asset('storage/' . $banner->imagem) }}" 
-                                     alt="Banner atual" style="max-height: 150px; border-radius: 8px;">
+                                <img src="{{ $banner->imagem_url }}" 
+                                     alt="Banner atual" 
+                                     style="max-height: 150px; border-radius: 8px; border: 1px solid #ddd;">
                                 <br>
                                 <small class="text-muted">Imagem atual</small>
                             </div>
                         @endif
+                        
                         <input type="file" name="imagem" id="imagem" class="form-control @error('imagem') is-invalid @enderror" accept="image/*">
                         <small class="text-muted">Deixe em branco para manter a imagem atual. Formatos: JPG, PNG, GIF, WEBP. Máx: 2MB</small>
                         @error('imagem')
@@ -89,7 +93,7 @@
                     <div class="col-md-6 mb-3">
                         <label for="cor_fundo" class="form-label">Cor do Fundo</label>
                         <input type="text" name="cor_fundo" id="cor_fundo" class="form-control @error('cor_fundo') is-invalid @enderror" 
-                               value="{{ old('cor_fundo', $banner->cor_fundo ?? '#0d6efd') }}" placeholder="#0d6efd ou linear-gradient(...)">
+                               value="{{ old('cor_fundo', $banner->cor_fundo ?? '#0b1a33') }}" placeholder="#0d6efd ou linear-gradient(...)">
                         <small class="text-muted">Use hexadecimal ou gradiente CSS</small>
                         @error('cor_fundo')
                             <div class="invalid-feedback">{{ $message }}</div>
@@ -143,8 +147,8 @@
                     <div class="col-md-6 mb-3">
                         <label for="ordem" class="form-label">Ordem</label>
                         <input type="number" name="ordem" id="ordem" class="form-control @error('ordem') is-invalid @enderror" 
-                               value="{{ old('ordem', $banner->ordem) }}">
-                        <small class="text-muted">Ordem de exibição no carrossel</small>
+                               value="{{ old('ordem', $banner->ordem ?? 0) }}">
+                        <small class="text-muted">Deixe em branco para adicionar ao final</small>
                         @error('ordem')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror

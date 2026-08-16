@@ -12,34 +12,49 @@ trait ImageUploadTrait
     /**
      * Upload de imagem
      */
-    public function uploadImage(UploadedFile $file, string $path = 'images', ?string $name = null): string
+    public function uploadImage(UploadedFile $file, string $folder = 'banners', ?string $name = null): string
     {
+        // Gera um nome único para o arquivo
         $filename = $name ?? time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
         
-        $file->storeAs($path, $filename, 'public');
+        // Salva o arquivo na pasta public
+        $path = $file->storeAs($folder, $filename, 'public');
         
-        return $filename;
+        // 🔥 RETORNA O CAMINHO COMPLETO (ex: "banners/123456_abc.jpg")
+        return $path;
     }
 
     /**
      * Deletar imagem
      */
-    public function deleteImage(?string $filename, string $path = 'images'): void
+    public function deleteImage(?string $path, string $folder = 'banners'): bool
     {
-        if ($filename && Storage::disk('public')->exists($path . '/' . $filename)) {
-            Storage::disk('public')->delete($path . '/' . $filename);
+        // Se não tiver caminho, retorna false
+        if (!$path) {
+            return false;
         }
+
+        // Verifica se o arquivo existe e deleta
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->delete($path);
+        }
+
+        return false;
     }
 
     /**
-     * Obter URL da imagem
+     * Obter URL da imagem (opcional - já tem no Model)
      */
-    public function getImageUrl(?string $filename, string $path = 'images', string $default = 'placeholder.jpg'): string
+    public function getImageUrl(?string $path, string $default = null): ?string
     {
-        if ($filename && Storage::disk('public')->exists($path . '/' . $filename)) {
-            return asset("storage/{$path}/{$filename}");
+        if (!$path) {
+            return $default;
         }
 
-        return asset("images/{$default}");
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::url($path);
+        }
+
+        return $default;
     }
 }
