@@ -5,16 +5,13 @@ set -e
 start_mysql() {
     echo "🔧 Iniciando MySQL..."
     
-    # Inicializa o MySQL se for primeira execução
     if [ ! -d "/var/lib/mysql/mysql" ]; then
         echo "📦 Inicializando banco de dados MySQL..."
         mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql 2>/dev/null || true
     fi
     
-    # Inicia o MySQL em background
     mysqld --user=mysql --datadir=/var/lib/mysql &
     
-    # Aguarda o MySQL iniciar
     echo "⏳ Aguardando MySQL iniciar..."
     local max_attempts=60
     local attempt=0
@@ -23,17 +20,11 @@ start_mysql() {
         if mysqladmin ping -h 127.0.0.1 -u root --silent 2>/dev/null; then
             echo "✅ MySQL iniciado com sucesso!"
             
-            # Configura o MySQL se for primeira execução
             if [ ! -f "/var/lib/mysql/.configured" ]; then
                 echo "⚙️  Configurando MySQL..."
                 
-                # Define senha do root
                 mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root123';" 2>/dev/null || true
-                
-                # Cria banco de dados
                 mysql -u root -proot123 -e "CREATE DATABASE IF NOT EXISTS smcomponentes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
-                
-                # Cria usuário e dá permissões
                 mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'localhost' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
                 mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'127.0.0.1' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
                 mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'%' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
@@ -67,37 +58,49 @@ start_mysql() {
     return 1
 }
 
-# Função para configurar o .env
+# Função para configurar o .env (se não existir)
 configure_env() {
-    echo "📝 Configurando .env..."
+    echo "📝 Verificando .env..."
     
-    # Verifica se .env existe
     if [ ! -f .env ]; then
-        if [ -f .env.example ]; then
-            cp .env.example .env
-        else
-            touch .env
-        fi
+        echo "⚠️  .env não encontrado, criando..."
+        cat > .env << 'EOF'
+APP_NAME=SMComponentes
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=http://localhost:8080
+
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=smcomponentes
+DB_USERNAME=smuser
+DB_PASSWORD=smuser123
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+MEMCACHED_HOST=127.0.0.1
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+EOF
+        echo "✅ .env criado!"
     fi
-    
-    # Configurações do banco
-    sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/g' .env
-    sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/g' .env
-    sed -i 's/^DB_PORT=.*/DB_PORT=3306/g' .env
-    sed -i 's/^DB_DATABASE=.*/DB_DATABASE=smcomponentes/g' .env
-    sed -i 's/^DB_USERNAME=.*/DB_USERNAME=smuser/g' .env
-    sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=smuser123/g' .env
     
     # Configura APP_URL
     if [ -n "$RENDER_EXTERNAL_URL" ]; then
         sed -i "s|^APP_URL=.*|APP_URL=$RENDER_EXTERNAL_URL|g" .env
     fi
     
-    # Configura APP_ENV
-    sed -i 's/^APP_ENV=.*/APP_ENV=production/g' .env
-    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/g' .env
-    
-    echo "✅ .env configurado!"
+    echo "✅ .env verificado!"
 }
 
 # Função principal
@@ -106,42 +109,30 @@ start_app() {
     echo "🚀 INICIANDO SMComponentes - All-in-One"
     echo "========================================="
     
-    # Inicia MySQL
     start_mysql
-    
-    # Aguarda MySQL ficar 100% pronto
     sleep 3
-    
-    # Configura .env
     configure_env
     
-    # Gera APP_KEY se necessário
     if ! grep -q "^APP_KEY=" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d '=' -f2)" ]; then
         echo "🔑 Gerando APP_KEY..."
         php artisan key:generate --force
     fi
     
-    # Verifica conexão com banco
     echo "🔍 Testando conexão com banco de dados..."
-    
-    # Testa a conexão
     if php -r "new PDO('mysql:host=127.0.0.1;dbname=smcomponentes', 'smuser', 'smuser123'); echo 'Conectado!';" 2>/dev/null; then
         echo "✅ Conexão com banco OK!"
     else
-        echo "⚠️  Erro ao conectar com banco (pode ser normal na primeira execução)"
+        echo "⚠️  Erro ao conectar com banco"
     fi
     
-    # Roda migrations e seeds
     echo "📦 Executando migrations..."
     php artisan migrate --force || echo "⚠️  Erro nas migrations"
     
     echo "🌱 Executando seeds..."
     php artisan db:seed --force || echo "⚠️  Erro nos seeds"
     
-    # Cria link simbólico do storage
     php artisan storage:link --force || true
     
-    # Otimiza
     echo "⚡ Otimizando aplicação..."
     php artisan config:cache || true
     php artisan route:cache || true
@@ -150,17 +141,11 @@ start_app() {
     echo "========================================="
     echo "✅ APLICAÇÃO PRONTA!"
     echo "🌐 URL: http://localhost:8080"
-    echo "📊 MySQL: 127.0.0.1:3306"
-    echo "   Usuário: smuser"
-    echo "   Senha: smuser123"
-    echo "   Root: root/root123"
     echo "========================================="
     
-    # Inicia Apache em foreground
     exec apache2-foreground
 }
 
-# Comando para shell interativo
 if [ "$1" = "shell" ]; then
     exec /bin/bash
 elif [ "$1" = "mysql" ]; then
