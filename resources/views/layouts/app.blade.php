@@ -19,9 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     
-    {{-- ════════════════════════════════════════════════════ --}}
-    {{-- FONT AWESOME 6 (GRATUITO)                          --}}
-    {{-- ════════════════════════════════════════════════════ --}}
+    {{-- Font Awesome 6 --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     {{-- Bootstrap Icons --}}
@@ -38,39 +36,13 @@
     
     <style>
         /* ============================================
-           🎨 PSICOLOGIA DAS CORES APLICADA
-           ============================================
-           
-           🔵 AZUL (#2563eb, #1e40af, #3b82f6)
-           → Confiança, Segurança, Tecnologia, Estabilidade
-           → Usado em: Navbar, Botões principais, Links
-           
-           🟠 LARANJA (#f97316, #ea580c)
-           → Energia, Entusiasmo, Ação, Impulso de Compra
-           → Usado em: Badges, Promoções, CTAs
-           
-           🟢 VERDE (#22c55e, #16a34a)
-           → Crescimento, Harmonia, Sustentabilidade
-           → Usado em: WhatsApp, Sucesso, Confirmações
-           
-           🟣 ROXO (#8b5cf6, #7c3aed)
-           → Criatividade, Inovação, Luxo
-           → Usado em: Destaques, Elementos premium
-           
-           🔴 VERMELHO (#ef4444, #dc2626)
-           → Urgência, Atenção, Ofertas
-           → Usado em: Descontos, Alertas, Badges do carrinho
-           
-           ⚫ PRETO/CINZA (#0f172a, #1e293b, #334155)
-           → Sofisticação, Elegância, Profissionalismo
-           → Usado em: Textos, Fundos, Footer
-        */
-
+           TODOS OS SEUS ESTILOS AQUI
+           ============================================ */
+        
         /* ============================================
            VARIÁVEIS DE COR E TEMA
            ============================================ */
         :root {
-            /* Cores Primárias - Psicologia: Confiança e Tecnologia */
             --color-primary-50: #eff6ff;
             --color-primary-100: #dbeafe;
             --color-primary-200: #bfdbfe;
@@ -82,25 +54,20 @@
             --color-primary-800: #1e40af;
             --color-primary-900: #1e3a8a;
 
-            /* Cores Secundárias - Psicologia: Energia e Ação */
             --color-secondary-50: #fff7ed;
             --color-secondary-500: #f97316;
             --color-secondary-600: #ea580c;
             --color-secondary-700: #c2410c;
 
-            /* Cores de Sucesso - Psicologia: Confiança e Crescimento */
             --color-success-500: #22c55e;
             --color-success-600: #16a34a;
 
-            /* Cores de Destaque - Psicologia: Criatividade e Inovação */
             --color-purple-500: #8b5cf6;
             --color-purple-600: #7c3aed;
 
-            /* Cores de Alerta - Psicologia: Urgência */
             --color-danger-500: #ef4444;
             --color-danger-600: #dc2626;
 
-            /* Cores Neutras - Psicologia: Sofisticação */
             --color-gray-50: #f8fafc;
             --color-gray-100: #f1f5f9;
             --color-gray-200: #e2e8f0;
@@ -112,7 +79,6 @@
             --color-gray-800: #1e293b;
             --color-gray-900: #0f172a;
 
-            /* Gradientes */
             --gradient-primary: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
             --gradient-secondary: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
             --gradient-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
@@ -120,7 +86,6 @@
             --gradient-hero: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #1e40af 100%);
             --gradient-dark: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 
-            /* Outras variáveis */
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --transition-speed: 0.3s;
             --border-radius: 12px;
@@ -128,7 +93,6 @@
             --border-radius-full: 50px;
             --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.1);
             --box-shadow-hover: 0 10px 30px rgba(37, 99, 235, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
-            --box-shadow-glow: 0 0 40px rgba(59, 130, 246, 0.2);
         }
 
         /* ============================================
@@ -153,7 +117,7 @@
         }
 
         /* ============================================
-           TOP BAR - Psicologia: Confiabilidade
+           TOP BAR
            ============================================ */
         .top-bar {
             background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-100) 100%);
@@ -184,14 +148,6 @@
             margin-right: 6px;
         }
 
-        .top-bar .text-primary {
-            color: var(--color-primary-600) !important;
-        }
-
-        .top-bar .text-success {
-            color: var(--color-success-500) !important;
-        }
-
         .top-bar a {
             color: var(--color-gray-600);
             text-decoration: none;
@@ -203,7 +159,7 @@
         }
 
         /* ============================================
-           NAVBAR - NOVA VERSÃO COM ALPINE.JS
+           NAVBAR
            ============================================ */
         .nav-main {
             background: var(--gradient-primary);
@@ -256,7 +212,6 @@
             font-size: 1.1rem;
         }
 
-        /* Mobile menu */
         .nav-main .d-md-none {
             background: rgba(15, 23, 42, 0.98);
             backdrop-filter: blur(20px);
@@ -280,7 +235,6 @@
             display: none;
         }
 
-        /* Botão hamburger */
         .nav-main .btn-link {
             color: #ffffff !important;
             transition: transform var(--transition-speed) ease;
@@ -291,7 +245,7 @@
         }
 
         /* ============================================
-           BUSCA - Psicologia: Clareza e Eficiência
+           BUSCA
            ============================================ */
         .search-form .form-control {
             border-radius: var(--border-radius-full) 0 0 var(--border-radius-full);
@@ -335,7 +289,7 @@
         }
 
         /* ============================================
-           BOTÕES DE AÇÃO - Psicologia: Urgência e Confiança
+           BOTÕES
            ============================================ */
         .btn-action {
             border-radius: var(--border-radius-full);
@@ -364,7 +318,6 @@
             height: 400px;
         }
 
-        /* Botão Outline - Psicologia: Sofisticação */
         .btn-action-outline {
             border: 2px solid rgba(255, 255, 255, 0.3);
             color: #ffffff;
@@ -379,7 +332,6 @@
             color: #ffffff;
         }
 
-        /* Botão Primário - Psicologia: Confiança */
         .btn-action-primary {
             background: var(--gradient-secondary);
             border: none;
@@ -393,22 +345,8 @@
             color: #ffffff;
         }
 
-        /* Botão Sucesso - Psicologia: Crescimento */
-        .btn-action-success {
-            background: var(--gradient-success);
-            border: none;
-            color: #ffffff;
-            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.35);
-        }
-
-        .btn-action-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(34, 197, 94, 0.5);
-            color: #ffffff;
-        }
-
         /* ============================================
-           CARRINHO - Psicologia: Urgência e Ação
+           CARRINHO
            ============================================ */
         .cart-wrapper {
             position: relative;
@@ -466,7 +404,7 @@
         }
 
         /* ============================================
-           DROPDOWN - Psicologia: Credibilidade
+           DROPDOWN
            ============================================ */
         .dropdown-menu-custom {
             border: none;
@@ -498,6 +436,11 @@
             color: var(--color-gray-700);
             text-decoration: none;
             display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            cursor: pointer;
         }
 
         .dropdown-item-custom:hover {
@@ -528,58 +471,7 @@
         }
 
         /* ============================================
-           HERO - Psicologia: Inspiração e Inovação
-           ============================================ */
-        .hero-section {
-            background: var(--gradient-hero);
-            padding: 80px 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -20%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            animation: float-hero 20s ease-in-out infinite;
-        }
-
-        @keyframes float-hero {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(-20px, 30px) scale(1.1); }
-            66% { transform: translate(20px, -20px) scale(0.9); }
-        }
-
-        .hero-section .hero-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-section .hero-title .highlight {
-            background: var(--gradient-secondary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-section .hero-subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 1.2rem;
-            max-width: 500px;
-        }
-
-        /* ============================================
-           FOOTER - Psicologia: Confiança e Estabilidade
+           FOOTER
            ============================================ */
         .footer-custom {
             background: var(--gradient-dark);
@@ -666,7 +558,6 @@
             opacity: 1;
         }
 
-        /* Redes Sociais - Psicologia: Conexão */
         .footer-custom .footer-social {
             display: flex;
             gap: 12px;
@@ -731,7 +622,7 @@
         }
 
         /* ============================================
-           BOTÕES FLUTUANTES - Psicologia: Ação e Conexão
+           BOTÕES FLUTUANTES
            ============================================ */
         .float-btn {
             position: fixed;
@@ -751,7 +642,6 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
         }
 
-        /* WhatsApp - Psicologia: Confiança e Crescimento */
         .float-btn-whatsapp {
             bottom: 30px;
             right: 30px;
@@ -773,7 +663,6 @@
             50% { transform: scale(1.06) translateY(-6px); }
         }
 
-        /* Instagram - Psicologia: Criatividade e Inspiração */
         .float-btn-instagram {
             bottom: 105px;
             right: 30px;
@@ -796,7 +685,7 @@
         }
 
         /* ============================================
-           ALERTAS - Psicologia: Clareza e Confiança
+           ALERTAS
            ============================================ */
         .alert-custom {
             border-radius: var(--border-radius);
@@ -835,10 +724,6 @@
                 width: 100%;
                 justify-content: center;
             }
-
-            .hero-section .hero-title {
-                font-size: 2.5rem;
-            }
         }
 
         @media (max-width: 767.98px) {
@@ -875,18 +760,6 @@
 
             .footer-custom {
                 padding: 40px 0 20px;
-            }
-
-            .hero-section {
-                padding: 50px 0;
-            }
-
-            .hero-section .hero-title {
-                font-size: 2rem;
-            }
-
-            .hero-section .hero-subtitle {
-                font-size: 1rem;
             }
         }
 
@@ -940,15 +813,11 @@
             }
         }
 
-        /* Focus visible para navegação por teclado */
         :focus-visible {
             outline: 3px solid var(--color-secondary-500);
             outline-offset: 2px;
         }
 
-        /* ============================================
-           SCROLLBAR PERSONALIZADA
-           ============================================ */
         ::-webkit-scrollbar {
             width: 10px;
             height: 10px;
@@ -968,7 +837,7 @@
         }
 
         /* ============================================
-           UTILITÁRIOS DE COR
+           UTILITÁRIOS
            ============================================ */
         .text-gradient-primary {
             background: var(--gradient-primary);
@@ -999,162 +868,13 @@
         .bg-gradient-purple {
             background: var(--gradient-purple);
         }
-
-        /* ============================================
-           CUSTOM - CARD PRODUTOS
-           ============================================ */
-        .product-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: none;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            background: #ffffff;
-            box-shadow: var(--box-shadow);
-            height: 100%;
-        }
-
-        .product-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--box-shadow-hover);
-        }
-
-        .product-card .card-img-top {
-            height: 200px;
-            object-fit: contain;
-            padding: 16px;
-            background: var(--color-gray-50);
-        }
-
-        .product-card .card-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            min-height: 44px;
-            color: var(--color-gray-800);
-        }
-
-        .product-card .price {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--color-success-500);
-        }
-
-        .product-card .old-price {
-            font-size: 0.85rem;
-            color: var(--color-gray-400);
-            text-decoration: line-through;
-            margin-left: 8px;
-        }
-
-        .product-card .categoria-badge {
-            font-size: 0.7rem;
-            color: var(--color-gray-500);
-            background: var(--color-gray-100);
-            padding: 4px 12px;
-            border-radius: 20px;
-            display: inline-block;
-        }
-
-        /* ============================================
-           CUSTOM - ADMIN STAT CARDS
-           ============================================ */
-        .admin-stat-card {
-            background: #fff;
-            border-radius: var(--border-radius);
-            padding: 15px 20px;
-            border: 1px solid var(--color-gray-200);
-            transition: var(--transition-speed) ease;
-            text-align: center;
-        }
-
-        .admin-stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--box-shadow-hover);
-        }
-
-        .admin-stat-card .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .admin-stat-card .stat-label {
-            font-size: 0.85rem;
-            color: var(--color-gray-500);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* ============================================
-           CUSTOM - ADMIN TABLES
-           ============================================ */
-        .admin-table th {
-            background: var(--color-gray-50);
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--color-gray-500);
-            border-bottom: 2px solid var(--color-gray-200);
-        }
-
-        .admin-table td {
-            vertical-align: middle;
-            padding: 10px 12px;
-        }
-
-        .admin-table tr:hover {
-            background-color: var(--color-gray-50);
-        }
-
-        /* ============================================
-           CUSTOM - PAGINAÇÃO
-           ============================================ */
-        .pagination {
-            gap: 6px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .pagination .page-link {
-            border: none;
-            border-radius: 10px !important;
-            padding: 10px 16px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--color-gray-700);
-            background: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            transition: var(--transition-speed) ease;
-            min-width: 44px;
-            text-align: center;
-        }
-
-        .pagination .page-link:hover {
-            background: var(--color-primary-50);
-            color: var(--color-primary-600);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-        }
-
-        .pagination .page-item.active .page-link {
-            background: var(--gradient-primary);
-            color: #ffffff;
-            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
-        }
-
-        .pagination .page-item.disabled .page-link {
-            color: var(--color-gray-400);
-            background: var(--color-gray-50);
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
-        }
     </style>
     
     @stack('styles')
 </head>
 <body>
     {{-- ============================================
-         TOP BAR - Psicologia: Confiabilidade
+         TOP BAR
          ============================================ --}}
     <div class="top-bar">
         <div class="container">
@@ -1179,7 +899,7 @@
     </div>
 
     {{-- ============================================
-         NAVBAR - NOVA VERSÃO COM ALPINE.JS
+         NAVBAR - CORRIGIDA COM PERFIL E SAIR VISÍVEIS
          ============================================ --}}
     <nav x-data="{ open: false }" class="nav-main">
         <div class="container">
@@ -1205,6 +925,10 @@
                                 <i class="bi bi-speedometer2"></i> Admin
                             </a>
                         @endif
+                        {{-- ✅ PERFIL VISÍVEL --}}
+                        <a href="{{ route('profile.edit') }}" class="nav-link-custom {{ request()->routeIs('profile.edit') ? 'active' : '' }}">
+                            <i class="bi bi-person"></i> Perfil
+                        </a>
                     @endauth
                 </div>
 
@@ -1229,35 +953,19 @@
                         </a>
                     </div>
 
-                    {{-- User / Auth --}}
+                    {{-- ✅ USER / AUTH - COM PERFIL E SAIR VISÍVEIS --}}
                     @auth
-                        <div class="dropdown">
-                            <button class="btn btn-action btn-action-outline dropdown-toggle" data-bs-toggle="dropdown" 
-                                    aria-expanded="false" id="userDropdown" aria-label="Menu do usuário">
-                                <i class="bi bi-person-circle" aria-hidden="true"></i> 
-                                <span class="d-none d-xl-inline">{{ Str::limit(Auth::user()->name, 14) }}</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-custom" aria-labelledby="userDropdown">
-                                <li>
-                                    <a class="dropdown-item dropdown-item-custom" href="{{ route('profile.edit') }}">
-                                        <i class="bi bi-gear" aria-hidden="true"></i> Perfil
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item dropdown-item-custom" href="{{ route('dashboard') }}">
-                                        <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider-custom"></li>
-                                <li>
-                                    <form action="{{ route('logout') }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item dropdown-item-custom text-danger">
-                                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-white small d-none d-xl-inline">
+                                <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
+                            </span>
+                            {{-- ✅ SAIR VISÍVEL --}}
+                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-action btn-action-outline" style="padding: 4px 16px; font-size: 0.85rem;">
+                                    <i class="bi bi-box-arrow-right"></i> Sair
+                                </button>
+                            </form>
                         </div>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-action btn-action-outline">
@@ -1302,10 +1010,15 @@
                                 <i class="bi bi-speedometer2"></i> Admin
                             </a>
                         @endif
+                        {{-- ✅ PERFIL MOBILE --}}
+                        <a href="{{ route('profile.edit') }}" class="nav-link-custom">
+                            <i class="bi bi-person"></i> Perfil
+                        </a>
                         <hr class="my-2" style="border-color: rgba(255,255,255,0.1);">
                         <span class="text-white-50 small px-2">
                             <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
                         </span>
+                        {{-- ✅ SAIR MOBILE --}}
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="nav-link-custom text-danger border-0 bg-transparent w-100 text-start">
@@ -1366,12 +1079,11 @@
          CONTEÚDO PRINCIPAL
          ============================================ --}}
     <main role="main">
-        {{-- Yield para conteúdo das páginas --}}
         @yield('content')
     </main>
 
     {{-- ============================================
-         FOOTER - Psicologia: Confiança e Estabilidade
+         FOOTER
          ============================================ --}}
     <footer class="footer-custom" role="contentinfo">
         <div class="container">
@@ -1441,7 +1153,7 @@
     </footer>
 
     {{-- ============================================
-         BOTÕES FLUTUANTES - Psicologia: Ação e Conexão
+         BOTÕES FLUTUANTES
          ============================================ --}}
     <a href="https://wa.me/5511999999999?text=Olá!%20Vim%20pelo%20site%20SM%20Componentes%20e%20gostaria%20de%20mais%20informações." 
        target="_blank" rel="noopener noreferrer"
@@ -1462,14 +1174,11 @@
     {{-- ============================================
          SCRIPTS
          ============================================ --}}
-    
-    {{-- jQuery (necessário para alguns plugins) --}}
     <script src="https://code.jquery.com/jquery-3.6.4.min.js" 
             integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" 
             crossorigin="anonymous">
     </script>
 
-    {{-- Bootstrap 5 --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
             crossorigin="anonymous">
@@ -1477,19 +1186,9 @@
 
     {{-- Script Personalizado --}}
     <script>
-        /**
-         * 🚀 INICIALIZAÇÃO COMPLETA DO SITE
-         * ============================================
-         * 1. Contador do Carrinho (AJAX)
-         * 2. Busca com Debounce
-         * 3. BFCache (voltar página)
-         */
         (function() {
             'use strict';
 
-            // ============================================
-            // 1. 🛒 ATUALIZAR CONTADOR DO CARRINHO
-            // ============================================
             function updateCartCount() {
                 const badge = document.getElementById('cart-count');
                 if (!badge) return;
@@ -1509,9 +1208,6 @@
                     });
             }
 
-            // ============================================
-            // 2. 🔍 BUSCA COM DEBOUNCE (300ms)
-            // ============================================
             function setupSearch() {
                 const searchInput = document.getElementById('search-input');
                 if (!searchInput) return;
@@ -1529,31 +1225,20 @@
                 });
             }
 
-            // ============================================
-            // 3. 🚀 INICIALIZAR TUDO
-            // ============================================
             function init() {
                 console.log('📦 DOM carregado, inicializando...');
-                
                 updateCartCount();
                 setupSearch();
-
-                // Atualiza carrinho a cada 30 segundos
                 setInterval(updateCartCount, 30000);
-
                 console.log('🚀 Scripts carregados com sucesso!');
             }
 
-            // Aguarda o DOM estar pronto
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', init);
             } else {
                 init();
             }
 
-            // ============================================
-            // 4. 🔄 ATUALIZAR CARRINHO AO VOLTAR (BFCache)
-            // ============================================
             window.addEventListener('pageshow', function(event) {
                 if (event.persisted) {
                     console.log('🔄 Página restaurada do cache, atualizando carrinho...');

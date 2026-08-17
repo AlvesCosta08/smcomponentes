@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes; // 🔥 Soft Delete
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles, SoftDeletes; // 🔥 Adicionado SoftDeletes
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     protected $table = 'users';
 
@@ -21,9 +21,10 @@ class User extends Authenticatable
         'email',
         'password',
         'telefone',
-        'celular',          // 🔥 NOVO
-        'ie',               // 🔥 NOVO (Inscrição Estadual)
+        'celular',
+        'ie',
         'cpf',
+        'cnpj',           // 🔥 ADICIONADO
         'data_nascimento',
         'cep',
         'logradouro',
@@ -47,13 +48,13 @@ class User extends Authenticatable
         'data_nascimento' => 'date',
         'ultimo_acesso' => 'datetime',
         'ativo' => 'boolean',
-        'deleted_at' => 'datetime', // 🔥 NOVO (SoftDelete)
+        'deleted_at' => 'datetime',
     ];
 
     // ========== VALIDAÇÕES ==========
 
     /**
-     * 🔥 Validação de CPF
+     * Validação de CPF
      */
     public static function validarCpf($cpf): bool
     {
@@ -81,7 +82,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Validação de CNPJ
+     * Validação de CNPJ
      */
     public static function validarCnpj($cnpj): bool
     {
@@ -95,34 +96,71 @@ class User extends Authenticatable
             return false;
         }
         
-        for ($t = 12; $t < 14; $t++) {
-            $d = 0;
-            $c = 0;
-            for ($m = $t - 7, $i = 0; $i < $t; $i++) {
-                $d += $cnpj[$i] * $m;
-                $m = ($m == 2 ? 9 : $m - 1);
-            }
-            $d = ((10 * $d) % 11) % 10;
-            if ($cnpj[$i] != $d) {
-                return false;
-            }
+        // Primeiro dígito verificador
+        $pesos = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $soma = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $soma += $cnpj[$i] * $pesos[$i];
         }
+        $resto = $soma % 11;
+        $digito1 = $resto < 2 ? 0 : 11 - $resto;
         
-        return true;
+        // Segundo dígito verificador
+        $pesos = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $soma = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $soma += $cnpj[$i] * $pesos[$i];
+        }
+        $resto = $soma % 11;
+        $digito2 = $resto < 2 ? 0 : 11 - $resto;
+        
+        return $cnpj[12] == $digito1 && $cnpj[13] == $digito2;
     }
 
     /**
-     * 🔥 NOVO: Validação de email
+     * Validação de email
      */
     public static function validarEmail($email): bool
     {
         return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
     }
 
-    // ========== ACESSORS ==========
+    /**
+     * Valida documento (CPF ou CNPJ)
+     */
+    public static function validarDocumento($documento): bool
+    {
+        $doc = preg_replace('/[^0-9]/', '', $documento);
+        
+        if (strlen($doc) === 11) {
+            return self::validarCpf($doc);
+        } elseif (strlen($doc) === 14) {
+            return self::validarCnpj($doc);
+        }
+        
+        return false;
+    }
 
     /**
-     * 🔥 Formatar CPF
+     * Detecta o tipo de documento
+     */
+    public static function detectarDocumento($documento): string
+    {
+        $doc = preg_replace('/[^0-9]/', '', $documento);
+        
+        if (strlen($doc) === 11) {
+            return 'cpf';
+        } elseif (strlen($doc) === 14) {
+            return 'cnpj';
+        }
+        
+        return 'desconhecido';
+    }
+
+    // ========== ACCESSORS ==========
+
+    /**
+     * Formatar CPF
      */
     public function getCpfFormatadoAttribute(): string
     {
@@ -134,7 +172,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Formatar CNPJ
+     * Formatar CNPJ
      */
     public function getCnpjFormatadoAttribute(): string
     {
@@ -146,7 +184,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Formatar Telefone
+     * Formatar Telefone
      */
     public function getTelefoneFormatadoAttribute(): string
     {
@@ -165,7 +203,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Formatar Celular
+     * Formatar Celular
      */
     public function getCelularFormatadoAttribute(): string
     {
@@ -182,7 +220,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Formatar CEP
+     * Formatar CEP
      */
     public function getCepFormatadoAttribute(): string
     {
@@ -194,7 +232,7 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Endereço completo
+     * Endereço completo
      */
     public function getEnderecoCompletoAttribute(): string
     {
@@ -226,26 +264,40 @@ class User extends Authenticatable
     }
 
     /**
-     * 🔥 NOVO: Nome completo (já existe name, mas pode ser útil)
+     * Tipo de documento
      */
-    public function getNomeCompletoAttribute(): string
+    public function getTipoDocumentoAttribute(): string
     {
-        return $this->name;
+        if ($this->cpf) {
+            return 'CPF';
+        }
+        if ($this->cnpj) {
+            return 'CNPJ';
+        }
+        return '';
+    }
+
+    /**
+     * Documento formatado
+     */
+    public function getDocumentoFormatadoAttribute(): string
+    {
+        if ($this->cpf) {
+            return $this->cpf_formatado;
+        }
+        if ($this->cnpj) {
+            return $this->cnpj_formatado;
+        }
+        return '';
     }
 
     // ========== RELATIONSHIPS ==========
 
-    /**
-     * 🔥 NOVO: Relação com pedidos
-     */
     public function pedidos()
     {
         return $this->hasMany(Pedido::class);
     }
 
-    /**
-     * 🔥 NOVO: Relação com wishlist
-     */
     public function wishlist()
     {
         return $this->belongsToMany(Produto::class, 'wishlists', 'user_id', 'produto_id')
@@ -269,9 +321,6 @@ class User extends Authenticatable
         return $this->hasRole('Cliente');
     }
 
-    /**
-     * 🔥 NOVO: Verifica se tem permissão específica
-     */
     public function hasPermission(string $permission): bool
     {
         return $this->hasPermissionTo($permission);
@@ -279,25 +328,16 @@ class User extends Authenticatable
 
     // ========== STATUS METHODS ==========
 
-    /**
-     * 🔥 NOVO: Verifica se está ativo
-     */
     public function isActive(): bool
     {
         return $this->ativo && !$this->trashed();
     }
 
-    /**
-     * 🔥 NOVO: Verifica se está deletado
-     */
     public function isDeleted(): bool
     {
         return $this->trashed();
     }
 
-    /**
-     * 🔥 NOVO: Restaurar usuário
-     */
     public function restoreUser(): bool
     {
         if ($this->trashed()) {
@@ -306,9 +346,6 @@ class User extends Authenticatable
         return false;
     }
 
-    /**
-     * 🔥 NOVO: Excluir permanentemente
-     */
     public function forceDeleteUser(): bool
     {
         if ($this->trashed()) {
@@ -317,25 +354,16 @@ class User extends Authenticatable
         return false;
     }
 
-    /**
-     * 🔥 NOVO: Ativar usuário
-     */
     public function activate(): bool
     {
         return $this->update(['ativo' => true]);
     }
 
-    /**
-     * 🔥 NOVO: Desativar usuário
-     */
     public function deactivate(): bool
     {
         return $this->update(['ativo' => false]);
     }
 
-    /**
-     * 🔥 NOVO: Registrar último acesso
-     */
     public function recordLogin(): bool
     {
         return $this->update(['ultimo_acesso' => now()]);
@@ -343,62 +371,42 @@ class User extends Authenticatable
 
     // ========== SCOPE METHODS ==========
 
-    /**
-     * 🔥 NOVO: Scope para usuários ativos
-     */
     public function scopeActive($query)
     {
         return $query->where('ativo', true)->whereNull('deleted_at');
     }
 
-    /**
-     * 🔥 NOVO: Scope para usuários inativos
-     */
     public function scopeInactive($query)
     {
         return $query->where('ativo', false)->whereNull('deleted_at');
     }
 
-    /**
-     * 🔥 NOVO: Scope para clientes
-     */
     public function scopeClientes($query)
     {
         return $query->role('Cliente');
     }
 
-    /**
-     * 🔥 NOVO: Scope para administradores
-     */
     public function scopeAdmins($query)
     {
         return $query->role('Admin');
     }
 
-    /**
-     * 🔥 NOVO: Scope para funcionários
-     */
     public function scopeFuncionarios($query)
     {
         return $query->role('Funcionario');
     }
 
-    /**
-     * 🔥 NOVO: Scope para buscar por nome ou email
-     */
     public function scopeBuscar($query, string $termo)
     {
         return $query->where(function($q) use ($termo) {
             $q->where('name', 'ILIKE', "%{$termo}%")
               ->orWhere('email', 'ILIKE', "%{$termo}%")
               ->orWhere('cpf', 'ILIKE', "%{$termo}%")
+              ->orWhere('cnpj', 'ILIKE', "%{$termo}%")
               ->orWhere('telefone', 'ILIKE', "%{$termo}%");
         });
     }
 
-    /**
-     * 🔥 NOVO: Scope para usuários que não acessam há X dias
-     */
     public function scopeInativosHa($query, int $dias)
     {
         return $query->where('ultimo_acesso', '<', now()->subDays($dias))
@@ -409,7 +417,6 @@ class User extends Authenticatable
 
     protected static function booted()
     {
-        // 🔥 Atribuir role padrão ao criar
         static::created(function ($user) {
             if (!$user->hasAnyRole(['Admin', 'Funcionario', 'Cliente'])) {
                 $user->assignRole('Cliente');
@@ -418,7 +425,6 @@ class User extends Authenticatable
             Log::info('Novo usuário criado: ' . $user->email);
         });
 
-        // 🔥 Log de atividade ao atualizar
         static::updated(function ($user) {
             if ($user->isDirty('ativo')) {
                 Log::info('Usuário ' . $user->email . ' foi ' . ($user->ativo ? 'ativado' : 'desativado'));
@@ -429,17 +435,14 @@ class User extends Authenticatable
             }
         });
 
-        // 🔥 NOVO: Evento ao deletar (soft delete)
         static::deleting(function ($user) {
             Log::info("Usuário {$user->id} - {$user->email} foi movido para a lixeira");
         });
 
-        // 🔥 NOVO: Evento ao restaurar
         static::restoring(function ($user) {
             Log::info("Usuário {$user->id} - {$user->email} foi restaurado");
         });
 
-        // 🔥 NOVO: Evento ao forçar exclusão
         static::forceDeleting(function ($user) {
             Log::info("Usuário {$user->id} - {$user->email} foi excluído permanentemente");
         });

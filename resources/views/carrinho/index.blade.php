@@ -151,10 +151,19 @@
                             <span class="h5 fw-bold text-primary">R$ {{ number_format($total ?? 0, 2, ',', '.') }}</span>
                         </div>
                         
-                        <button class="btn btn-success btn-lg w-100" 
-                                onclick="alert('🚀 Sistema de checkout em desenvolvimento!')">
-                            <i class="bi bi-cart-check"></i> Finalizar Compra
-                        </button>
+                        {{-- ✅ CORRIGIDO: Redirecionar para checkout --}}
+                        @auth
+                            <a href="{{ route('checkout.index') }}" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-cart-check"></i> Finalizar Compra
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> Faça login para finalizar
+                            </a>
+                            <small class="text-muted d-block text-center mt-2">
+                                Já tem conta? <a href="{{ route('login') }}">Clique aqui</a>
+                            </small>
+                        @endauth
                         
                         <div class="mt-3">
                             <small class="text-muted d-block text-center">
