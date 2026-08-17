@@ -4,3 +4,11 @@ Usuário	Email	Senha
 Admin	admin@loja.com	12345678
 Funcionário	funcionario@loja.com	12345678
 Cliente	cliente@loja.com	12345678
+
+
+ Acessos:
+Aplicação: http://localhost:8080
+
+phpMyAdmin: http://localhost:8081 (usuário: root, senha: root123)
+
+Admin (se criado): admin@smcomponentes.com / password123

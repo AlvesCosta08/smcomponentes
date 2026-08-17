@@ -23,22 +23,30 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copiar arquivos do projeto
+# Copiar todos os arquivos
 COPY . .
 
 # Instalar dependências do Composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
-# Criar diretórios e definir permissões
+# Criar diretórios (com -p para não dar erro se já existir)
 RUN mkdir -p storage/framework/cache \
     && mkdir -p storage/framework/sessions \
     && mkdir -p storage/framework/views \
     && mkdir -p bootstrap/cache \
-    && mkdir -p public/storage \
     && chmod -R 777 storage \
-    && chmod -R 777 bootstrap/cache \
-    && chown -R www-data:www-data /var/www
+    && chmod -R 777 bootstrap/cache
+
+# Criar link simbólico para storage (se não existir)
+RUN ln -sf /var/www/storage/app/public /var/www/public/storage || true
+
+# Configurar permissões
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage \
+    && chmod -R 755 /var/www/bootstrap/cache
 
 EXPOSE 80
 
 CMD php artisan serve --host=0.0.0.0 --port=80
+
+
