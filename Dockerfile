@@ -18,29 +18,27 @@ RUN apt-get update && apt-get install -y \
 # Instalar extensões PHP
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Instalar Composer (apenas para uso futuro)
+# Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copiar todos os arquivos (incluindo vendor)
+# Copiar arquivos do projeto
 COPY . .
 
-# Criar diretórios necessários
+# Instalar dependências do Composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+# Criar diretórios e definir permissões
 RUN mkdir -p storage/framework/cache \
     && mkdir -p storage/framework/sessions \
     && mkdir -p storage/framework/views \
     && mkdir -p bootstrap/cache \
     && mkdir -p public/storage \
     && chmod -R 777 storage \
-    && chmod -R 777 bootstrap/cache
-
-# Configurar permissões
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage \
-    && chmod -R 755 /var/www/bootstrap/cache
+    && chmod -R 777 bootstrap/cache \
+    && chown -R www-data:www-data /var/www
 
 EXPOSE 80
 
 CMD php artisan serve --host=0.0.0.0 --port=80
-

@@ -1,124 +1,14 @@
-# Dependências
-vendor/
-node_modules/
-composer.lock
-package-lock.json
-yarn.lock
-
-# Arquivos de ambiente
-.env
-.env.local
-.env.testing
-.env.production
-.env.staging
-.env.example
-
-# Controle de versão
-.git/
-.gitattributes
+node_modules
+.git
 .gitignore
-.gitlab/
-.github/
-
-# Arquivos Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-.docker-compose.override.yml
-
-# IDEs e editores
-.idea/
-.vscode/
-*.sublime-*
-*.swp
-*.swo
-*~
-.editorconfig
-
-# Storage
-storage/*.sqlite
-storage/*.sqlite-journal
-storage/logs/*
-!storage/logs/.gitkeep
-storage/framework/cache/*
-!storage/framework/cache/.gitkeep
-storage/framework/sessions/*
-!storage/framework/sessions/.gitkeep
-storage/framework/views/*
-!storage/framework/views/.gitkeep
-storage/framework/testing/*
-!storage/framework/testing/.gitkeep
-storage/app/public/*
-!storage/app/public/.gitkeep
-storage/app/temp/*
-
-# Assets compilados
-public/storage/
-public/build/
-public/css/
-public/js/
-public/mix-manifest.json
-public/assets/
-public/vendor/
-
-# Testes
-tests/
-coverage/
-.phpunit.cache/
-.phpunit.result.cache
-phpunit.xml
-
-# Logs e debug
+.env
+.DS_Store
 *.log
 *.sqlite
-*.sqlite3
-*.db
-*.pid
-*.seed
-*.lock
-npm-debug.log
-yarn-error.log
-
-# Sistema operacional
-.DS_Store
-Thumbs.db
-desktop.ini
-*.tmp
-*.temp
-
-# CI/CD
-.github/
-.gitlab/
-travis.yml
-.gitlab-ci.yml
-azure-pipelines.yml
-circle.yml
-
-# Arquivos de backup
-*.bak
-*.old
-*.orig
-*.rej
-*.patch
-*.diff
-
-# Documentação
-README.md
+*.sqlite-journal
+.idea
+.vscode
+docker-compose.yml
+Dockerfile
+render.yaml
 *.md
-docs/
-CHANGELOG.md
-CONTRIBUTING.md
-LICENSE
-*.pdf
-*.txt
-*.rtf
-
-# Outros
-.htaccess
-.htpasswd
-.env.backup
-.phpcs-cache
-.php-cs-fixer.cache
-cache/
-tmp/
-temp/

@@ -1,18 +1,26 @@
 #!/bin/bash
 
-# Instalar dependências do Composer
+echo "🚀 Iniciando build..."
+
+# Instalar dependências
 composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+# Verificar se o vendor foi instalado
+if [ -d "vendor" ]; then
+    echo "✅ Vendor instalado com sucesso!"
+else
+    echo "❌ Vendor não encontrado!"
+    exit 1
+fi
 
 # Criar .env se não existir
 if [ ! -f .env ]; then
-    cp .env.example .env 2>/dev/null || echo "APP_KEY=" > .env
+    echo "APP_ENV=production" > .env
+    echo "APP_DEBUG=false" >> .env
+    php artisan key:generate --force
 fi
-
-# Gerar APP_KEY
-php artisan key:generate --force
 
 # Configurar permissões
 chmod -R 777 storage bootstrap/cache
 
-# Executar migrações (opcional - pode ser feito no deploy)
-# php artisan migrate --force
+echo "✅ Build concluído!"
