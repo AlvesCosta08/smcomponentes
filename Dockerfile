@@ -53,14 +53,30 @@ WORKDIR /var/www
 # Copia os arquivos do projeto
 COPY . .
 
+# CRIA OS DIRETÓRIOS NECESSÁRIOS E CONFIGURA PERMISSÕES ANTES DO COMPOSER
+RUN mkdir -p storage/framework/cache \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p bootstrap/cache \
+    && mkdir -p public/storage \
+    && chmod -R 777 storage \
+    && chmod -R 777 bootstrap/cache
+
 # Cria arquivo .env se não existir
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# Instala dependências PHP - AGORA COM PHP 8.4
+# Gera APP_KEY antes do composer (para evitar erros)
+RUN php artisan key:generate --force || true
+
+# Instala dependências PHP - COM PHP 8.4
 RUN composer install \
     --no-interaction \
     --no-progress \
-    --optimize-autoloader
+    --optimize-autoloader \
+    --no-scripts
+
+# Executa os scripts do Composer separadamente
+RUN php artisan package:discover --ansi || true
 
 # Instala dependências Node (se tiver package.json)
 RUN if [ -f package.json ]; then \
@@ -68,7 +84,7 @@ RUN if [ -f package.json ]; then \
         npm run build || true; \
     fi
 
-# Configura permissões
+# Configura permissões finais
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage \
     && chmod -R 755 /var/www/bootstrap/cache \

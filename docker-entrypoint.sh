@@ -24,7 +24,7 @@ wait_for_mysql() {
 # Aguarda o banco de dados
 wait_for_mysql
 
-# Gera a chave da aplicação se não existir
+# Verifica se .env existe
 if [ ! -f .env ]; then
     echo "Criando arquivo .env..."
     cp .env.example .env
@@ -35,6 +35,12 @@ if ! grep -q "^APP_KEY=" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d '=' -f2)
     echo "Gerando APP_KEY..."
     php artisan key:generate --force
 fi
+
+# Cria links simbólicos
+php artisan storage:link --force || true
+
+# Limpa cache
+php artisan optimize:clear || true
 
 # Roda as migrations e seeds
 echo "Executando migrations..."
