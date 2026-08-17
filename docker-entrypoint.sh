@@ -1,20 +1,44 @@
 #!/bin/bash
+set -e
 
-# Aguarda o banco de dados ficar disponível (se estiver usando PostgreSQL)
-# while ! nc -z $DB_HOST $DB_PORT; do sleep 1; done
+# Função para verificar se o MySQL está pronto
+wait_for_mysql() {
+    echo "Aguardando MySQL iniciar..."
+    while ! php -r "try { new PDO('mysql:host=db;dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}'); echo 'Conectado!'; } catch(PDOException \$e) { exit(1); }" 2>/dev/null; do
+        echo "MySQL ainda não está pronto... Aguardando 2 segundos"
+        sleep 2
+    done
+    echo "MySQL está pronto!"
+}
 
-# Roda as migrations
+# Aguarda o banco de dados
+wait_for_mysql
+
+# Gera a chave da aplicação se não existir
+if [ ! -f .env ]; then
+    echo "Criando arquivo .env..."
+    cp .env.example .env
+    php artisan key:generate
+fi
+
+# Roda as migrations e seeds
+echo "Executando migrations..."
 php artisan migrate --force
 
-# Limpa e otimiza o cache
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
-php artisan route:clear
+echo "Executando seeds..."
+php artisan db:seed --force
 
+# Otimiza para produção
+echo "Otimizando aplicação..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan event:cache
 
-# Inicia o Apache
-apache2-foreground
+# Remove cache de desenvolvimento
+php artisan optimize:clear || true
+
+echo "Aplicação pronta!"
+
+# Executa o comando passado (padrão: apache2-foreground)
+exec "$@"
