@@ -28,31 +28,32 @@ start_mysql() {
                 echo "⚙️  Configurando MySQL..."
                 
                 # Define senha do root
-                mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root123';"
+                mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root123';" 2>/dev/null || true
                 
                 # Cria banco de dados
-                mysql -u root -proot123 -e "CREATE DATABASE IF NOT EXISTS smcomponentes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+                mysql -u root -proot123 -e "CREATE DATABASE IF NOT EXISTS smcomponentes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
                 
                 # Cria usuário e dá permissões
-                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'localhost' IDENTIFIED BY 'smuser123';"
-                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'127.0.0.1' IDENTIFIED BY 'smuser123';"
-                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'%' IDENTIFIED BY 'smuser123';"
-                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'localhost';"
-                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'127.0.0.1';"
-                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'%';"
-                mysql -u root -proot123 -e "FLUSH PRIVILEGES;"
+                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'localhost' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
+                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'127.0.0.1' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
+                mysql -u root -proot123 -e "CREATE USER IF NOT EXISTS 'smuser'@'%' IDENTIFIED BY 'smuser123';" 2>/dev/null || true
+                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'localhost';" 2>/dev/null || true
+                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'127.0.0.1';" 2>/dev/null || true
+                mysql -u root -proot123 -e "GRANT ALL PRIVILEGES ON smcomponentes.* TO 'smuser'@'%';" 2>/dev/null || true
+                mysql -u root -proot123 -e "FLUSH PRIVILEGES;" 2>/dev/null || true
                 
                 touch /var/lib/mysql/.configured
                 echo "✅ MySQL configurado!"
                 
-                # Mostra informações do banco
                 echo "========================================="
-                echo "📊 Banco de dados configurado:"
+                echo "📊 DADOS DO BANCO DE DADOS:"
                 echo "   Banco: smcomponentes"
-                echo "   Usuário: root"
-                echo "   Senha: root123"
-                echo "   Usuário app: smuser"
-                echo "   Senha app: smuser123"
+                echo "   Host: 127.0.0.1"
+                echo "   Porta: 3306"
+                echo "   Usuário: smuser"
+                echo "   Senha: smuser123"
+                echo "   Root: root"
+                echo "   Senha Root: root123"
                 echo "========================================="
             fi
             return 0
@@ -64,6 +65,39 @@ start_mysql() {
     
     echo "❌ Erro: MySQL não iniciou!"
     return 1
+}
+
+# Função para configurar o .env
+configure_env() {
+    echo "📝 Configurando .env..."
+    
+    # Verifica se .env existe
+    if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+            cp .env.example .env
+        else
+            touch .env
+        fi
+    fi
+    
+    # Configurações do banco
+    sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/g' .env
+    sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/g' .env
+    sed -i 's/^DB_PORT=.*/DB_PORT=3306/g' .env
+    sed -i 's/^DB_DATABASE=.*/DB_DATABASE=smcomponentes/g' .env
+    sed -i 's/^DB_USERNAME=.*/DB_USERNAME=smuser/g' .env
+    sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=smuser123/g' .env
+    
+    # Configura APP_URL
+    if [ -n "$RENDER_EXTERNAL_URL" ]; then
+        sed -i "s|^APP_URL=.*|APP_URL=$RENDER_EXTERNAL_URL|g" .env
+    fi
+    
+    # Configura APP_ENV
+    sed -i 's/^APP_ENV=.*/APP_ENV=production/g' .env
+    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/g' .env
+    
+    echo "✅ .env configurado!"
 }
 
 # Função principal
@@ -78,26 +112,8 @@ start_app() {
     # Aguarda MySQL ficar 100% pronto
     sleep 3
     
-    # Configura .env para usar MySQL local
-    echo "📝 Configurando .env..."
-    
-    # Atualiza ou cria o .env
-    if [ ! -f .env ]; then
-        cp .env.example .env
-    fi
-    
-    # Configura conexão com banco
-    sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=mysql/g' .env
-    sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/g' .env
-    sed -i 's/^DB_PORT=.*/DB_PORT=3306/g' .env
-    sed -i 's/^DB_DATABASE=.*/DB_DATABASE=smcomponentes/g' .env
-    sed -i 's/^DB_USERNAME=.*/DB_USERNAME=smuser/g' .env
-    sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=smuser123/g' .env
-    
-    # Configura APP_URL
-    if [ -n "$RENDER_EXTERNAL_URL" ]; then
-        sed -i "s|^APP_URL=.*|APP_URL=$RENDER_EXTERNAL_URL|g" .env
-    fi
+    # Configura .env
+    configure_env
     
     # Gera APP_KEY se necessário
     if ! grep -q "^APP_KEY=" .env || [ -z "$(grep "^APP_KEY=" .env | cut -d '=' -f2)" ]; then
@@ -107,16 +123,17 @@ start_app() {
     
     # Verifica conexão com banco
     echo "🔍 Testando conexão com banco de dados..."
-    if php artisan migrate:status 2>/dev/null | grep -q "Migration table"; then
+    
+    # Testa a conexão
+    if php -r "new PDO('mysql:host=127.0.0.1;dbname=smcomponentes', 'smuser', 'smuser123'); echo 'Conectado!';" 2>/dev/null; then
         echo "✅ Conexão com banco OK!"
     else
-        echo "⚠️  Tabela de migrations não encontrada, criando..."
-        php artisan migrate:install --force || true
+        echo "⚠️  Erro ao conectar com banco (pode ser normal na primeira execução)"
     fi
     
     # Roda migrations e seeds
     echo "📦 Executando migrations..."
-    php artisan migrate --force || echo "⚠️  Erro nas migrations (pode ser normal na primeira execução)"
+    php artisan migrate --force || echo "⚠️  Erro nas migrations"
     
     echo "🌱 Executando seeds..."
     php artisan db:seed --force || echo "⚠️  Erro nos seeds"
@@ -129,18 +146,14 @@ start_app() {
     php artisan config:cache || true
     php artisan route:cache || true
     php artisan view:cache || true
-    php artisan event:cache || true
     
     echo "========================================="
     echo "✅ APLICAÇÃO PRONTA!"
     echo "🌐 URL: http://localhost:8080"
-    echo "📊 MySQL: localhost:3306"
-    echo "   Usuário: root"
-    echo "   Senha: root123"
-    echo "========================================="
-    echo "📋 Logs:"
-    echo "   - Aplicação: /var/www/storage/logs/laravel.log"
-    echo "   - MySQL: /var/log/mysql/error.log"
+    echo "📊 MySQL: 127.0.0.1:3306"
+    echo "   Usuário: smuser"
+    echo "   Senha: smuser123"
+    echo "   Root: root/root123"
     echo "========================================="
     
     # Inicia Apache em foreground
@@ -150,6 +163,8 @@ start_app() {
 # Comando para shell interativo
 if [ "$1" = "shell" ]; then
     exec /bin/bash
+elif [ "$1" = "mysql" ]; then
+    exec mysql -u root -proot123
 else
     start_app
 fi

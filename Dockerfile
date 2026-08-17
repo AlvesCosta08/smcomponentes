@@ -99,17 +99,26 @@ RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "date.timezone = America/Sao_Paulo" >> /usr/local/etc/php/conf.d/timezone.ini
 
-# Configura MySQL para aceitar conexões
-RUN mkdir -p /var/run/mysqld \
-    && chown -R mysql:mysql /var/run/mysqld \
-    && chmod -R 777 /var/run/mysqld
+# ============================================
+# CONFIGURAÇÃO DO MYSQL - CORRIGIDA
+# ============================================
+# Cria o diretório de configuração do MySQL
+RUN mkdir -p /etc/mysql/mysql.conf.d/
 
-# Configura o MySQL para escutar em todas as interfaces
+# Configura o MySQL
 RUN echo "[mysqld]" > /etc/mysql/mysql.conf.d/custom.cnf \
     && echo "bind-address = 0.0.0.0" >> /etc/mysql/mysql.conf.d/custom.cnf \
     && echo "character-set-server = utf8mb4" >> /etc/mysql/mysql.conf.d/custom.cnf \
     && echo "collation-server = utf8mb4_unicode_ci" >> /etc/mysql/mysql.conf.d/custom.cnf \
-    && echo "max_allowed_packet = 256M" >> /etc/mysql/mysql.conf.d/custom.cnf
+    && echo "max_allowed_packet = 256M" >> /etc/mysql/mysql.conf.d/custom.cnf \
+    && echo "skip-name-resolve" >> /etc/mysql/mysql.conf.d/custom.cnf
+
+# Cria diretório para o socket do MySQL
+RUN mkdir -p /var/run/mysqld \
+    && chown -R mysql:mysql /var/run/mysqld \
+    && chmod -R 777 /var/run/mysqld \
+    && mkdir -p /var/lib/mysql \
+    && chown -R mysql:mysql /var/lib/mysql
 
 # Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/

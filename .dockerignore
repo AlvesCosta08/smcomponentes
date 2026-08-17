@@ -1,28 +1,43 @@
 # Dependências
 vendor/
 node_modules/
+composer.lock
+package-lock.json
+yarn.lock
 
 # Arquivos de ambiente
-.env*
-!.env.example
+.env
+.env.local
+.env.testing
+.env.production
+.env.staging
+.env.example
 
-# Git
+# Controle de versão
 .git/
-.gitignore
 .gitattributes
+.gitignore
+.gitlab/
+.github/
 
-# Docker
+# Arquivos Docker
 Dockerfile
 docker-compose.yml
 .dockerignore
+.docker-compose.override.yml
 
-# IDE
+# IDEs e editores
 .idea/
 .vscode/
+*.sublime-*
+*.swp
+*.swo
+*~
 .editorconfig
 
-# Storage (mantém apenas os .gitkeep)
-storage/*.sqlite*
+# Storage
+storage/*.sqlite
+storage/*.sqlite-journal
 storage/logs/*
 !storage/logs/.gitkeep
 storage/framework/cache/*
@@ -35,33 +50,75 @@ storage/framework/testing/*
 !storage/framework/testing/.gitkeep
 storage/app/public/*
 !storage/app/public/.gitkeep
+storage/app/temp/*
 
 # Assets compilados
 public/storage/
 public/build/
-public/hot
+public/css/
+public/js/
+public/mix-manifest.json
+public/assets/
+public/vendor/
 
 # Testes
 tests/
 coverage/
-phpunit.xml
 .phpunit.cache/
 .phpunit.result.cache
+phpunit.xml
 
-# Logs
+# Logs e debug
 *.log
+*.sqlite
+*.sqlite3
+*.db
+*.pid
+*.seed
+*.lock
 npm-debug.log
 yarn-error.log
 
-# Sistema
+# Sistema operacional
 .DS_Store
 Thumbs.db
+desktop.ini
+*.tmp
+*.temp
+
+# CI/CD
+.github/
+.gitlab/
+travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+circle.yml
+
+# Arquivos de backup
+*.bak
+*.old
+*.orig
+*.rej
+*.patch
+*.diff
 
 # Documentação
+README.md
 *.md
 docs/
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
+*.pdf
+*.txt
+*.rtf
 
-# Cache
-.cache/
+# Outros
+.htaccess
+.htpasswd
+.env.backup
+.phpcs-cache
+.php-cs-fixer.cache
+cache/
 tmp/
 temp/
