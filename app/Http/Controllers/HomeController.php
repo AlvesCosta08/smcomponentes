@@ -10,133 +10,57 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Collection;
+use stdClass;
 
 class HomeController extends Controller
 {
     /**
+     * Tempo de cache em segundos (1 hora)
+     */
+    private const CACHE_TTL = 3600;
+
+    /**
      * Exibe a página inicial.
      */
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\View\View
     {
-        // ============================================================
-        // BANNERS - CORRIGIDO DEFINITIVAMENTE
-        // ============================================================
-
-        // Buscar banners do banco
-        $bannersFromDb = Banner::ativo()
-            ->ordenado()
-            ->get();
-
-        // Criar a variável $banners como Collection de stdClass
-        $banners = collect();
-
-        if ($bannersFromDb->isEmpty()) {
-            // Banner padrão
-            $bannerDefault = new \stdClass();
-            $bannerDefault->id = null;
-            $bannerDefault->titulo = 'SM Componentes';
-            $bannerDefault->subtitulo = 'Qualidade em Componentes Eletrônicos';
-            $bannerDefault->descricao = 'Encontre os melhores componentes para seus projetos';
-            $bannerDefault->imagem_url = null;
-            $bannerDefault->link = route('produtos.index');
-            $bannerDefault->texto_botao = 'Ver Produtos';
-            $bannerDefault->cor_texto = '#ffffff';
-            $bannerDefault->cor_botao = 'light';
-            $bannerDefault->estilo_fundo = 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
-            
-            $banners->push($bannerDefault);
-        } else {
-            // Converter cada banner para stdClass
-            foreach ($bannersFromDb as $banner) {
-                $obj = new \stdClass();
-                $obj->id = $banner->id;
-                $obj->titulo = $banner->titulo;
-                $obj->subtitulo = $banner->subtitulo;
-                $obj->descricao = $banner->descricao;
-                $obj->imagem_url = $this->getImageUrl($banner->imagem);
-                $obj->link = $banner->link;
-                $obj->texto_botao = $banner->texto_botao;
-                $obj->cor_texto = $banner->cor_texto ?? '#ffffff';
-                $obj->cor_botao = $banner->cor_botao ?? 'primary';
-                $obj->estilo_fundo = $this->getEstiloFundo($banner->cor_fundo);
-                
-                $banners->push($obj);
-            }
-        }
-
-        // ============================================================
-        // PRODUTOS EM DESTAQUE
-        // ============================================================
-
-        $pageDestaque = max(1, (int) $request->get('page_destaque', 1));
-
-        $produtosDestaque = $this->getCachedPaginator(
+        $banners = $this->getBanners();
+        $produtosDestaque = $this->getProdutosPaginated(
             'produtos_destaque',
-            Produto::emDestaque(),
-            $pageDestaque,
+            fn() => Produto::emDestaque(),
+            $request->get('page_destaque', 1),
             8,
             'page_destaque'
         );
-
-        // ============================================================
-        // OFERTAS DO DIA
-        // ============================================================
-
-        $pageOfertas = max(1, (int) $request->get('page_ofertas', 1));
-
-        $ofertas = $this->getCachedPaginator(
+        $ofertas = $this->getProdutosPaginated(
             'ofertas_ativas',
-            Produto::ofertas(),
-            $pageOfertas,
+            fn() => Produto::ofertas(),
+            $request->get('page_ofertas', 1),
             8,
             'page_ofertas'
         );
-
-        // ============================================================
-        // NOVOS PRODUTOS
-        // ============================================================
-
-        $pageNovos = max(1, (int) $request->get('page_novos', 1));
-
-        $novosProdutos = $this->getCachedPaginator(
+        $novosProdutos = $this->getProdutosPaginated(
             'novos_produtos',
-            Produto::novos(),
-            $pageNovos,
+            fn() => Produto::novos(),
+            $request->get('page_novos', 1),
             8,
             'page_novos'
         );
-
-        // ============================================================
-        // MAIS VENDIDOS
-        // ============================================================
-
-        $pageVendidos = max(1, (int) $request->get('page_vendidos', 1));
-
-        $maisVendidos = $this->getCachedPaginator(
+        $maisVendidos = $this->getProdutosPaginated(
             'mais_vendidos',
-            Produto::maisVendidos(),
-            $pageVendidos,
+            fn() => Produto::maisVendidos(),
+            $request->get('page_vendidos', 1),
             8,
             'page_vendidos'
         );
-
-        // ============================================================
-        // TODOS OS PRODUTOS
-        // ============================================================
-
-        $pageTodos = max(1, (int) $request->get('page_todos', 1));
-
-        $produtosDisponiveis = $this->getCachedPaginator(
+        $produtosDisponiveis = $this->getProdutosPaginated(
             'produtos_disponiveis',
-            Produto::todosDisponiveis(),
-            $pageTodos,
+            fn() => Produto::todosDisponiveis(),
+            $request->get('page_todos', 1),
             12,
             'page_todos'
         );
-
-        // ============================================================
-        // VIEW
-        // ============================================================
 
         return view('home', compact(
             'banners',
@@ -148,37 +72,93 @@ class HomeController extends Controller
         ));
     }
 
+    // ================================================================
+    // MÉTODOS PRIVADOS
+    // ================================================================
+
     /**
-     * Método auxiliar: Gerar URL da imagem
+     * Obtém os banners ativos com fallback.
      */
-    private function getImageUrl($imagem)
+    private function getBanners(): Collection
+    {
+        return Cache::remember('home_banners', self::CACHE_TTL, function () {
+            $bannersFromDb = Banner::ativo()->ordenado()->get();
+
+            if ($bannersFromDb->isEmpty()) {
+                return $this->getDefaultBanner();
+            }
+
+            return $bannersFromDb->map(fn($banner) => $this->formatBanner($banner));
+        });
+    }
+
+    /**
+     * Retorna o banner padrão.
+     */
+    private function getDefaultBanner(): Collection
+    {
+        $banner = new stdClass();
+        $banner->id = null;
+        $banner->titulo = 'SM Componentes';
+        $banner->subtitulo = 'Qualidade em Componentes Eletrônicos';
+        $banner->descricao = 'Encontre os melhores componentes para seus projetos';
+        $banner->imagem_url = null;
+        $banner->link = route('produtos.index');
+        $banner->texto_botao = 'Ver Produtos';
+        $banner->cor_texto = '#ffffff';
+        $banner->cor_botao = 'light';
+        $banner->estilo_fundo = 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+
+        return collect([$banner]);
+    }
+
+    /**
+     * Formata um banner para exibição.
+     */
+    private function formatBanner(Banner $banner): stdClass
+    {
+        $obj = new stdClass();
+        $obj->id = $banner->id;
+        $obj->titulo = $banner->titulo;
+        $obj->subtitulo = $banner->subtitulo;
+        $obj->descricao = $banner->descricao;
+        $obj->imagem_url = $this->getImageUrl($banner->imagem);
+        $obj->link = $banner->link;
+        $obj->texto_botao = $banner->texto_botao;
+        $obj->cor_texto = $banner->cor_texto ?? '#ffffff';
+        $obj->cor_botao = $banner->cor_botao ?? 'primary';
+        $obj->estilo_fundo = $this->getEstiloFundo($banner->cor_fundo);
+
+        return $obj;
+    }
+
+    /**
+     * Gera a URL da imagem.
+     */
+    private function getImageUrl(?string $imagem): ?string
     {
         if (empty($imagem)) {
             return null;
         }
 
-        // Se já for URL completa (http/https)
         if (filter_var($imagem, FILTER_VALIDATE_URL)) {
             return $imagem;
         }
 
-        // Remove o prefixo 'banners/' se já existir
         $cleanPath = str_replace('banners/', '', $imagem);
         $storagePath = 'banners/' . $cleanPath;
 
-        // Verifica se o arquivo existe no storage
         if (Storage::disk('public')->exists($storagePath)) {
             return Storage::disk('public')->url($storagePath);
         }
 
-        // Fallback
         return asset('storage/' . $storagePath);
     }
 
     /**
-     * Método auxiliar: Gerar estilo de fundo
+     * Gera o estilo de fundo do banner.
      */
-    private function getEstiloFundo($corFundo)
+    private function getEstiloFundo(?string $corFundo): string
     {
         if (empty($corFundo)) {
             return 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
@@ -198,121 +178,52 @@ class HomeController extends Controller
     }
 
     /**
-     * Retorna um paginator utilizando cache.
+     * Obtém produtos paginados com cache.
      */
-    private function getCachedPaginator(
+    private function getProdutosPaginated(
         string $cacheKey,
-        $query,
-        int $currentPage,
+        callable $queryBuilder,
+        int $page,
         int $perPage = 12,
         string $pageName = 'page'
     ): LengthAwarePaginator {
+        $fullCacheKey = "{$cacheKey}_{$pageName}_{$page}";
 
-        $fullCacheKey = "{$cacheKey}_{$pageName}_{$currentPage}";
-
-        $cachedData = Cache::remember(
-            $fullCacheKey,
-            now()->addHour(),
-            function () use ($query, $perPage, $currentPage, $pageName) {
-
-                $paginator = $query->paginate(
+        return Cache::remember($fullCacheKey, self::CACHE_TTL, function () use ($queryBuilder, $perPage, $page, $pageName) {
+            $result = $queryBuilder();
+            
+            // Se o resultado já for um paginator, usa ele
+            if ($result instanceof LengthAwarePaginator) {
+                return $result;
+            }
+            
+            // Se for um Builder, aplica paginação
+            if (method_exists($result, 'paginate')) {
+                $paginator = $result->paginate($perPage, ['*'], $pageName, $page);
+            } else {
+                // Se for uma Collection, converte para paginator
+                $items = $result instanceof Collection ? $result : collect($result);
+                $paginator = new LengthAwarePaginator(
+                    $items->forPage($page, $perPage),
+                    $items->count(),
                     $perPage,
-                    ['*'],
-                    $pageName,
-                    $currentPage
+                    $page,
+                    ['path' => request()->url(), 'query' => request()->query(), 'pageName' => $pageName]
                 );
+            }
 
-                $items = collect($paginator->items())
-                    ->map(function ($produto) {
-                        return $produto->toArray();
-                    })
-                    ->values()
-                    ->all();
-
-                return [
-                    'items' => $items,
-                    'total' => (int) $paginator->total(),
-                    'per_page' => (int) $paginator->perPage(),
-                    'current_page' => (int) $paginator->currentPage(),
-                    'last_page' => (int) $paginator->lastPage(),
+            return new LengthAwarePaginator(
+                $paginator->items(),
+                $paginator->total(),
+                $paginator->perPage(),
+                $paginator->currentPage(),
+                [
                     'path' => request()->url(),
                     'query' => request()->query(),
-                ];
-            }
-        );
-
-        if (!is_array($cachedData) || !isset($cachedData['items']) || !is_array($cachedData['items'])) {
-            Cache::forget($fullCacheKey);
-            
-            $cachedData = Cache::remember(
-                $fullCacheKey,
-                now()->addHour(),
-                function () use ($query, $perPage, $currentPage, $pageName) {
-
-                    $paginator = $query->paginate(
-                        $perPage,
-                        ['*'],
-                        $pageName,
-                        $currentPage
-                    );
-
-                    $items = collect($paginator->items())
-                        ->map(function ($produto) {
-                            return $produto->toArray();
-                        })
-                        ->values()
-                        ->all();
-
-                    return [
-                        'items' => $items,
-                        'total' => (int) $paginator->total(),
-                        'per_page' => (int) $paginator->perPage(),
-                        'current_page' => (int) $paginator->currentPage(),
-                        'last_page' => (int) $paginator->lastPage(),
-                        'path' => request()->url(),
-                        'query' => request()->query(),
-                    ];
-                }
+                    'pageName' => $pageName,
+                ]
             );
-        }
-
-        $itemsArray = $cachedData['items'] ?? [];
-        
-        if (!is_array($itemsArray)) {
-            $itemsArray = [];
-        }
-
-        $items = collect($itemsArray)
-            ->map(function ($produto) {
-                if (is_string($produto)) {
-                    $produto = json_decode($produto, true);
-                }
-                
-                if (is_array($produto)) {
-                    return (object) $produto;
-                }
-                
-                if (is_object($produto)) {
-                    return $produto;
-                }
-                
-                return null;
-            })
-            ->filter()
-            ->values()
-            ->all();
-
-        return new LengthAwarePaginator(
-            $items,
-            $cachedData['total'] ?? 0,
-            $cachedData['per_page'] ?? $perPage,
-            $cachedData['current_page'] ?? $currentPage,
-            [
-                'path' => $cachedData['path'] ?? request()->url(),
-                'query' => $cachedData['query'] ?? request()->query(),
-                'pageName' => $pageName,
-            ]
-        );
+        });
     }
 
     // ================================================================
@@ -320,9 +231,9 @@ class HomeController extends Controller
     // ================================================================
 
     /**
-     * Limpar cache do sistema
+     * Limpar cache do sistema.
      */
-    public function clearCache()
+    public function clearCache(): \Illuminate\Http\RedirectResponse
     {
         try {
             Artisan::call('view:clear');
@@ -330,82 +241,86 @@ class HomeController extends Controller
             Artisan::call('route:clear');
             Artisan::call('event:clear');
             Artisan::call('cache:clear');
-            
+
             Cache::flush();
-            
+
             Log::info('Cache limpo pelo administrador', [
                 'usuario_id' => auth()->id(),
                 'email' => auth()->user()->email
             ]);
 
             return redirect()->back()->with('success', '✅ Cache limpo com sucesso!');
-            
         } catch (\Exception $e) {
-            Log::error('Erro ao limpar cache: ' . $e->getMessage(), [
+            Log::error('Erro ao limpar cache', [
+                'erro' => $e->getMessage(),
                 'usuario_id' => auth()->id()
             ]);
-            
+
             return redirect()->back()->with('error', '❌ Erro ao limpar cache: ' . $e->getMessage());
         }
     }
 
     /**
-     * Limpar cache de banners
+     * Limpar cache de banners.
      */
-    public function clearBannerCache()
+    public function clearBannerCache(): \Illuminate\Http\RedirectResponse
     {
         try {
+            Cache::forget('home_banners');
             Cache::forget('banners_ativos');
             Cache::forget('banners');
             Cache::forget('banners_active');
-            
+
             Log::info('Cache de banners limpo', [
                 'usuario_id' => auth()->id()
             ]);
 
             return redirect()->back()->with('success', '✅ Cache de banners limpo com sucesso!');
-            
         } catch (\Exception $e) {
-            Log::error('Erro ao limpar cache de banners: ' . $e->getMessage());
-            
+            Log::error('Erro ao limpar cache de banners', [
+                'erro' => $e->getMessage(),
+                'usuario_id' => auth()->id()
+            ]);
+
             return redirect()->back()->with('error', '❌ Erro ao limpar cache de banners: ' . $e->getMessage());
         }
     }
 
     /**
-     * Recarregar banners
+     * Recarregar banners (forçar recache).
      */
-    public function reloadBanners()
+    public function reloadBanners(): \Illuminate\Http\RedirectResponse
     {
         try {
+            Cache::forget('home_banners');
             Cache::forget('banners_ativos');
             Cache::forget('banners');
             Cache::forget('banners_active');
-            
-            $banners = Banner::ativo()
-                ->ordenado()
-                ->get();
-            
-            Cache::put('banners_ativos', $banners, 3600);
-            
+
+            $banners = Banner::ativo()->ordenado()->get();
+            Cache::put('home_banners', $banners, self::CACHE_TTL);
+            Cache::put('banners_ativos', $banners, self::CACHE_TTL);
+
             Log::info('Banners recarregados', [
                 'usuario_id' => auth()->id(),
                 'quantidade' => $banners->count()
             ]);
 
-            return redirect()->back()->with('success', '✅ Banners recarregados com sucesso! (' . $banners->count() . ' banners)');
-            
+            return redirect()->back()->with('success', "✅ Banners recarregados com sucesso! ({$banners->count()} banners)");
         } catch (\Exception $e) {
-            Log::error('Erro ao recarregar banners: ' . $e->getMessage());
-            
+            Log::error('Erro ao recarregar banners', [
+                'erro' => $e->getMessage(),
+                'usuario_id' => auth()->id()
+            ]);
+
             return redirect()->back()->with('error', '❌ Erro ao recarregar banners: ' . $e->getMessage());
         }
     }
 
     /**
-     * Limpar cache de produtos
+     * Limpar cache de produtos.
      */
-    public function clearProductCache()
+    public function clearProductCache(): \Illuminate\Http\RedirectResponse
     {
         try {
             Cache::forget('produtos_destaque');
@@ -413,24 +328,26 @@ class HomeController extends Controller
             Cache::forget('novos_produtos');
             Cache::forget('mais_vendidos');
             Cache::forget('produtos_disponiveis');
-            
+
             Log::info('Cache de produtos limpo', [
                 'usuario_id' => auth()->id()
             ]);
 
             return redirect()->back()->with('success', '✅ Cache de produtos limpo com sucesso!');
-            
         } catch (\Exception $e) {
-            Log::error('Erro ao limpar cache de produtos: ' . $e->getMessage());
-            
+            Log::error('Erro ao limpar cache de produtos', [
+                'erro' => $e->getMessage(),
+                'usuario_id' => auth()->id()
+            ]);
+
             return redirect()->back()->with('error', '❌ Erro ao limpar cache de produtos: ' . $e->getMessage());
         }
     }
 
     /**
-     * Limpar todos os caches
+     * Limpar todos os caches.
      */
-    public function clearAllCache()
+    public function clearAllCache(): \Illuminate\Http\RedirectResponse
     {
         try {
             Artisan::call('view:clear');
@@ -439,19 +356,65 @@ class HomeController extends Controller
             Artisan::call('event:clear');
             Artisan::call('cache:clear');
             Artisan::call('optimize:clear');
-            
+
             Cache::flush();
-            
+
             Log::info('Todos os caches limpos', [
                 'usuario_id' => auth()->id()
             ]);
 
             return redirect()->back()->with('success', '✅ Todos os caches foram limpos com sucesso!');
-            
         } catch (\Exception $e) {
-            Log::error('Erro ao limpar todos os caches: ' . $e->getMessage());
-            
+            Log::error('Erro ao limpar todos os caches', [
+                'erro' => $e->getMessage(),
+                'usuario_id' => auth()->id()
+            ]);
+
             return redirect()->back()->with('error', '❌ Erro ao limpar caches: ' . $e->getMessage());
         }
+    }
+
+    // ================================================================
+    // PÁGINAS ESTÁTICAS
+    // ================================================================
+
+    /**
+     * Página de termos e condições.
+     */
+    public function termos(): \Illuminate\View\View
+    {
+        return view('pages.termos');
+    }
+
+    /**
+     * Página de política de privacidade.
+     */
+    public function privacidade(): \Illuminate\View\View
+    {
+        return view('pages.privacidade');
+    }
+
+    /**
+     * Página de contato.
+     */
+    public function contato(): \Illuminate\View\View
+    {
+        return view('pages.contato');
+    }
+
+    /**
+     * Página sobre nós.
+     */
+    public function sobre(): \Illuminate\View\View
+    {
+        return view('pages.sobre');
+    }
+
+    /**
+     * Página de perguntas frequentes.
+     */
+    public function faq(): \Illuminate\View\View
+    {
+        return view('pages.faq');
     }
 }

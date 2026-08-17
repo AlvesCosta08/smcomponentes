@@ -12,3 +12,5 @@ Aplicação: http://localhost:8080
 phpMyAdmin: http://localhost:8081 (usuário: root, senha: root123)
 
 Admin (se criado): admin@smcomponentes.com / password123
+
+cliente@loja.com cliente123

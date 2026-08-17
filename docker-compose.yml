@@ -1,70 +1,51 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: smcomponentes_app
-    restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8080:8000"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
     environment:
       - APP_ENV=local
       - APP_DEBUG=true
       - APP_URL=http://localhost:8080
-      - DB_CONNECTION=mysql
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=smcomponentes
-      - DB_USERNAME=root
-      - DB_PASSWORD=root123
-    volumes:
-      - ./storage:/var/www/storage
-      - ./public:/var/www/public
-      - ./bootstrap/cache:/var/www/bootstrap/cache
-      - ./:/var/www
-    depends_on:
-      - db
     networks:
-      - smnetwork
+      - smcomponentes-network
 
   db:
     image: mysql:8.0
     container_name: smcomponentes_db
-    restart: unless-stopped
-    environment:
-      - MYSQL_DATABASE=smcomponentes
-      - MYSQL_ROOT_PASSWORD=root123
-      - MYSQL_USER=smuser
-      - MYSQL_PASSWORD=smuser123
     ports:
       - "3307:3306"
+    environment:
+      MYSQL_DATABASE: smcomponentes
+      MYSQL_ROOT_PASSWORD: root123
     volumes:
       - db_data:/var/lib/mysql
-    command: 
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-authentication-plugin=mysql_native_password
     networks:
-      - smnetwork
+      - smcomponentes-network
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: smcomponentes_phpmyadmin
-    restart: unless-stopped
-    environment:
-      - PMA_HOST=db
-      - PMA_PORT=3306
-      - UPLOAD_LIMIT=100M
     ports:
       - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 100M
     depends_on:
       - db
     networks:
-      - smnetwork
+      - smcomponentes-network
+
+networks:
+  smcomponentes-network:
+    driver: bridge
 
 volumes:
   db_data:
 
-networks:
-  smnetwork:
-    driver: bridge
