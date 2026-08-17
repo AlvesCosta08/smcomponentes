@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 # Instalar extensões PHP
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Instalar Composer (apenas para uso futuro)
+# Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
@@ -26,7 +26,14 @@ WORKDIR /var/www
 # Copiar todos os arquivos
 COPY . .
 
-# NÃO executar composer dump-autoload - vamos fazer depois
+# Criar diretórios necessários
+RUN mkdir -p storage/framework/cache \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p bootstrap/cache \
+    && mkdir -p public/storage \
+    && chmod -R 777 storage \
+    && chmod -R 777 bootstrap/cache
 
 # Configurar permissões
 RUN chown -R www-data:www-data /var/www \
