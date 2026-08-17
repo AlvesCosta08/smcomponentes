@@ -1,21 +1,67 @@
+# Dependências
 vendor/
 node_modules/
+
+# Arquivos de ambiente
+.env*
+!.env.example
+
+# Git
 .git/
-.env
-.env.local
-.env.testing
 .gitignore
 .gitattributes
+
+# Docker
 Dockerfile
 docker-compose.yml
 .dockerignore
-README.md
+
+# IDE
 .idea/
 .vscode/
-storage/*.sqlite
+.editorconfig
+
+# Storage (mantém apenas os .gitkeep)
+storage/*.sqlite*
 storage/logs/*
+!storage/logs/.gitkeep
+storage/framework/cache/*
+!storage/framework/cache/.gitkeep
+storage/framework/sessions/*
+!storage/framework/sessions/.gitkeep
+storage/framework/views/*
+!storage/framework/views/.gitkeep
+storage/framework/testing/*
+!storage/framework/testing/.gitkeep
+storage/app/public/*
+!storage/app/public/.gitkeep
+
+# Assets compilados
 public/storage/
+public/build/
+public/hot
+
+# Testes
 tests/
 coverage/
+phpunit.xml
 .phpunit.cache/
 .phpunit.result.cache
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Documentação
+*.md
+docs/
+
+# Cache
+.cache/
+tmp/
+temp/
