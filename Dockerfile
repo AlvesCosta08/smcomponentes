@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Instala dependências do sistema
 RUN apt-get update && apt-get install -y \
@@ -33,13 +33,13 @@ RUN docker-php-ext-install \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Configura o Apache
-RUN a2enmod rewrite
-RUN a2enmod headers
-RUN a2enmod expires
+RUN a2enmod rewrite \
+    && a2enmod headers \
+    && a2enmod expires
 
 # Configura o Apache para apontar para public
-RUN sed -i 's!/var/www/html!/var/www/public!g' /etc/apache2/sites-available/000-default.conf
-RUN sed -i 's!/var/www/!/var/www/public!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*
+RUN sed -i 's!/var/www/html!/var/www/public!g' /etc/apache2/sites-available/000-default.conf \
+    && sed -i 's!/var/www/!/var/www/public!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*
 
 # Instala Node.js 20.x e npm compatível
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -56,12 +56,11 @@ COPY . .
 # Cria arquivo .env se não existir
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# Instala dependências PHP
+# Instala dependências PHP - AGORA COM PHP 8.4
 RUN composer install \
     --no-interaction \
     --no-progress \
-    --optimize-autoloader \
-    --ignore-platform-req=ext-zip
+    --optimize-autoloader
 
 # Instala dependências Node (se tiver package.json)
 RUN if [ -f package.json ]; then \
@@ -79,7 +78,8 @@ RUN chown -R www-data:www-data /var/www \
 RUN echo "upload_max_filesize = 100M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 100M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/uploads.ini \
-    && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini
+    && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "date.timezone = America/Sao_Paulo" >> /usr/local/etc/php/conf.d/timezone.ini
 
 # Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/
