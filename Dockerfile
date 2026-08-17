@@ -41,10 +41,11 @@ RUN a2enmod expires
 RUN sed -i 's!/var/www/html!/var/www/public!g' /etc/apache2/sites-available/000-default.conf
 RUN sed -i 's!/var/www/!/var/www/public!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*
 
-# Instala Node.js e npm
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash - \
+# Instala Node.js 20.x e npm compatível
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm@latest
+    && npm install -g npm@10.8.2 \
+    && npm --version
 
 # Define o diretório de trabalho
 WORKDIR /var/www
@@ -52,15 +53,21 @@ WORKDIR /var/www
 # Copia os arquivos do projeto
 COPY . .
 
-# Instala dependências PHP (ignorando extensões que não temos no container)
+# Cria arquivo .env se não existir
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
+
+# Instala dependências PHP
 RUN composer install \
     --no-interaction \
     --no-progress \
     --optimize-autoloader \
     --ignore-platform-req=ext-zip
 
-# Instala dependências Node e compila assets (se tiver)
-RUN npm install && npm run build || true
+# Instala dependências Node (se tiver package.json)
+RUN if [ -f package.json ]; then \
+        npm install && \
+        npm run build || true; \
+    fi
 
 # Configura permissões
 RUN chown -R www-data:www-data /var/www \
