@@ -18,12 +18,12 @@ RUN apt-get update && apt-get install -y \
 # Instalar extensões PHP
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Instalar Composer
+# Instalar Composer (apenas para uso futuro)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copiar todos os arquivos
+# Copiar todos os arquivos (incluindo vendor)
 COPY . .
 
 # Criar diretórios necessários
@@ -43,3 +43,4 @@ RUN chown -R www-data:www-data /var/www \
 EXPOSE 80
 
 CMD php artisan serve --host=0.0.0.0 --port=80
+
