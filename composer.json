@@ -7,26 +7,22 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "laravel/framework": "^13.8",
+        "laravel/framework": "^11.0",
         "laravel/tinker": "^3.0",
         "livewire/flux": "^2.16",
         "livewire/livewire": "^4.4",
         "mercadopago/dx-php": "^3.14",
         "rap2hpoutre/fast-excel": "^5.14",
-        "spatie/laravel-backup": "^10.3",
-        "spatie/laravel-permission": "^8.3",
-        "symfony/http-client": "^8.1",
-        "symfony/mailer": "^8.1"
+        "spatie/laravel-backup": "^9.0",
+        "spatie/laravel-permission": "^6.0",
+        "symfony/http-client": "^7.0",
+        "symfony/mailer": "^7.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/breeze": "^2.4",
-        "laravel/pail": "^1.2.5",
-        "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^12.5.12"
+        "phpunit/phpunit": "^10.5"
     },
     "autoload": {
         "psr-4": {
@@ -41,126 +37,6 @@
         }
     },
     "scripts": {
-        "setup": [
-            "composer install",
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install --ignore-scripts",
-            "npm run build"
-        ],
-        "dev": [
-            "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --timeout=0\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
-        ],
-        "test": [
-            "@php artisan config:clear --ansi @no_additional_args",
-            "@php artisan test"
-        ],
-        
-        "🔥 ============================================": "",
-        "🔥 SCRIPTS PARA MÚLTIPLOS AMBIENTES": "",
-        "🔥 ============================================": "",
-        
-        "env:local": [
-            "ln -sf .env.local .env 2>/dev/null || true",
-            "@php artisan optimize:clear"
-        ],
-        "env:prod": [
-            "ln -sf .env.production .env 2>/dev/null || true",
-            "@php artisan optimize:clear",
-            "@php artisan config:cache",
-            "@php artisan route:cache",
-            "@php artisan view:cache",
-            "@php artisan event:cache"
-        ],
-        "env:staging": [
-            "ln -sf .env.staging .env 2>/dev/null || true",
-            "@php artisan optimize:clear",
-            "@php artisan config:cache",
-            "@php artisan route:cache",
-            "@php artisan view:cache",
-            "@php artisan event:cache"
-        ],
-        "env:test": [
-            "ln -sf .env.testing .env 2>/dev/null || true",
-            "@php artisan optimize:clear"
-        ],
-        "env:status": [
-            "@php -r \"echo '📁 Ambiente atual: ' . (is_link('.env') ? readlink('.env') : '.env (arquivo direto)') . PHP_EOL;\"",
-            "@php -r \"echo 'APP_ENV: ' . (getenv('APP_ENV') ?: 'não definido') . PHP_EOL;\"",
-            "@php -r \"echo 'APP_DEBUG: ' . (getenv('APP_DEBUG') ?: 'não definido') . PHP_EOL;\"",
-            "@php -r \"echo 'APP_URL: ' . (getenv('APP_URL') ?: 'não definido') . PHP_EOL;\""
-        ],
-        
-        "🔥 ============================================": "",
-        "🔥 INICIAR EM DIFERENTES AMBIENTES": "",
-        "🔥 ============================================": "",
-        
-        "start": "php artisan serve",
-        "start:local": [
-            "composer env:local",
-            "php artisan serve"
-        ],
-        "start:prod": [
-            "composer env:prod",
-            "php artisan serve --env=production"
-        ],
-        "start:staging": [
-            "composer env:staging",
-            "php artisan serve --env=staging"
-        ],
-        "start:test": [
-            "composer env:test",
-            "php artisan serve --env=testing"
-        ],
-        "start:https": [
-            "php artisan serve --host=0.0.0.0 --port=443"
-        ],
-        "start:public": [
-            "php artisan serve --host=0.0.0.0 --port=8000"
-        ],
-        
-        "🔥 ============================================": "",
-        "🔥 DEPLOY": "",
-        "🔥 ============================================": "",
-        
-        "deploy:prod": [
-            "composer env:prod",
-            "@php artisan migrate --force",
-            "npm install --production --no-audit --no-fund",
-            "npm run build",
-            "composer dump-autoload --optimize"
-        ],
-        "deploy:staging": [
-            "composer env:staging",
-            "@php artisan migrate --force",
-            "npm install --production --no-audit --no-fund",
-            "npm run build",
-            "composer dump-autoload --optimize"
-        ],
-        
-        "🔥 ============================================": "",
-        "🔥 UTILITÁRIOS": "",
-        "🔥 ============================================": "",
-        
-        "db:reset": [
-            "@php artisan migrate:fresh --seed --force"
-        ],
-        "db:refresh": [
-            "@php artisan migrate:refresh --seed --force"
-        ],
-        "clear": [
-            "@php artisan optimize:clear"
-        ],
-        "logs": "tail -f storage/logs/laravel.log",
-        "info": "php artisan about",
-        "routes": "php artisan route:list",
-        
-        "🔥 ============================================": "",
-        "🔥 COMANDOS ORIGINAIS (MANTIDOS)": "",
-        "🔥 ============================================": "",
-        
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
@@ -192,6 +68,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "audit": {
+            "block-insecure": false
         }
     },
     "minimum-stability": "stable",

@@ -16,6 +16,9 @@ use App\Services\WishlistService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,93 +27,68 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        Log::info('🚀 AppServiceProvider::register() EXECUTADO!');
-        
+        // Log apenas em desenvolvimento/não produção
+        if (!app()->isProduction()) {
+            Log::info('🚀 AppServiceProvider::register() EXECUTADO!');
+        }
+
         try {
             // ============================================
             // REPOSITORIES
             // ============================================
             
-            $this->app->singleton(ProdutoRepository::class, function ($app) {
-                Log::info('✅ ProdutoRepository registrado!');
-                return new ProdutoRepository();
-            });
-
-            $this->app->singleton(PedidoRepository::class, function ($app) {
-                Log::info('✅ PedidoRepository registrado!');
-                return new PedidoRepository();
-            });
+            // Repositories geralmente são stateless, podem ser singletons
+            $this->app->singleton(ProdutoRepository::class);
+            $this->app->singleton(PedidoRepository::class);
 
             // ============================================
             // SERVICES
             // ============================================
             
-            // StockService
-            $this->app->singleton(StockService::class, function ($app) {
-                Log::info('✅ StockService registrado!');
-                return new StockService();
-            });
-
-            // ProductService
+            // ✅ Usar singleton APENAS para serviços com estado
+            // ou que são caros de instanciar
+            
+            // StockService - Stateless, pode ser bind normal
+            $this->app->bind(StockService::class);
+            
+            // ProductService - Depende de repositórios
             $this->app->singleton(ProductService::class, function ($app) {
-                Log::info('✅ ProductService registrado!');
                 return new ProductService(
                     $app->make(ProdutoRepository::class),
                     $app->make(StockService::class)
                 );
             });
 
-            // OrderService (para clientes)
+            // OrderService - Depende de repositórios
             $this->app->singleton(OrderService::class, function ($app) {
-                Log::info('✅ OrderService registrado!');
                 return new OrderService(
                     $app->make(PedidoRepository::class),
                     $app->make(StockService::class)
                 );
             });
 
-            // OrderAdminService (para admin)
+            // OrderAdminService - Depende de repositórios
             $this->app->singleton(OrderAdminService::class, function ($app) {
-                Log::info('✅ OrderAdminService registrado!');
                 return new OrderAdminService(
                     $app->make(PedidoRepository::class),
                     $app->make(StockService::class)
                 );
             });
 
-            // DashboardService
-            $this->app->singleton(DashboardService::class, function ($app) {
-                Log::info('✅ DashboardService registrado!');
-                return new DashboardService();
-            });
+            // 🆕 Services que NÃO precisam de singleton (stateless)
+            $this->app->bind(DashboardService::class);
+            $this->app->bind(UserService::class);
+            $this->app->bind(BannerService::class);
+            $this->app->bind(PaymentService::class);
+            $this->app->bind(WishlistService::class);
 
-            // UserService
-            $this->app->singleton(UserService::class, function ($app) {
-                Log::info('✅ UserService registrado!');
-                return new UserService();
-            });
-
-            // BannerService
-            $this->app->singleton(BannerService::class, function ($app) {
-                Log::info('✅ BannerService registrado!');
-                return new BannerService();
-            });
-
-            // PaymentService (Mercado Pago)
-            $this->app->singleton(PaymentService::class, function ($app) {
-                Log::info('✅ PaymentService registrado!');
-                return new PaymentService();
-            });
-
-            // 🆕 WishlistService
-            $this->app->singleton(WishlistService::class, function ($app) {
-                Log::info('✅ WishlistService registrado!');
-                return new WishlistService();
-            });
-
-            Log::info('✅ Todos os services registrados com sucesso!');
+            // Log apenas em desenvolvimento
+            if (!app()->isProduction()) {
+                Log::info('✅ Todos os services registrados com sucesso!');
+            }
             
         } catch (\Exception $e) {
+            // Log de erro SEMPRE (mesmo em produção)
             Log::error('❌ ERRO no AppServiceProvider: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
             throw $e;
@@ -122,14 +100,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Log::info('🚀 AppServiceProvider::boot() EXECUTADO!');
-        
+        // Log apenas em desenvolvimento
+        if (!app()->isProduction()) {
+            Log::info('🚀 AppServiceProvider::boot() EXECUTADO!');
+        }
+
         // ============================================
         // SEGURANÇA
         // ============================================
         
-        // Forçar HTTPS em produção
-        if (config('app.env') === 'production') {
+        // ✅ Forçar HTTPS em produção
+        if (app()->isProduction()) {
             URL::forceScheme('https');
         }
 
@@ -137,7 +118,7 @@ class AppServiceProvider extends ServiceProvider
         // CONFIGURAÇÕES DE DATA/HORA
         // ============================================
         
-        // Configurar timezone
+        // ✅ Configurar timezone (já definido no config/app.php)
         date_default_timezone_set(config('app.timezone', 'America/Sao_Paulo'));
 
         // ============================================
@@ -145,22 +126,35 @@ class AppServiceProvider extends ServiceProvider
         // ============================================
         
         // Configurar paginação com Bootstrap 5
-        \Illuminate\Pagination\Paginator::useBootstrapFive();
+        Paginator::useBootstrapFive();
 
         // ============================================
-        // MACROS
+        // MACROS - Otimizadas
         // ============================================
         
-        // Macro para formatação de moeda
-        if (!\Illuminate\Support\Str::hasMacro('currency')) {
-            \Illuminate\Support\Str::macro('currency', function ($value) {
-                return 'R$ ' . number_format($value, 2, ',', '.');
-            });
+        $this->registerMacros();
+
+        // ============================================
+        // CONFIGURAÇÃO DO SPATIE PERMISSION
+        // ============================================
+        
+        $this->configureSpatiePermission();
+    }
+
+    /**
+     * Register all String macros
+     */
+    protected function registerMacros(): void
+    {
+        // ✅ Verificação mais robusta para evitar re-registro
+        if (!Str::hasMacro('currency')) {
+            Str::macro('currency', fn($value) => 
+                'R$ ' . number_format($value, 2, ',', '.')
+            );
         }
 
-        // Macro para formatação de CPF
-        if (!\Illuminate\Support\Str::hasMacro('cpf')) {
-            \Illuminate\Support\Str::macro('cpf', function ($value) {
+        if (!Str::hasMacro('cpf')) {
+            Str::macro('cpf', function ($value) {
                 $value = preg_replace('/[^0-9]/', '', $value);
                 if (strlen($value) === 11) {
                     return substr($value, 0, 3) . '.' . 
@@ -172,9 +166,8 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        // Macro para formatação de telefone
-        if (!\Illuminate\Support\Str::hasMacro('phone')) {
-            \Illuminate\Support\Str::macro('phone', function ($value) {
+        if (!Str::hasMacro('phone')) {
+            Str::macro('phone', function ($value) {
                 $value = preg_replace('/[^0-9]/', '', $value);
                 if (strlen($value) === 11) {
                     return '(' . substr($value, 0, 2) . ') ' . 
@@ -190,9 +183,8 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        // Macro para formatação de CEP
-        if (!\Illuminate\Support\Str::hasMacro('cep')) {
-            \Illuminate\Support\Str::macro('cep', function ($value) {
+        if (!Str::hasMacro('cep')) {
+            Str::macro('cep', function ($value) {
                 $value = preg_replace('/[^0-9]/', '', $value);
                 if (strlen($value) === 8) {
                     return substr($value, 0, 5) . '-' . substr($value, 5, 3);
@@ -201,32 +193,34 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        // Macro para formatação de data
-        if (!\Illuminate\Support\Str::hasMacro('data')) {
-            \Illuminate\Support\Str::macro('data', function ($value) {
-                if (!$value) return '';
-                $date = \Carbon\Carbon::parse($value);
-                return $date->format('d/m/Y');
-            });
+        if (!Str::hasMacro('data')) {
+            Str::macro('data', fn($value) => 
+                $value ? Carbon::parse($value)->format('d/m/Y') : ''
+            );
         }
 
-        // Macro para formatação de data e hora
-        if (!\Illuminate\Support\Str::hasMacro('datahora')) {
-            \Illuminate\Support\Str::macro('datahora', function ($value) {
-                if (!$value) return '';
-                $date = \Carbon\Carbon::parse($value);
-                return $date->format('d/m/Y H:i');
-            });
+        if (!Str::hasMacro('datahora')) {
+            Str::macro('datahora', fn($value) => 
+                $value ? Carbon::parse($value)->format('d/m/Y H:i') : ''
+            );
         }
+    }
 
-        // ============================================
-        // CONFIGURAÇÃO DO SPATIE PERMISSION
-        // ============================================
-        
+    /**
+     * Configure Spatie Permission
+     */
+    protected function configureSpatiePermission(): void
+    {
         try {
-            $this->app->make(\Spatie\Permission\PermissionRegistrar::class);
+            // ✅ Apenas tenta carregar se a classe existir
+            if (class_exists(\Spatie\Permission\PermissionRegistrar::class)) {
+                $this->app->make(\Spatie\Permission\PermissionRegistrar::class);
+            }
         } catch (\Exception $e) {
-            Log::warning('Erro ao carregar PermissionRegistrar: ' . $e->getMessage());
+            // Em produção, log mais silencioso
+            if (!app()->isProduction()) {
+                Log::warning('Erro ao carregar PermissionRegistrar: ' . $e->getMessage());
+            }
         }
     }
 }
