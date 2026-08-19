@@ -11,17 +11,15 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CarrinhoController extends Controller
 {
     /**
      * Limites do carrinho
-     * Tornando públicos para acesso externo (ex: validação)
+     * TORNAR PÚBLICO para acesso nos FormRequests
      */
     public const MAX_ITEMS = 50;
     public const MAX_QUANTITY_PER_ITEM = 999;
-    public const MIN_QUANTITY_PER_ITEM = 1;
 
     /**
      * Exibe o carrinho de compras.
@@ -38,8 +36,6 @@ class CarrinhoController extends Controller
                 'total' => $total,
                 'totalFormatado' => $this->formatarMoeda($total),
                 'totalItems' => $totalItems,
-                'maxQuantity' => self::MAX_QUANTITY_PER_ITEM,
-                'minQuantity' => self::MIN_QUANTITY_PER_ITEM,
             ]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao carregar carrinho', [
@@ -51,11 +47,8 @@ class CarrinhoController extends Controller
                 'carrinho' => [],
                 'total' => 0,
                 'totalFormatado' => 'R$ 0,00',
-                'totalItems' => 0,
-                'maxQuantity' => self::MAX_QUANTITY_PER_ITEM,
-                'minQuantity' => self::MIN_QUANTITY_PER_ITEM,
-                'error' => 'Erro ao carregar o carrinho. Tente novamente.'
-            ]);
+                'totalItems' => 0
+            ])->with('error', 'Erro ao carregar o carrinho. Tente novamente.');
         }
     }
 
@@ -72,10 +65,9 @@ class CarrinhoController extends Controller
             }
 
             if (!$produto->isDisponivel()) {
-                return $this->jsonOrBack($request, false, 'Produto indisponível no momento!');
+                return $this->jsonOrBack($request, false, 'Produto indisponível!');
             }
 
-            // Verificar estoque
             if ($request->quantidade > $produto->quantidade) {
                 return $this->jsonOrBack(
                     $request,
@@ -86,7 +78,7 @@ class CarrinhoController extends Controller
 
             $carrinho = $this->getCarrinho();
 
-            // Verificar limite de itens diferentes
+            // Verificar limite de itens
             if (count($carrinho) >= self::MAX_ITEMS) {
                 return $this->jsonOrBack(
                     $request,
@@ -95,50 +87,23 @@ class CarrinhoController extends Controller
                 );
             }
 
-            // Verificar limite por item
-            $quantidadeAtual = $this->getQuantidadeExistente($carrinho, $produto->id);
-            $novaQuantidade = $quantidadeAtual + $request->quantidade;
-
-            if ($novaQuantidade > self::MAX_QUANTITY_PER_ITEM) {
-                return $this->jsonOrBack(
-                    $request,
-                    false,
-                    "Quantidade máxima por item é " . self::MAX_QUANTITY_PER_ITEM . " unidades."
-                );
-            }
-
-            if ($novaQuantidade > $produto->quantidade) {
-                return $this->jsonOrBack(
-                    $request,
-                    false,
-                    "Quantidade total excede o estoque! Disponível: {$produto->quantidade}"
-                );
-            }
-
             // Adicionar ou atualizar item
-            $carrinho = $this->adicionarItemCarrinho($carrinho, $produto->id, $request->quantidade);
+            $carrinho = $this->adicionarItemCarrinho($carrinho, $produto->id, $request->quantidade, $produto->quantidade);
             $this->salvarCarrinho($carrinho);
-
-            $totalItems = $this->contarItens($carrinho);
-            $total = $this->calcularTotal($this->getCarrinhoCompleto());
 
             Log::info('🛒 Produto adicionado ao carrinho', [
                 'produto_id' => $request->produto_id,
                 'quantidade' => $request->quantidade,
-                'total_items' => $totalItems,
-                'usuario_id' => auth()->id() ?? 'guest'
+                'total_items' => $this->contarItens($carrinho)
             ]);
 
             return $this->jsonOrBack($request, true, 'Produto adicionado ao carrinho!', [
-                'count' => $totalItems,
-                'total' => $total,
-                'total_formatado' => $this->formatarMoeda($total)
+                'count' => $this->contarItens($carrinho)
             ]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao adicionar produto ao carrinho', [
                 'erro' => $e->getMessage(),
-                'produto_id' => $request->produto_id ?? null,
-                'trace' => $e->getTraceAsString()
+                'produto_id' => $request->produto_id ?? null
             ]);
 
             return $this->jsonOrBack($request, false, 'Erro ao adicionar produto. Tente novamente.');
@@ -148,13 +113,13 @@ class CarrinhoController extends Controller
     /**
      * Remove um item do carrinho.
      */
-    public function remover(Request $request, int $index): RedirectResponse
+    public function remover(Request $request, int $index): JsonResponse|RedirectResponse
     {
         try {
             $carrinho = $this->getCarrinho();
 
             if (!isset($carrinho[$index])) {
-                return back()->with('error', 'Item não encontrado!');
+                return $this->jsonOrBack($request, false, 'Item não encontrado!');
             }
 
             $produtoId = $carrinho[$index]['produto_id'] ?? 'desconhecido';
@@ -164,81 +129,16 @@ class CarrinhoController extends Controller
 
             Log::info('🗑️ Item removido do carrinho', [
                 'index' => $index,
-                'produto_id' => $produtoId,
-                'usuario_id' => auth()->id() ?? 'guest'
+                'produto_id' => $produtoId
             ]);
 
-            return redirect()->route('carrinho.index')
-                ->with('success', 'Item removido do carrinho!');
+            return $this->jsonOrBack($request, true, 'Item removido do carrinho!');
         } catch (\Exception $e) {
             Log::error('❌ Erro ao remover item do carrinho', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'erro' => $e->getMessage()
             ]);
 
-            return back()->with('error', 'Erro ao remover item. Tente novamente.');
-        }
-    }
-
-    /**
-     * Remove um item do carrinho via AJAX.
-     */
-    public function removerAjax(Request $request): JsonResponse
-    {
-        try {
-            $produtoId = $request->input('produto_id');
-            
-            if (!$produtoId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID do produto não informado.'
-                ], 422);
-            }
-
-            $carrinho = $this->getCarrinho();
-            $removido = false;
-
-            foreach ($carrinho as $key => $item) {
-                if ($item['produto_id'] == $produtoId) {
-                    unset($carrinho[$key]);
-                    $removido = true;
-                    break;
-                }
-            }
-
-            if (!$removido) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Produto não encontrado no carrinho.'
-                ], 404);
-            }
-
-            $this->salvarCarrinho(array_values($carrinho));
-            $totalItems = $this->contarItens($carrinho);
-            $total = $this->calcularTotal($this->getCarrinhoCompleto());
-
-            Log::info('🗑️ Item removido do carrinho (AJAX)', [
-                'produto_id' => $produtoId,
-                'usuario_id' => auth()->id() ?? 'guest'
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Item removido do carrinho!',
-                'count' => $totalItems,
-                'total' => $total,
-                'total_formatado' => $this->formatarMoeda($total)
-            ]);
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao remover item do carrinho (AJAX)', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro ao remover item. Tente novamente.'
-            ], 500);
+            return $this->jsonOrBack($request, false, 'Erro ao remover item. Tente novamente.');
         }
     }
 
@@ -262,23 +162,6 @@ class CarrinhoController extends Controller
                 return $this->jsonOrBack($request, false, 'Produto não encontrado!');
             }
 
-            // Validar quantidade
-            if ($request->quantidade < self::MIN_QUANTITY_PER_ITEM) {
-                return $this->jsonOrBack(
-                    $request,
-                    false,
-                    "Quantidade mínima é " . self::MIN_QUANTITY_PER_ITEM . " unidade."
-                );
-            }
-
-            if ($request->quantidade > self::MAX_QUANTITY_PER_ITEM) {
-                return $this->jsonOrBack(
-                    $request,
-                    false,
-                    "Quantidade máxima é " . self::MAX_QUANTITY_PER_ITEM . " unidades."
-                );
-            }
-
             if ($request->quantidade > $produto->quantidade) {
                 return $this->jsonOrBack(
                     $request,
@@ -290,35 +173,18 @@ class CarrinhoController extends Controller
             $carrinho[$index]['quantidade'] = $request->quantidade;
             $this->salvarCarrinho($carrinho);
 
-            $totalItems = $this->contarItens($carrinho);
-            $itemSubtotal = $request->quantidade * $produto->getPrecoVenda();
-            $total = $this->calcularTotal($this->getCarrinhoCompleto());
-
             Log::info('🔄 Carrinho atualizado', [
                 'index' => $index,
                 'nova_quantidade' => $request->quantidade,
-                'produto_id' => $produto->id,
-                'usuario_id' => auth()->id() ?? 'guest'
+                'produto_id' => $produto->id
             ]);
 
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Carrinho atualizado!',
-                    'count' => $totalItems,
-                    'total' => $total,
-                    'total_formatado' => $this->formatarMoeda($total),
-                    'item_total' => $itemSubtotal,
-                    'item_total_formatado' => $this->formatarMoeda($itemSubtotal)
-                ]);
-            }
-
-            return redirect()->route('carrinho.index')
-                ->with('success', 'Carrinho atualizado!');
+            return $this->jsonOrBack($request, true, 'Carrinho atualizado!', [
+                'count' => $this->contarItens($carrinho)
+            ]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao atualizar carrinho', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'erro' => $e->getMessage()
             ]);
 
             return $this->jsonOrBack($request, false, 'Erro ao atualizar carrinho. Tente novamente.');
@@ -334,26 +200,14 @@ class CarrinhoController extends Controller
             Session::forget('carrinho');
 
             Log::info('🧹 Carrinho limpo', [
-                'user_id' => auth()->id() ?? 'guest',
+                'user_id' => auth()->id(),
                 'ip' => $request->ip()
             ]);
 
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Carrinho limpo!',
-                    'count' => 0,
-                    'total' => 0,
-                    'total_formatado' => 'R$ 0,00'
-                ]);
-            }
-
-            return redirect()->route('carrinho.index')
-                ->with('success', 'Carrinho limpo!');
+            return $this->jsonOrBack($request, true, 'Carrinho limpo!', ['count' => 0]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao limpar carrinho', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'erro' => $e->getMessage()
             ]);
 
             return $this->jsonOrBack($request, false, 'Erro ao limpar carrinho. Tente novamente.');
@@ -375,15 +229,14 @@ class CarrinhoController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao contar itens do carrinho', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'erro' => $e->getMessage()
             ]);
 
             return response()->json([
                 'count' => 0,
                 'success' => false,
                 'error' => 'Erro ao contar itens'
-            ], 500);
+            ]);
         }
     }
 
@@ -403,8 +256,7 @@ class CarrinhoController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('❌ Erro ao calcular total do carrinho', [
-                'erro' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'erro' => $e->getMessage()
             ]);
 
             return response()->json([
@@ -412,7 +264,7 @@ class CarrinhoController extends Controller
                 'total_formatado' => 'R$ 0,00',
                 'success' => false,
                 'error' => 'Erro ao calcular total'
-            ], 500);
+            ]);
         }
     }
 
@@ -425,25 +277,18 @@ class CarrinhoController extends Controller
      */
     private function getCarrinho(): array
     {
-        try {
-            $carrinho = Session::get('carrinho', []);
+        $carrinho = Session::get('carrinho', []);
 
-            if (!is_array($carrinho)) {
-                Log::warning('⚠️ Carrinho corrompido - resetando', [
-                    'tipo' => gettype($carrinho),
-                    'valor' => $carrinho
-                ]);
-                $this->salvarCarrinho([]);
-                return [];
-            }
-
-            return $carrinho;
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao obter carrinho', [
-                'erro' => $e->getMessage()
+        if (!is_array($carrinho)) {
+            Log::warning('⚠️ Carrinho corrompido - resetando', [
+                'tipo' => gettype($carrinho),
+                'valor' => $carrinho
             ]);
+            $this->salvarCarrinho([]);
             return [];
         }
+
+        return $carrinho;
     }
 
     /**
@@ -451,15 +296,7 @@ class CarrinhoController extends Controller
      */
     private function salvarCarrinho(array $carrinho): void
     {
-        try {
-            Session::put('carrinho', array_values($carrinho));
-            Session::save();
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao salvar carrinho', [
-                'erro' => $e->getMessage()
-            ]);
-            throw $e;
-        }
+        Session::put('carrinho', array_values($carrinho));
     }
 
     /**
@@ -467,54 +304,43 @@ class CarrinhoController extends Controller
      */
     private function getCarrinhoCompleto(): array
     {
-        try {
-            $carrinho = $this->getCarrinho();
-            $resultado = [];
+        $carrinho = $this->getCarrinho();
+        $resultado = [];
 
-            foreach ($carrinho as $item) {
-                $produto = Produto::find($item['produto_id']);
+        foreach ($carrinho as $item) {
+            $produto = Produto::find($item['produto_id']);
 
-                if (!$produto) {
-                    Log::warning('⚠️ Produto não encontrado no carrinho', [
-                        'produto_id' => $item['produto_id']
-                    ]);
-                    continue;
-                }
-
-                $preco = $produto->getPrecoVenda();
-                $subtotal = $preco * $item['quantidade'];
-
-                $resultado[] = [
-                    'produto_id' => $produto->id,
-                    'nome' => $produto->descricao,
-                    'slug' => $produto->slug,
-                    'quantidade' => $item['quantidade'],
-                    'preco' => $preco,
-                    'preco_formatado' => $this->formatarMoeda($preco),
-                    'subtotal' => $subtotal,
-                    'subtotal_formatado' => $this->formatarMoeda($subtotal),
-                    'estoque' => $produto->quantidade,
-                    'imagem' => $produto->imagem_url,
-                    'disponivel' => $produto->isDisponivel(),
-                    'tem_promocao' => $produto->tem_promocao,
-                    'preco_original' => $produto->valor_unitario,
-                    'preco_original_formatado' => $this->formatarMoeda($produto->valor_unitario),
-                ];
+            if (!$produto) {
+                Log::warning('⚠️ Produto não encontrado no carrinho', [
+                    'produto_id' => $item['produto_id']
+                ]);
+                continue;
             }
 
-            return $resultado;
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao obter carrinho completo', [
-                'erro' => $e->getMessage()
-            ]);
-            return [];
+            $subtotal = $produto->valor_unitario * $item['quantidade'];
+
+            $resultado[] = [
+                'produto_id' => $produto->id,
+                'nome' => $produto->descricao,
+                'slug' => $produto->slug,
+                'quantidade' => $item['quantidade'],
+                'preco' => $produto->valor_unitario,
+                'preco_formatado' => $this->formatarMoeda($produto->valor_unitario),
+                'subtotal' => $subtotal,
+                'subtotal_formatado' => $this->formatarMoeda($subtotal),
+                'estoque' => $produto->quantidade,
+                'imagem' => $produto->imagem_url,
+                'disponivel' => $produto->isDisponivel(),
+            ];
         }
+
+        return $resultado;
     }
 
     /**
      * Adiciona um item ao carrinho.
      */
-    private function adicionarItemCarrinho(array $carrinho, int $produtoId, int $quantidade): array
+    private function adicionarItemCarrinho(array $carrinho, int $produtoId, int $quantidade, int $estoque): array
     {
         foreach ($carrinho as &$item) {
             if ($item['produto_id'] == $produtoId) {
@@ -522,6 +348,10 @@ class CarrinhoController extends Controller
 
                 if ($novaQuantidade > self::MAX_QUANTITY_PER_ITEM) {
                     throw new \Exception('Quantidade máxima por item é ' . self::MAX_QUANTITY_PER_ITEM);
+                }
+
+                if ($novaQuantidade > $estoque) {
+                    throw new \Exception("Quantidade total excede o estoque! Disponível: {$estoque}");
                 }
 
                 $item['quantidade'] = $novaQuantidade;
@@ -538,37 +368,17 @@ class CarrinhoController extends Controller
     }
 
     /**
-     * Obtém a quantidade existente de um produto no carrinho.
-     */
-    private function getQuantidadeExistente(array $carrinho, int $produtoId): int
-    {
-        foreach ($carrinho as $item) {
-            if ($item['produto_id'] == $produtoId) {
-                return $item['quantidade'];
-            }
-        }
-        return 0;
-    }
-
-    /**
      * Calcula o total do carrinho.
      */
     private function calcularTotal(array $carrinho): float
     {
-        try {
-            $total = 0;
+        $total = 0;
 
-            foreach ($carrinho as $item) {
-                $total += ($item['preco'] ?? 0) * ($item['quantidade'] ?? 0);
-            }
-
-            return (float) $total;
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao calcular total', [
-                'erro' => $e->getMessage()
-            ]);
-            return 0;
+        foreach ($carrinho as $item) {
+            $total += ($item['preco'] ?? 0) * ($item['quantidade'] ?? 0);
         }
+
+        return (float) $total;
     }
 
     /**
@@ -576,14 +386,7 @@ class CarrinhoController extends Controller
      */
     private function contarItens(array $carrinho): int
     {
-        try {
-            return (int) array_sum(array_column($carrinho, 'quantidade'));
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao contar itens', [
-                'erro' => $e->getMessage()
-            ]);
-            return 0;
-        }
+        return (int) array_sum(array_column($carrinho, 'quantidade'));
     }
 
     /**

@@ -52,9 +52,16 @@ class Banner extends Model
 
     /**
      * Accessor CORRIGIDO - Retorna a URL completa da imagem
+     * 
+     * Esta função verifica:
+     * 1. Se a imagem é uma URL completa (http/https)
+     * 2. Se a imagem existe na pasta storage/app/public/banners/
+     * 3. Se a imagem existe diretamente no storage
+     * 4. Se a imagem existe na pasta public/
      */
     public function getImagemUrlAttribute()
     {
+        // Se não tiver imagem, retorna null
         if (!$this->imagem) {
             return null;
         }
@@ -64,16 +71,26 @@ class Banner extends Model
             return $this->imagem;
         }
 
-        // Se for caminho do storage
+        // Verificar se a imagem existe na pasta banners/
+        // Caminho: storage/app/public/banners/nome_da_imagem.jpg
+        $path = 'banners/' . $this->imagem;
+        if (Storage::disk('public')->exists($path)) {
+            return asset('storage/' . $path);
+        }
+
+        // Verificar se a imagem existe diretamente no storage
+        // Caminho: storage/app/public/nome_da_imagem.jpg
         if (Storage::disk('public')->exists($this->imagem)) {
             return asset('storage/' . $this->imagem);
         }
 
         // Se for caminho direto na pasta public
+        // Caminho: public/nome_da_imagem.jpg
         if (file_exists(public_path($this->imagem))) {
             return asset($this->imagem);
         }
 
+        // Se não encontrar em nenhum lugar, retorna null
         return null;
     }
 

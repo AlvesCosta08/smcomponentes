@@ -3,96 +3,95 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class ProdutoRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $id = $this->route('id');
         
         return [
-            'descricao' => ['required', 'string', 'max:255'],
-            'referencia' => ['nullable', 'string', 'max:50', Rule::unique('produtos')->ignore($id)],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'valor_unitario' => ['required', 'numeric', 'min:0', 'max:999999.99'],
-            'valor_atacado' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
-            'preco_promocional' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
-            'ipi' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'quantidade' => ['required', 'integer', 'min:0'],
-            'ativo' => ['nullable', 'boolean'],
-            'destaque' => ['nullable', 'boolean'],
-            'novo' => ['nullable', 'boolean'],
-            'mais_vendido' => ['nullable', 'boolean'],
-            'imagem' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-            'imagens.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('produtos')->ignore($id)],
+            // Identificação
+            'descricao' => 'required|string|max:255',
+            'referencia' => 'nullable|string|max:50|unique:produtos,referencia,' . $id,
+            'categoria' => 'nullable|string|max:255',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'tipo' => 'nullable|string|max:20',
+            
+            // Estoque
+            'quantidade' => 'required|integer|min:0',
+            'estoque_minimo' => 'nullable|integer|min:0',
+            'disponibilidade' => 'nullable|in:DISPONIVEL,INDISPONIVEL,EST.BAIXO',
+            
+            // Preços
+            'valor_compra' => 'required|numeric|min:0',
+            'valor_atacado' => 'nullable|numeric|min:0',
+            'valor_unitario' => 'nullable|numeric|min:0',
+            'valor_custo' => 'nullable|numeric|min:0',
+            'preco_promocional' => 'nullable|numeric|min:0',
+            'ipi' => 'nullable|numeric|min:0|max:100',
+            'margem_lucro' => 'nullable|numeric|min:60|max:150',
+            
+            // Status
+            'ativo' => 'boolean',
+            'destaque' => 'boolean',
+            'novo' => 'boolean',
+            'mais_vendido' => 'boolean',
+            
+            // Datas
+            'data_compra' => 'nullable|date',
+            
+            // Imagem
+            'imagem' => 'nullable|image|max:2048',
+            'imagens.*' => 'nullable|image|max:2048',
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
-            'descricao.required' => 'A descrição do produto é obrigatória.',
-            'categoria_id.required' => 'Selecione uma categoria para o produto.',
-            'categoria_id.exists' => 'A categoria selecionada não existe.',
-            'valor_unitario.required' => 'O preço unitário é obrigatório.',
-            'valor_unitario.numeric' => 'O preço unitário deve ser um valor numérico.',
-            'quantidade.required' => 'A quantidade em estoque é obrigatória.',
-            'quantidade.integer' => 'A quantidade deve ser um número inteiro.',
-            'imagem.image' => 'O arquivo deve ser uma imagem.',
-            'imagem.mimes' => 'A imagem deve ser um dos formatos: JPEG, PNG, JPG, GIF ou WEBP.',
-            'imagem.max' => 'A imagem não pode ter mais que 2MB.',
+            'descricao.required' => 'A descrição é obrigatória.',
+            'valor_compra.required' => 'O valor de compra é obrigatório.',
+            'valor_compra.min' => 'O valor de compra não pode ser negativo.',
+            'quantidade.required' => 'A quantidade é obrigatória.',
+            'quantidade.min' => 'A quantidade não pode ser negativa.',
+            'margem_lucro.min' => 'A margem de lucro deve ser no mínimo 60%.',
+            'margem_lucro.max' => 'A margem de lucro deve ser no máximo 150%.',
+            'ipi.max' => 'O IPI não pode ser maior que 100%.',
+            'referencia.unique' => 'Esta referência já está sendo usada.',
+            'imagem.max' => 'A imagem deve ter no máximo 2MB.',
         ];
     }
 
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
+    protected function prepareForValidation()
     {
-        $this->merge([
-            'ativo' => $this->boolean('ativo', true),
-            'destaque' => $this->boolean('destaque'),
-            'novo' => $this->boolean('novo'),
-            'mais_vendido' => $this->boolean('mais_vendido'),
-            'valor_unitario' => $this->parseCurrency($this->input('valor_unitario')),
-            'valor_atacado' => $this->parseCurrency($this->input('valor_atacado')),
-            'preco_promocional' => $this->parseCurrency($this->input('preco_promocional')),
-        ]);
-    }
-
-    /**
-     * Parse currency string to float.
-     */
-    private function parseCurrency(?string $value): ?float
-    {
-        if (empty($value)) {
-            return null;
+        // Converte vírgula para ponto nos campos decimais
+        $decimais = [
+            'valor_compra', 
+            'valor_atacado', 
+            'valor_unitario', 
+            'valor_custo',
+            'ipi', 
+            'preco_promocional', 
+            'margem_lucro'
+        ];
+        
+        foreach ($decimais as $campo) {
+            if ($this->has($campo) && $this->$campo !== null) {
+                $valor = str_replace('R$', '', $this->$campo);
+                $valor = str_replace(' ', '', $valor);
+                $valor = str_replace('.', '', $valor);
+                $valor = str_replace(',', '.', $valor);
+                
+                $this->merge([
+                    $campo => (float) $valor
+                ]);
+            }
         }
-
-        $value = str_replace(['R$', 'R$ ', ' ', 'R'], '', $value);
-        $value = str_replace('.', '', $value);
-        $value = str_replace(',', '.', $value);
-
-        return (float) $value;
     }
 }

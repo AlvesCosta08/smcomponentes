@@ -19,7 +19,7 @@
         <div class="col-md-5">
             <div class="product-image-container">
                 @if($produto->imagem)
-                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                    <img src="{{ $produto->imagem_url }}" 
                          alt="{{ $produto->descricao }}" 
                          class="img-fluid rounded-3 w-100"
                          style="object-fit: contain; max-height: 400px; background: #f8f9fa; padding: 20px;">
@@ -47,8 +47,15 @@
                     <i class="bi bi-upc-scan"></i> Referência: {{ $produto->referencia }}
                 </p>
             @endif
+
+            @if($produto->possui_ipi)
+                <p class="text-muted small">
+                    <i class="bi bi-percent"></i> IPI: {{ $produto->ipi_aliquota }}
+                    <span class="text-muted ms-2">(+ {{ $produto->valor_ipi_formatado }})</span>
+                </p>
+            @endif
             
-            <!-- ✅ STATUS - VERIFICAÇÃO DIRETA (CORRIGIDO) -->
+            <!-- STATUS -->
             <div class="mb-3">
                 @php
                     $disponivel = ($produto->disponibilidade === 'DISPONIVEL' && $produto->quantidade > 0 && $produto->ativo);
@@ -70,25 +77,32 @@
                 <span class="badge bg-secondary ms-2">Estoque: {{ $produto->quantidade }} unidades</span>
             </div>
             
-            <!-- ✅ PREÇO - VERIFICAÇÃO DIRETA -->
+            <!-- PREÇO - USANDO valor_atacado -->
             <div class="mb-4">
-                @if($produto->preco_promocional && $produto->preco_promocional > 0 && $produto->preco_promocional < $produto->valor_unitario)
+                @if($produto->tem_promocao)
                     <h2 class="price text-success">
-                        R$ {{ number_format($produto->preco_promocional, 2, ',', '.') }}
+                        {{ $produto->preco_promocional_formatado }}
                     </h2>
                     <p class="text-muted">
                         <span class="old-price text-decoration-line-through text-danger">
-                            R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}
+                            {{ $produto->preco_atacado_formatado }}
                         </span>
-                        <span class="badge bg-danger ms-2">Promoção</span>
+                        <span class="badge bg-danger ms-2">-{{ $produto->desconto_percentual }}%</span>
                     </p>
                 @else
-                    <h2 class="price">R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}</h2>
+                    <h2 class="price">{{ $produto->preco_atacado_formatado }}</h2>
+                @endif
+                
+                @if($produto->possui_ipi)
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle"></i> 
+                        Com IPI: <span class="fw-bold text-primary">{{ $produto->preco_com_ipi_formatado }}</span>
+                    </p>
                 @endif
             </div>
 
-            <!-- ✅ BOTÃO - VERIFICAÇÃO DIRETA -->
-            @if($produto->disponibilidade === 'DISPONIVEL' && $produto->quantidade > 0 && $produto->ativo)
+            <!-- BOTÃO -->
+            @if($disponivel)
                 <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2">
                     @csrf
                     <input type="hidden" name="produto_id" value="{{ $produto->id }}">
@@ -133,7 +147,7 @@
                 <div class="col-6 col-md-3">
                     <div class="card h-100 shadow-sm hover-card">
                         @if($relacionado->imagem)
-                            <img src="{{ asset('storage/' . $relacionado->imagem) }}" 
+                            <img src="{{ $relacionado->imagem_url }}" 
                                  class="card-img-top" 
                                  alt="{{ $relacionado->descricao }}"
                                  style="height: 150px; object-fit: contain; padding: 10px; background: #f8f9fa;">
@@ -147,7 +161,7 @@
                                 {{ $relacionado->descricao }}
                             </h6>
                             <p class="card-text text-primary fw-bold">
-                                R$ {{ number_format($relacionado->valor_unitario, 2, ',', '.') }}
+                                {{ $relacionado->preco_atacado_formatado }}
                             </p>
                             <a href="{{ route('produtos.show', $relacionado->slug) }}" class="btn btn-sm btn-outline-primary w-100">
                                 Ver Produto

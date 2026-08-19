@@ -1,4 +1,3 @@
-{{-- admin/banners/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Gerenciar Banners - Admin')

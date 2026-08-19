@@ -1,73 +1,263 @@
 <?php
 
-namespace App\Http\Requests\Admin;
+namespace App\Http\Controllers\Admin;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
+use App\Models\Produto;
+use App\Models\Categoria;
+use App\Models\ProdutoImagem;
+use App\Http\Requests\ProdutoRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
-class ProdutoAdminRequest extends FormRequest
+class ProdutoAdminController extends Controller
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
+    public function index(Request $request)
     {
-        return $this->user()?->hasRole('Admin') ?? false;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
-    {
-        $id = $this->route('id');
+        $query = Produto::query()->with(['categoria']);
         
-        return [
-            'descricao' => ['required', 'string', 'max:255'],
-            'referencia' => ['nullable', 'string', 'max:50', Rule::unique('produtos')->ignore($id)],
-            'categoria_id' => ['required', 'exists:categorias,id'],
-            'valor_unitario' => ['required', 'numeric', 'min:0', 'max:999999.99'],
-            'valor_atacado' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
-            'preco_promocional' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
-            'ipi' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'quantidade' => ['required', 'integer', 'min:0'],
-            'ativo' => ['nullable', 'boolean'],
-            'destaque' => ['nullable', 'boolean'],
-            'novo' => ['nullable', 'boolean'],
-            'mais_vendido' => ['nullable', 'boolean'],
-            'imagem' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-            'imagens.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-        ];
+        if ($request->has('busca') && $request->busca) {
+            $query->buscar($request->busca);
+        }
+        
+        if ($request->has('status') && $request->status) {
+            switch ($request->status) {
+                case 'disponivel':
+                    $query->disponivel();
+                    break;
+                case 'indisponivel':
+                    $query->where('disponibilidade', Produto::INDISPONIVEL);
+                    break;
+                case 'estoque_baixo':
+                    $query->baixoEstoque();
+                    break;
+                case 'inativo':
+                    $query->where('ativo', false);
+                    break;
+            }
+        }
+        
+        if ($request->has('categoria') && $request->categoria) {
+            $query->where('categoria_id', $request->categoria);
+        }
+        
+        $produtos = $query->latest()->paginate(15);
+        $categorias = Categoria::ativo()->ordenado()->get();
+        
+        return view('admin.produtos.index', compact('produtos', 'categorias'));
     }
 
-    /**
-     * Get custom messages for validator errors.
-     */
-    public function messages(): array
+    public function create()
     {
-        return [
-            'descricao.required' => 'A descrição do produto é obrigatória.',
-            'categoria_id.required' => 'Selecione uma categoria.',
-            'categoria_id.exists' => 'Categoria inválida.',
-            'valor_unitario.required' => 'O preço unitário é obrigatório.',
-            'quantidade.required' => 'A quantidade é obrigatória.',
-            'imagem.image' => 'O arquivo deve ser uma imagem.',
-            'imagem.max' => 'A imagem não pode ter mais que 2MB.',
-        ];
+        $categorias = Categoria::ativo()->ordenado()->get();
+        $margens = Produto::getMargensDisponiveis();
+        return view('admin.produtos.create', compact('categorias', 'margens'));
     }
 
-    /**
-     * Prepare the data for validation.
-     */
-    protected function prepareForValidation(): void
+    public function store(ProdutoRequest $request)
     {
-        $this->merge([
-            'ativo' => $this->boolean('ativo', true),
-            'destaque' => $this->boolean('destaque'),
-            'novo' => $this->boolean('novo'),
-            'mais_vendido' => $this->boolean('mais_vendido'),
+        $data = $request->validated();
+        
+        // Gerar slug
+        $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
+        
+        // Criar instância para calcular preços
+        $produto = new Produto();
+        $precosCalculados = $produto->calcularTodosPrecos($data);
+        
+        // Merge dos preços calculados
+        $data = array_merge($data, $precosCalculados);
+        
+        // Processar imagem principal
+        if ($request->hasFile('imagem')) {
+            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
+        }
+        
+        // Calcular disponibilidade
+        $data['disponibilidade'] = $this->calcularDisponibilidade(
+            $data['quantidade'] ?? 0,
+            $data['ativo'] ?? true
+        );
+        
+        // Criar produto
+        $produto = Produto::create($data);
+        
+        // Processar imagens adicionais
+        if ($request->hasFile('imagens')) {
+            foreach ($request->file('imagens') as $index => $imagem) {
+                $nome = $this->uploadImagem($imagem);
+                ProdutoImagem::create([
+                    'produto_id' => $produto->id,
+                    'imagem' => $nome,
+                    'ordem' => $index,
+                    'principal' => $index === 0,
+                ]);
+            }
+        }
+        
+        return redirect()
+            ->route('admin.produtos.index')
+            ->with('success', 'Produto criado com sucesso!');
+    }
+
+    public function show($id)
+    {
+        $produto = Produto::with(['categoria', 'imagens'])
+            ->findOrFail($id);
+        return view('admin.produtos.show', compact('produto'));
+    }
+
+    public function edit($id)
+    {
+        $produto = Produto::with(['imagens'])->findOrFail($id);
+        $categorias = Categoria::ativo()->ordenado()->get();
+        $margens = Produto::getMargensDisponiveis();
+        return view('admin.produtos.edit', compact('produto', 'categorias', 'margens'));
+    }
+
+    public function update(ProdutoRequest $request, $id)
+    {
+        $produto = Produto::findOrFail($id);
+        $data = $request->validated();
+        
+        // Gerar slug se mudou
+        if ($produto->descricao !== $data['descricao']) {
+            $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
+        }
+        
+        // Recalcular preços
+        $precosCalculados = $produto->calcularTodosPrecos($data);
+        $data = array_merge($data, $precosCalculados);
+        
+        // Processar nova imagem principal
+        if ($request->hasFile('imagem')) {
+            if ($produto->imagem) {
+                Storage::disk('public')->delete($produto->imagem);
+            }
+            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
+        }
+        
+        // Processar imagens adicionais
+        if ($request->hasFile('imagens')) {
+            foreach ($request->file('imagens') as $index => $imagem) {
+                $nome = $this->uploadImagem($imagem);
+                ProdutoImagem::create([
+                    'produto_id' => $produto->id,
+                    'imagem' => $nome,
+                    'ordem' => $index,
+                ]);
+            }
+        }
+        
+        // Atualizar disponibilidade
+        $data['disponibilidade'] = $this->calcularDisponibilidade(
+            $data['quantidade'] ?? $produto->quantidade,
+            $data['ativo'] ?? $produto->ativo
+        );
+        
+        $produto->update($data);
+        
+        return redirect()
+            ->route('admin.produtos.index')
+            ->with('success', 'Produto atualizado com sucesso!');
+    }
+
+    public function destroy($id)
+    {
+        $produto = Produto::findOrFail($id);
+        
+        // Remover imagens
+        if ($produto->imagem) {
+            Storage::disk('public')->delete($produto->imagem);
+        }
+        
+        foreach ($produto->imagens as $imagem) {
+            Storage::disk('public')->delete($imagem->imagem);
+            $imagem->delete();
+        }
+        
+        $produto->delete();
+        
+        return redirect()
+            ->route('admin.produtos.index')
+            ->with('success', 'Produto excluído com sucesso!');
+    }
+
+    public function ajustarEstoque(Request $request, $id)
+    {
+        $request->validate([
+            'quantidade' => 'required|integer|min:1',
+            'operacao' => 'required|in:adicionar,remover,definir',
         ]);
+        
+        $produto = Produto::findOrFail($id);
+        
+        switch ($request->operacao) {
+            case 'adicionar':
+                $produto->aumentarEstoque($request->quantidade);
+                $mensagem = "Adicionados {$request->quantidade} itens ao estoque.";
+                break;
+            case 'remover':
+                if (!$produto->reduzirEstoque($request->quantidade)) {
+                    return back()->with('error', 'Estoque insuficiente!');
+                }
+                $mensagem = "Removidos {$request->quantidade} itens do estoque.";
+                break;
+            case 'definir':
+                $produto->quantidade = $request->quantidade;
+                $produto->atualizarDisponibilidade();
+                $produto->ultima_atualizacao_estoque = now();
+                $produto->save();
+                $mensagem = "Estoque definido para {$request->quantidade} itens.";
+                break;
+        }
+        
+        return back()->with('success', $mensagem);
+    }
+
+    public function removerImagem($id)
+    {
+        $imagem = ProdutoImagem::findOrFail($id);
+        Storage::disk('public')->delete($imagem->imagem);
+        $imagem->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function definirPrincipal($id)
+    {
+        $imagem = ProdutoImagem::findOrFail($id);
+        ProdutoImagem::where('produto_id', $imagem->produto_id)->update(['principal' => false]);
+        $imagem->principal = true;
+        $imagem->save();
+        return response()->json(['success' => true]);
+    }
+
+    // ==============================================
+    // MÉTODOS PRIVADOS
+    // ==============================================
+
+    private function uploadImagem($file): string
+    {
+        $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('produtos', $filename, 'public');
+        return $path;
+    }
+
+    private function calcularDisponibilidade(int $quantidade, bool $ativo): string
+    {
+        if (!$ativo) {
+            return Produto::INDISPONIVEL;
+        }
+        
+        if ($quantidade <= 0) {
+            return Produto::INDISPONIVEL;
+        }
+        
+        if ($quantidade <= 5) {
+            return Produto::ESTOQUE_BAIXO;
+        }
+        
+        return Produto::DISPONIVEL;
     }
 }

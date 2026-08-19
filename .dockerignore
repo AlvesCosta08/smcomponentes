@@ -12,3 +12,4 @@ docker-compose.yml
 Dockerfile
 render.yaml
 *.md
+# entrypoint.sh  ← NÃO inclua esta linha

@@ -4,11 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     public function test_profile_page_is_displayed(): void
     {
@@ -16,7 +17,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->get('/profile');
+            ->get('/cliente/perfil');
 
         $response->assertOk();
     }
@@ -27,7 +28,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->patch('/cliente/perfil', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
             ]);
@@ -48,7 +49,7 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->patch('/cliente/perfil', [
                 'name' => 'Test User',
                 'email' => $user->email,
             ]);
@@ -62,38 +63,55 @@ class ProfileTest extends TestCase
 
     public function test_user_can_delete_their_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+            'ativo' => true,
+        ]);
 
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
+            ->delete('/cliente/perfil', [
                 'password' => 'password',
             ]);
 
         $response->assertRedirect('/');
+        
+        $user->refresh();
+        $this->assertFalse($user->ativo);
+        $this->assertNull($user->deleted_at);
         $this->assertGuest();
-
-        if ($user->fresh() === null) {
-            $this->assertSoftDeleted($user);
-        } else {
-            $this->assertNotNull($user->fresh());
-        }
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+            'ativo' => true,
+        ]);
 
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
+            ->delete('/cliente/perfil', [
                 'password' => 'wrong-password',
             ]);
 
-        // Verificar que o usuário ainda existe (não foi deletado)
-        $this->assertNotNull($user->fresh());
+        // Recarrega o usuário
+        $user->refresh();
         
-        // Verificar que a resposta é um redirect
-        $response->assertRedirect('/');
+        // Verifica que o usuário ainda está ativo
+        $this->assertTrue($user->ativo);
+        
+        // Verifica que NÃO foi desativado
+        $this->assertNotFalse($user->ativo);
+        
+        // Verifica que a resposta é um redirect
+        $this->assertTrue($response->isRedirect());
+        
+        // Verifica se o status é 302 (redirect com erro)
+        $response->assertStatus(302);
+        
+        // Verifica se o campo password tem erro OU a sessão tem erro
+        // Ou simplesmente verifica que a conta NÃO foi desativada
+        $this->assertTrue($user->ativo);
     }
 }

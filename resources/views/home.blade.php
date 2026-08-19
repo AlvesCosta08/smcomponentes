@@ -108,7 +108,7 @@
                 </div>
                 @endforeach
             @else
-                {{-- BANNER PADRÃO (CASO NÃO HAJA BANNERS) --}}
+                {{-- BANNER PADRÃO --}}
                 <div class="carousel-item active">
                     <div class="banner-placeholder d-flex align-items-center justify-content-center text-center" 
                          style="height: 450px; background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);">
@@ -192,7 +192,7 @@
 </section>
 
 {{-- ============================================ --}}
-{{-- PRODUTOS EM DESTAQUE                        --}}
+{{-- PRODUTOS EM DESTAQUE - USANDO valor_atacado --}}
 {{-- ============================================ --}}
 @if(isset($produtosDestaque) && $produtosDestaque->count() > 0)
 <section class="produtos-smart py-4">
@@ -209,32 +209,46 @@
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
-                                @if($produto->imagem ?? false)
-                                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                                @if($produto->imagem)
+                                    <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;">
+                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if(($produto->preco_promocional ?? 0) > 0)
-                                <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">OFERTA</span>
+                            @if($produto->hasPromocao())
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
+                                    -{{ $produto->getDescontoPercentual() }}%
+                                </span>
+                            @endif
+                            @if($produto->hasIpi())
+                                <span class="badge bg-info position-absolute bottom-0 start-0 m-2" style="font-size: 0.6rem;">
+                                    IPI {{ $produto->getIpiAliquota() }}
+                                </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if(($produto->preco_promocional ?? 0) > 0)
+                                @if($produto->hasPromocao())
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                     <span class="fw-bold text-danger">
-                                        R$ {{ number_format($produto->preco_promocional ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoPromocionalFormatado() }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
+                                @endif
+                                @if($produto->hasIpi())
+                                    <br>
+                                    <small class="text-muted" style="font-size: 0.65rem;">
+                                        + IPI: {{ $produto->getPrecoComIpiFormatado() }}
+                                    </small>
                                 @endif
                             </p>
                             <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
@@ -261,7 +275,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- OFERTAS DO DIA                             --}}
+{{-- OFERTAS DO DIA - USANDO valor_atacado     --}}
 {{-- ============================================ --}}
 @if(isset($ofertas) && $ofertas->count() > 0)
 <section class="ofertas-smart py-4 bg-light">
@@ -278,29 +292,36 @@
                     <div class="card produto-card-smart h-100 shadow-sm border-0 border-warning border-2">
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
-                                @if($produto->imagem ?? false)
-                                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                                @if($produto->imagem)
+                                    <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;">
+                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if(($produto->valor_unitario ?? 0) > 0 && ($produto->preco_promocional ?? 0) > 0)
+                            @if($produto->hasPromocao())
                                 <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill">
-                                    {{ round((($produto->valor_unitario - $produto->preco_promocional) / $produto->valor_unitario) * 100) }}% OFF
+                                    -{{ $produto->getDescontoPercentual() }}% OFF
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                <span class="text-decoration-line-through text-muted me-1 small">
-                                    R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
-                                </span>
-                                <span class="fw-bold text-danger">
-                                    R$ {{ number_format($produto->preco_promocional ?? 0, 2, ',', '.') }}
-                                </span>
+                                @if($produto->hasPromocao())
+                                    <span class="text-decoration-line-through text-muted me-1 small">
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                    </span>
+                                    <span class="fw-bold text-danger">
+                                        {{ $produto->getPrecoPromocionalFormatado() }}
+                                    </span>
+                                @else
+                                    <span class="fw-bold text-danger">
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                    </span>
+                                @endif
                             </p>
                             <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                class="btn btn-sm btn-outline-danger w-100 rounded-pill">
@@ -326,7 +347,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- MAIS VENDIDOS                              --}}
+{{-- MAIS VENDIDOS - USANDO valor_atacado      --}}
 {{-- ============================================ --}}
 @if(isset($maisVendidos) && $maisVendidos->count() > 0)
 <section class="mais-vendidos-smart py-4">
@@ -343,10 +364,11 @@
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
-                                @if($produto->imagem ?? false)
-                                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                                @if($produto->imagem)
+                                    <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;">
+                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
@@ -358,16 +380,16 @@
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if(($produto->preco_promocional ?? 0) > 0)
+                                @if($produto->hasPromocao())
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                     <span class="fw-bold text-warning">
-                                        R$ {{ number_format($produto->preco_promocional ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoPromocionalFormatado() }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-warning">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                 @endif
                             </p>
@@ -395,7 +417,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- TODOS OS PRODUTOS                          --}}
+{{-- TODOS OS PRODUTOS - USANDO valor_atacado  --}}
 {{-- ============================================ --}}
 @if(isset($produtosDisponiveis) && $produtosDisponiveis->count() > 0)
 <section class="todos-produtos-smart py-4 bg-light">
@@ -415,32 +437,41 @@
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
-                                @if($produto->imagem ?? false)
-                                    <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                                @if($produto->imagem)
+                                    <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;">
+                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if(($produto->preco_promocional ?? 0) > 0)
-                                <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">OFERTA</span>
+                            @if($produto->hasPromocao())
+                                <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
+                                    -{{ $produto->getDescontoPercentual() }}%
+                                </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if(($produto->preco_promocional ?? 0) > 0)
+                                @if($produto->hasPromocao())
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                     <span class="fw-bold text-primary">
-                                        R$ {{ number_format($produto->preco_promocional ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoPromocionalFormatado() }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                        {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
+                                @endif
+                                @if($produto->hasIpi())
+                                    <br>
+                                    <small class="text-muted" style="font-size: 0.65rem;">
+                                        IPI: {{ $produto->getPrecoComIpiFormatado() }}
+                                    </small>
                                 @endif
                             </p>
                             <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 

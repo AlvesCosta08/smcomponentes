@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\ProdutoAdminController;
 use App\Http\Controllers\Admin\UsuarioAdminController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\ImageController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,7 +49,7 @@ require __DIR__ . '/auth.php';
 Route::prefix('carrinho')->name('carrinho.')->middleware('throttle:30,1')->group(function () {
     Route::get('/', [CarrinhoController::class, 'index'])->name('index');
     Route::get('/count', [CarrinhoController::class, 'count'])->name('count');
-    Route::get('/total', [CarrinhoController::class, 'total'])->name('total'); // NOVO
+    Route::get('/total', [CarrinhoController::class, 'total'])->name('total');
     Route::post('/adicionar', [CarrinhoController::class, 'adicionar'])->name('adicionar');
     Route::put('/atualizar/{item}', [CarrinhoController::class, 'atualizar'])->name('atualizar');
     Route::delete('/remover/{item}', [CarrinhoController::class, 'remover'])->name('remover');
@@ -67,12 +68,12 @@ Route::middleware(['auth'])->prefix('cliente')->name('cliente.')->group(function
     // --- 3.2 Perfil (UNIFICADO) ---
     Route::prefix('perfil')->name('perfil.')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('edit');
-        Route::get('/visualizar', [ProfileController::class, 'show'])->name('show'); // NOVO
+        Route::get('/visualizar', [ProfileController::class, 'show'])->name('show');
         Route::patch('/', [ProfileController::class, 'update'])->name('update');
-        Route::put('/senha', [ProfileController::class, 'updatePassword'])->name('password'); // NOVO
+        Route::put('/senha', [ProfileController::class, 'updatePassword'])->name('password');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('destroy');
-        Route::post('/reativar', [ProfileController::class, 'reativar'])->name('reativar'); // NOVO
-        Route::get('/historico', [ProfileController::class, 'historico'])->name('historico'); // NOVO
+        Route::post('/reativar', [ProfileController::class, 'reativar'])->name('reativar');
+        Route::get('/historico', [ProfileController::class, 'historico'])->name('historico');
     });
     
     // --- 3.3 Pedidos ---
@@ -116,7 +117,6 @@ Route::middleware(['auth'])->prefix('checkout')->name('checkout.')->group(functi
 // ============================================================
 
 Route::middleware(['auth'])->group(function () {
-    // Redirecionar rotas antigas para as novas
     Route::get('/profile', fn() => redirect()->route('cliente.perfil.edit'))->name('profile.edit');
     Route::patch('/profile', fn() => redirect()->route('cliente.perfil.update'))->name('profile.update');
     Route::delete('/profile', fn() => redirect()->route('cliente.perfil.destroy'))->name('profile.destroy');
@@ -153,8 +153,8 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/{id}', [ProdutoAdminController::class, 'update'])->name('update');
         Route::delete('/{id}', [ProdutoAdminController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/ajustar-estoque', [ProdutoAdminController::class, 'ajustarEstoque'])->name('ajustar-estoque');
-        Route::delete('/imagem/{id}', [ProdutoAdminController::class, 'removerImagem'])->name('remover-imagem'); // NOVO
-        Route::post('/imagem/{id}/principal', [ProdutoAdminController::class, 'definirPrincipal'])->name('imagem-principal'); // NOVO
+        Route::delete('/imagem/{id}', [ProdutoAdminController::class, 'removerImagem'])->name('remover-imagem');
+        Route::post('/imagem/{id}/principal', [ProdutoAdminController::class, 'definirPrincipal'])->name('imagem-principal');
     });
 
     // --- 6.4 Usuários ---
@@ -201,3 +201,26 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
 if (app()->environment('local')) {
     require __DIR__ . '/debug.php';
 }
+
+// ============================================================
+// LÓGICA 8: ROTAS PARA IMAGENS (SERVIDAS PELO LARAVEL)
+// ============================================================
+
+// Rotas para servir imagens de produtos
+Route::get('/storage/produtos/{filename}', [ImageController::class, 'show'])
+    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg)$')
+    ->name('produto.imagem');
+
+// Rota otimizada (redimensiona na URL)
+Route::get('/storage/produtos/{width}x{height}/{filename}', [ImageController::class, 'showOptimized'])
+    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg)$')
+    ->where('width', '\d+')
+    ->where('height', '\d+')
+    ->name('produto.imagem.otimizada');
+
+// Rotas API para upload (opcional)
+Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
+    Route::post('/upload-image', [ImageController::class, 'upload'])->name('upload');
+    Route::post('/upload-optimized', [ImageController::class, 'uploadOptimized'])->name('upload.optimized');
+    Route::delete('/delete-image', [ImageController::class, 'delete'])->name('delete.image');
+});

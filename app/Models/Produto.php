@@ -2,92 +2,88 @@
 
 namespace App\Models;
 
+use App\Enums\DisponibilidadeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Produto extends Model
 {
     use HasFactory, SoftDeletes;
 
-    // ==============================================
-    // CONSTANTES
-    // ==============================================
-    
-    const DISPONIVEL = 'DISPONIVEL';
-    const INDISPONIVEL = 'INDISPONIVEL';
-    const ESTOQUE_BAIXO = 'EST.BAIXO';
-
-    const STATUS_LABELS = [
-        self::DISPONIVEL => 'Disponível',
-        self::INDISPONIVEL => 'Indisponível',
-        self::ESTOQUE_BAIXO => 'Estoque Baixo',
-    ];
-
-    // ==============================================
-    // TABELA E FILLABLE
-    // ==============================================
-
     protected $table = 'produtos';
 
     protected $fillable = [
-        'descricao',
-        'slug',
-        'referencia',
+        'categoria',
         'categoria_id',
-        'valor_unitario',
+        'referencia',
+        'descricao',
+        'tipo',
+        'disponibilidade',
+        'imagem',
+        'slug',
+        'quantidade',
+        'estoque_minimo',
         'valor_atacado',
+        'valor_compra',
+        'valor_unitario',
+        'valor_custo',
         'preco_promocional',
         'ipi',
-        'quantidade',
-        'disponibilidade',
+        'percentual_custo',
+        'margem_lucro',
         'ativo',
         'destaque',
         'novo',
         'mais_vendido',
-        'imagem',
+        'data_compra',
+        'ultima_atualizacao_estoque',
         'visualizacoes',
+        'ultima_visualizacao',
     ];
 
-    // ==============================================
-    // CASTS
-    // ==============================================
-
     protected $casts = [
-        'valor_unitario' => 'decimal:2',
-        'valor_atacado' => 'decimal:2',
-        'preco_promocional' => 'decimal:2',
-        'ipi' => 'decimal:2',
+        'valor_atacado' => 'float',
+        'valor_compra' => 'float',
+        'valor_unitario' => 'float',
+        'valor_custo' => 'float',
+        'preco_promocional' => 'float',
+        'ipi' => 'float',
+        'percentual_custo' => 'float',
+        'margem_lucro' => 'float',
         'quantidade' => 'integer',
-        'visualizacoes' => 'integer',
+        'estoque_minimo' => 'integer',
         'ativo' => 'boolean',
         'destaque' => 'boolean',
         'novo' => 'boolean',
         'mais_vendido' => 'boolean',
+        'data_compra' => 'date',
+        'ultima_atualizacao_estoque' => 'datetime',
+        'ultima_visualizacao' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'disponibilidade' => DisponibilidadeEnum::class,
+        'visualizacoes' => 'integer',
     ];
 
     // ==============================================
-    // APPENDS
+    // ATRIBUTOS APENDADOS
     // ==============================================
-
+    
     protected $appends = [
         'preco_formatado',
         'preco_atacado_formatado',
         'preco_promocional_formatado',
-        'preco_com_ipi',
-        'preco_com_ipi_formatado',
         'imagem_url',
+        'imagens_urls',
         'status_label',
         'disponivel',
         'tem_promocao',
-        'tem_ipi',
-        'preco_venda_formatado',
         'desconto_percentual',
+        'lucro_bruto_formatado',
     ];
 
     // ==============================================
@@ -96,14 +92,17 @@ class Produto extends Model
 
     public function categoria()
     {
-        return $this->belongsTo(Categoria::class)->withDefault([
-            'nome' => 'Sem categoria'
-        ]);
+        return $this->belongsTo(Categoria::class);
     }
 
     public function imagens()
     {
-        return $this->hasMany(ProdutoImagem::class);
+        return $this->hasMany(ProdutoImagem::class)->orderBy('ordem', 'asc');
+    }
+
+    public function imagemPrincipal()
+    {
+        return $this->hasOne(ProdutoImagem::class)->where('principal', true);
     }
 
     public function itensPedido()
@@ -117,97 +116,39 @@ class Produto extends Model
     }
 
     // ==============================================
-    // ACCESSORS - PREÇOS
+    // ACESSORS (GETTERS)
     // ==============================================
 
     public function getPrecoFormatadoAttribute(): string
     {
-        return 'R$ ' . number_format($this->valor_unitario ?? 0, 2, ',', '.');
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
     }
 
     public function getPrecoAtacadoFormatadoAttribute(): string
     {
-        if ($this->valor_atacado && $this->valor_atacado > 0) {
-            return 'R$ ' . number_format($this->valor_atacado, 2, ',', '.');
-        }
-        return $this->getPrecoFormatadoAttribute();
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
     }
 
-    public function getPrecoPromocionalFormatadoAttribute(): string
+    public function getPrecoPromocionalFormatadoAttribute(): ?string
     {
-        if ($this->preco_promocional && $this->preco_promocional > 0) {
-            return 'R$ ' . number_format($this->preco_promocional, 2, ',', '.');
-        }
-        return '';
+        return $this->preco_promocional 
+            ? 'R$ ' . number_format($this->preco_promocional, 2, ',', '.') 
+            : null;
     }
-
-    public function getPrecoComIpiAttribute(): float
-    {
-        $base = $this->valor_atacado ?? $this->valor_unitario ?? 0;
-        
-        if ($base <= 0) {
-            return 0;
-        }
-        
-        $ipi = $this->ipi ?? 0;
-        return round($base * (1 + ($ipi / 100)), 2);
-    }
-
-    public function getPrecoComIpiFormatadoAttribute(): string
-    {
-        return 'R$ ' . number_format($this->preco_com_ipi, 2, ',', '.');
-    }
-
-    public function getIpiFormatadoAttribute(): string
-    {
-        return number_format($this->ipi ?? 0, 2) . '%';
-    }
-
-    public function getTemIpiAttribute(): bool
-    {
-        return ($this->ipi ?? 0) > 0;
-    }
-
-    public function getTemPromocaoAttribute(): bool
-    {
-        $precoBase = $this->valor_atacado ?? $this->valor_unitario ?? 0;
-        
-        return $this->preco_promocional !== null 
-            && $this->preco_promocional > 0 
-            && $this->preco_promocional < $precoBase;
-    }
-
-    // ==============================================
-    // ACCESSORS - IMAGEM
-    // ==============================================
 
     public function getImagemUrlAttribute(): string
     {
-        if (!$this->imagem) {
-            return asset('images/produto-placeholder.jpg');
-        }
-
-        if (filter_var($this->imagem, FILTER_VALIDATE_URL)) {
-            return $this->imagem;
-        }
-
-        if (Storage::disk('public')->exists('produtos/' . $this->imagem)) {
-            return asset('storage/produtos/' . $this->imagem);
-        }
-
-        return asset('images/produto-placeholder.jpg');
+        return $this->getImagemUrl();
     }
 
-    // ==============================================
-    // ACCESSORS - STATUS
-    // ==============================================
+    public function getImagensUrlsAttribute(): array
+    {
+        return $this->getImagensUrls();
+    }
 
     public function getStatusLabelAttribute(): string
     {
-        if (!$this->ativo) {
-            return 'Inativo';
-        }
-        return self::STATUS_LABELS[$this->disponibilidade] ?? 'Desconhecido';
+        return $this->getStatusLabel();
     }
 
     public function getDisponivelAttribute(): bool
@@ -215,37 +156,262 @@ class Produto extends Model
         return $this->isDisponivel();
     }
 
-    // ==============================================
-    // ACCESSORS - VENDA
-    // ==============================================
-
-    public function getPrecoVendaAttribute(): float
+    public function getTemPromocaoAttribute(): bool
     {
-        if ($this->tem_promocao) {
-            return $this->preco_promocional;
-        }
-        
-        return $this->valor_atacado ?? $this->valor_unitario ?? 0;
+        return $this->hasPromocao();
     }
 
-    public function getPrecoVendaFormatadoAttribute(): string
+    public function getDescontoPercentualAttribute(): int
     {
-        return 'R$ ' . number_format($this->getPrecoVendaAttribute(), 2, ',', '.');
+        return $this->getDescontoPercentual();
     }
 
-    public function getDescontoPercentualAttribute(): float
+    public function getLucroBrutoFormatadoAttribute(): string
     {
-        if (!$this->tem_promocao) {
+        return $this->getLucroBrutoFormatado();
+    }
+
+    // ==============================================
+    // MÉTODOS AUXILIARES
+    // ==============================================
+
+    public function getPrecoFormatado(): string
+    {
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
+    }
+
+    public function getPrecoAtacadoFormatado(): string
+    {
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
+    }
+
+    public function getPrecoPromocionalFormatado(): ?string
+    {
+        return $this->preco_promocional 
+            ? 'R$ ' . number_format($this->preco_promocional, 2, ',', '.') 
+            : null;
+    }
+
+    public function getPrecoComIpi(): float
+    {
+        $preco = $this->valor_atacado ?? 0;
+        $ipi = $this->ipi ?? 0;
+        return round($preco * (1 + ($ipi / 100)), 2);
+    }
+
+    public function getPrecoComIpiFormatado(): string
+    {
+        return 'R$ ' . number_format($this->getPrecoComIpi(), 2, ',', '.');
+    }
+
+    public function getValorIpi(): float
+    {
+        $preco = $this->valor_atacado ?? 0;
+        $ipi = $this->ipi ?? 0;
+        return round($preco * ($ipi / 100), 2);
+    }
+
+    public function getValorIpiFormatado(): string
+    {
+        return 'R$ ' . number_format($this->getValorIpi(), 2, ',', '.');
+    }
+
+    public function getIpiAliquota(): string
+    {
+        return number_format($this->ipi ?? 0, 2, ',', '.') . '%';
+    }
+
+    public function hasIpi(): bool
+    {
+        return ($this->ipi ?? 0) > 0;
+    }
+
+    public function hasPromocao(): bool
+    {
+        return $this->preco_promocional !== null 
+            && $this->preco_promocional > 0 
+            && $this->preco_promocional < ($this->valor_atacado ?? 0);
+    }
+
+    public function getDescontoPercentual(): int
+    {
+        if (!$this->hasPromocao() || ($this->valor_atacado ?? 0) <= 0) {
             return 0;
         }
-        
-        $base = $this->valor_atacado ?? $this->valor_unitario ?? 0;
-        
-        if ($base <= 0 || $this->preco_promocional >= $base) {
-            return 0;
+        return (int) round((($this->valor_atacado - $this->preco_promocional) / $this->valor_atacado) * 100);
+    }
+
+    public function getStatusLabel(): string
+    {
+        if (!$this->ativo) {
+            return 'Inativo';
         }
+        return $this->disponibilidade?->label() ?? 'Desconhecido';
+    }
+
+    public function isDisponivel(): bool
+    {
+        return $this->ativo 
+            && ($this->quantidade ?? 0) > 0 
+            && $this->disponibilidade === DisponibilidadeEnum::DISPONIVEL;
+    }
+
+    public function getImagemUrl(): string
+    {
+        // Primeiro tenta pegar a imagem principal do relacionamento
+        if ($this->relationLoaded('imagemPrincipal') && $this->imagemPrincipal) {
+            return $this->getImagemPath($this->imagemPrincipal->imagem);
+        }
+
+        // Depois tenta a primeira imagem do relacionamento
+        if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
+            return $this->getImagemPath($this->imagens->first()->imagem);
+        }
+
+        // Fallback para o campo imagem antigo
+        if ($this->imagem) {
+            return $this->getImagemPath($this->imagem);
+        }
+
+        return asset('images/produto-placeholder.jpg');
+    }
+
+    public function getImagensUrls(): array
+    {
+        if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
+            return $this->imagens->map(function ($imagem) {
+                return $this->getImagemPath($imagem->imagem);
+            })->toArray();
+        }
+
+        // Fallback para uma única imagem
+        return [$this->getImagemUrl()];
+    }
+
+    private function getImagemPath(string $path): string
+    {
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+
+        return asset('images/produto-placeholder.jpg');
+    }
+
+    public function getLucroBruto(): float
+    {
+        $preco = $this->valor_atacado ?? 0;
+        $custo = $this->valor_custo ?? 0;
+        return round($preco - $custo, 2);
+    }
+
+    public function getLucroBrutoFormatado(): string
+    {
+        return 'R$ ' . number_format($this->getLucroBruto(), 2, ',', '.');
+    }
+
+    public function getMarkup(): float
+    {
+        $margem = $this->margem_lucro ?? 80;
+        if ($margem <= 0 || $margem >= 100) {
+            return 1;
+        }
+        return round(1 / (1 - ($margem / 100)), 2);
+    }
+
+    // ==============================================
+    // MÉTODOS DE CÁLCULO
+    // ==============================================
+
+    public function calcularTodosPrecos(array $data): array
+    {
+        $valorCompra = (float) ($data['valor_compra'] ?? 0);
+        $margem = (float) ($data['margem_lucro'] ?? 80);
+        $ipi = (float) ($data['ipi'] ?? 0);
+
+        $custo = round($valorCompra, 2);
         
-        return round((($base - $this->preco_promocional) / $base) * 100, 0);
+        $precoAtacado = 0;
+        if ($margem > 0 && $margem < 100) {
+            $precoAtacado = round($custo / (1 - ($margem / 100)), 2);
+        } else {
+            $precoAtacado = $custo;
+        }
+
+        $percentualCusto = 0;
+        if ($precoAtacado > 0) {
+            $percentualCusto = round(($custo / $precoAtacado) * 100, 2);
+        }
+
+        return [
+            'valor_custo' => $custo,
+            'valor_atacado' => $precoAtacado,
+            'percentual_custo' => $percentualCusto,
+        ];
+    }
+
+    public function setValorCompraAttribute(?float $value): void
+    {
+        $this->attributes['valor_compra'] = $value !== null ? round($value, 2) : null;
+        $this->recalcularPrecos();
+    }
+
+    public function setMargemLucroAttribute(?float $value): void
+    {
+        $this->attributes['margem_lucro'] = $value !== null ? round($value, 2) : null;
+        $this->recalcularPrecos();
+    }
+
+    public function setIpiAttribute(?float $value): void
+    {
+        $this->attributes['ipi'] = $value !== null ? round($value, 2) : null;
+        $this->recalcularPrecos();
+    }
+
+    private function recalcularPrecos(): void
+    {
+        $valorCompra = $this->attributes['valor_compra'] ?? 0;
+        $margem = $this->attributes['margem_lucro'] ?? 80;
+        $ipi = $this->attributes['ipi'] ?? 0;
+
+        if ($valorCompra > 0) {
+            $resultados = $this->calcularTodosPrecos([
+                'valor_compra' => $valorCompra,
+                'margem_lucro' => $margem,
+                'ipi' => $ipi,
+            ]);
+
+            $this->attributes['valor_custo'] = $resultados['valor_custo'];
+            $this->attributes['valor_atacado'] = $resultados['valor_atacado'];
+            $this->attributes['percentual_custo'] = $resultados['percentual_custo'];
+        } else {
+            $this->attributes['valor_custo'] = null;
+            $this->attributes['valor_atacado'] = null;
+            $this->attributes['percentual_custo'] = null;
+        }
+    }
+
+    public function atualizarDisponibilidade(): void
+    {
+        if (!$this->ativo) {
+            $this->disponibilidade = DisponibilidadeEnum::INDISPONIVEL;
+        } elseif (($this->quantidade ?? 0) <= 0) {
+            $this->disponibilidade = DisponibilidadeEnum::INDISPONIVEL;
+        } elseif (($this->quantidade ?? 0) <= ($this->estoque_minimo ?? 5)) {
+            $this->disponibilidade = DisponibilidadeEnum::ESTOQUE_BAIXO;
+        } else {
+            $this->disponibilidade = DisponibilidadeEnum::DISPONIVEL;
+        }
+    }
+
+    public function incrementarVisualizacoes(): void
+    {
+        $this->increment('visualizacoes');
+        $this->ultima_visualizacao = now();
+        $this->saveQuietly();
     }
 
     // ==============================================
@@ -255,15 +421,13 @@ class Produto extends Model
     public function scopeDisponivel($query)
     {
         return $query->where('ativo', true)
-            ->where('disponibilidade', self::DISPONIVEL)
+            ->where('disponibilidade', DisponibilidadeEnum::DISPONIVEL->value)
             ->where('quantidade', '>', 0);
     }
 
     public function scopeEmDestaque($query)
     {
-        return $query->disponivel()
-            ->where('destaque', true)
-            ->orderBy('created_at', 'desc');
+        return $query->disponivel()->where('destaque', true);
     }
 
     public function scopeOfertas($query)
@@ -271,7 +435,7 @@ class Produto extends Model
         return $query->disponivel()
             ->whereNotNull('preco_promocional')
             ->where('preco_promocional', '>', 0)
-            ->whereRaw('preco_promocional < COALESCE(valor_atacado, valor_unitario)');
+            ->whereRaw('preco_promocional < valor_atacado');
     }
 
     public function scopeNovos($query)
@@ -288,7 +452,7 @@ class Produto extends Model
             ->orderBy('visualizacoes', 'desc');
     }
 
-    public function scopeBaixoEstoque($query, $limite = 5)
+    public function scopeBaixoEstoque($query, int $limite = 5)
     {
         return $query->where('ativo', true)
             ->where('quantidade', '<=', $limite)
@@ -296,148 +460,16 @@ class Produto extends Model
             ->orderBy('quantidade', 'asc');
     }
 
-    public function scopePorCategoria($query, $categoriaId)
+    public function scopeBuscar($query, string $termo)
     {
-        return $query->where('categoria_id', $categoriaId);
-    }
-
-    /**
-     * Busca produtos por descrição, referência ou categoria
-     * Usa LIKE para MySQL (case-insensitive)
-     */
-    public function scopeBuscar($query, $termo)
-    {
-        if (empty($termo)) {
-            return $query;
-        }
-
-        $termo = trim($termo);
-        
         return $query->where(function($q) use ($termo) {
             $q->where('descricao', 'LIKE', "%{$termo}%")
               ->orWhere('referencia', 'LIKE', "%{$termo}%")
+              ->orWhere('categoria', 'LIKE', "%{$termo}%")
               ->orWhereHas('categoria', function($q) use ($termo) {
                   $q->where('nome', 'LIKE', "%{$termo}%");
               });
         });
-    }
-
-    public function scopeAtivos($query)
-    {
-        return $query->where('ativo', true);
-    }
-
-    public function scopeInativos($query)
-    {
-        return $query->where('ativo', false);
-    }
-
-    public function scopeOrdenado($query, string $campo = 'descricao', string $direcao = 'asc')
-    {
-        if (in_array($campo, $this->getFillable())) {
-            return $query->orderBy($campo, $direcao);
-        }
-        
-        return $query->orderBy('descricao', 'asc');
-    }
-
-    // ==============================================
-    // MÉTODOS
-    // ==============================================
-
-    public function isDisponivel(): bool
-    {
-        return $this->ativo 
-            && $this->disponibilidade === self::DISPONIVEL
-            && $this->quantidade > 0;
-    }
-
-    public function temEstoque(int $quantidade = 1): bool
-    {
-        return $this->quantidade >= $quantidade;
-    }
-
-    public function reduzirEstoque(int $quantidade): bool
-    {
-        if (!$this->temEstoque($quantidade)) {
-            return false;
-        }
-        
-        $this->quantidade -= $quantidade;
-        $this->atualizarDisponibilidade();
-        
-        return $this->save();
-    }
-
-    public function aumentarEstoque(int $quantidade): bool
-    {
-        $this->quantidade += $quantidade;
-        $this->atualizarDisponibilidade();
-        
-        return $this->save();
-    }
-
-    public function atualizarDisponibilidade(): void
-    {
-        if (!$this->ativo) {
-            $this->disponibilidade = self::INDISPONIVEL;
-        } elseif ($this->quantidade <= 0) {
-            $this->disponibilidade = self::INDISPONIVEL;
-        } elseif ($this->quantidade <= 5) {
-            $this->disponibilidade = self::ESTOQUE_BAIXO;
-        } else {
-            $this->disponibilidade = self::DISPONIVEL;
-        }
-    }
-
-    public function incrementarVisualizacoes(): void
-    {
-        $this->increment('visualizacoes');
-    }
-
-    public function getPrecoVenda(): float
-    {
-        return $this->getPrecoVendaAttribute();
-    }
-
-    public function getPrecoVendaFormatado(): string
-    {
-        return $this->getPrecoVendaFormatadoAttribute();
-    }
-
-    public function getDescontoPercentual(): float
-    {
-        return $this->getDescontoPercentualAttribute();
-    }
-
-    /**
-     * Verifica se o produto está em promoção
-     */
-    public function isEmPromocao(): bool
-    {
-        return $this->tem_promocao;
-    }
-
-    /**
-     * Retorna o preço final (com ou sem IPI)
-     */
-    public function getPrecoFinal(bool $comIpi = true): float
-    {
-        $preco = $this->getPrecoVenda();
-        
-        if ($comIpi && $this->ipi > 0) {
-            return $preco * (1 + ($this->ipi / 100));
-        }
-        
-        return $preco;
-    }
-
-    /**
-     * Retorna o preço final formatado
-     */
-    public function getPrecoFinalFormatado(bool $comIpi = true): string
-    {
-        return 'R$ ' . number_format($this->getPrecoFinal($comIpi), 2, ',', '.');
     }
 
     // ==============================================
@@ -448,51 +480,66 @@ class Produto extends Model
     {
         static::creating(function ($produto) {
             if (empty($produto->slug)) {
-                $produto->slug = Str::slug($produto->descricao);
+                $baseSlug = Str::slug($produto->descricao);
+                $slug = $baseSlug;
+                $counter = 1;
+                
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+                
+                $produto->slug = $slug;
             }
             
-            if (empty($produto->disponibilidade)) {
-                $produto->disponibilidade = self::DISPONIVEL;
-            }
+            $produto->disponibilidade ??= DisponibilidadeEnum::DISPONIVEL->value;
+            $produto->visualizacoes ??= 0;
+            $produto->estoque_minimo ??= 5;
 
-            // Garantir valores padrão
-            $produto->valor_unitario = $produto->valor_unitario ?? 0;
-            $produto->quantidade = $produto->quantidade ?? 0;
+            if (!empty($produto->valor_compra)) {
+                $resultados = $produto->calcularTodosPrecos([
+                    'valor_compra' => $produto->valor_compra,
+                    'margem_lucro' => $produto->margem_lucro ?? 80,
+                    'ipi' => $produto->ipi ?? 0,
+                ]);
+                $produto->valor_custo = $resultados['valor_custo'];
+                $produto->valor_atacado = $resultados['valor_atacado'];
+                $produto->percentual_custo = $resultados['percentual_custo'];
+            }
         });
 
         static::updating(function ($produto) {
             if ($produto->isDirty('descricao') && empty($produto->slug)) {
-                $produto->slug = Str::slug($produto->descricao);
+                $baseSlug = Str::slug($produto->descricao);
+                $slug = $baseSlug;
+                $counter = 1;
+                
+                while (static::where('slug', $slug)->where('id', '!=', $produto->id)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+                
+                $produto->slug = $slug;
             }
             
-            if ($produto->isDirty('quantidade') || $produto->isDirty('ativo')) {
+            if ($produto->isDirty(['quantidade', 'ativo'])) {
                 $produto->atualizarDisponibilidade();
             }
+
+            if ($produto->isDirty('quantidade')) {
+                $produto->ultima_atualizacao_estoque = now();
+            }
+
+            if ($produto->isDirty(['valor_compra', 'margem_lucro', 'ipi'])) {
+                $resultados = $produto->calcularTodosPrecos([
+                    'valor_compra' => $produto->valor_compra,
+                    'margem_lucro' => $produto->margem_lucro ?? 80,
+                    'ipi' => $produto->ipi ?? 0,
+                ]);
+                $produto->valor_custo = $resultados['valor_custo'];
+                $produto->valor_atacado = $resultados['valor_atacado'];
+                $produto->percentual_custo = $resultados['percentual_custo'];
+            }
         });
-    }
-
-    // ==============================================
-    // MÉTODOS ESTÁTICOS PARA CONTROLLERS
-    // ==============================================
-
-    /**
-     * Obtém todos os produtos disponíveis com paginação
-     * 
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public static function todosDisponiveis()
-    {
-        return self::disponivel()
-            ->orderBy('descricao');
-    }
-
-    /**
-     * Busca produtos com cache
-     */
-    public static function buscarComCache(string $termo, int $porPagina = 12)
-    {
-        return self::disponivel()
-            ->buscar($termo)
-            ->paginate($porPagina);
     }
 }

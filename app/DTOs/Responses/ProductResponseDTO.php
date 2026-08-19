@@ -1,48 +1,117 @@
 <?php
+// app/DTOs/Responses/ProductResponseDTO.php
 
 namespace App\DTOs\Responses;
 
 use App\Models\Produto;
+use Illuminate\Support\Facades\Storage;
 
 class ProductResponseDTO
 {
     public function __construct(
-        public readonly int $id,
-        public readonly string $descricao,
-        public readonly string $categoria,
-        public readonly ?string $referencia,
-        public readonly ?string $slug,
-        public readonly ?string $tipo,
-        public readonly string $disponibilidade,
-        public readonly ?string $imagem,
-        public readonly int $quantidade,
-        public readonly int $estoque_minimo,
-        public readonly ?float $valor_atacado,
-        public readonly ?float $valor_compra,
-        public readonly ?float $valor_unitario,
-        public readonly ?float $valor_custo,
-        public readonly ?float $preco_promocional,
-        public readonly ?float $ipi,
-        public readonly ?float $percentual_custo,
-        public readonly ?float $margem_lucro,
-        public readonly bool $ativo,
-        public readonly bool $destaque,
-        public readonly bool $novo,
-        public readonly bool $mais_vendido,
-        public readonly ?string $data_compra,
-        public readonly int $visualizacoes,
-        public readonly ?string $created_at,
-        public readonly ?string $updated_at,
-        public readonly ?float $preco_com_ipi,
-        public readonly ?string $preco_com_ipi_formatado,
-        public readonly ?string $ipi_formatado,
+        // Dados básicos
+        public int $id,
+        public string $descricao,
+        public ?string $categoria,
+        public ?string $referencia,
+        public ?string $slug,
+        public ?string $tipo,
+        
+        // Estoque
+        public int $quantidade,
+        public int $estoque_minimo,
+        public string $disponibilidade,
+        
+        // ✅ PREÇOS - valor_atacado é o principal
+        public ?float $valor_compra,
+        public ?float $valor_custo,
+        public ?float $valor_atacado,      // ✅ Preço principal
+        public ?float $valor_unitario,     // Preço secundário
+        public ?float $preco_promocional,
+        
+        // ✅ IPI e Margem
+        public ?float $ipi,
+        public ?float $margem_lucro,
+        public ?float $percentual_custo,
+        
+        // ✅ CAMPOS CALCULADOS (appends)
+        public ?string $preco_formatado,
+        public ?string $preco_atacado_formatado,
+        public ?string $preco_promocional_formatado,
+        public ?float $preco_com_ipi,
+        public ?string $preco_com_ipi_formatado,
+        public ?float $valor_ipi,
+        public ?string $valor_ipi_formatado,
+        public ?string $ipi_aliquota,
+        public ?bool $possui_ipi,
+        public ?bool $tem_promocao,
+        public ?int $desconto_percentual,
+        public ?string $status_label,
+        public ?bool $disponivel,
+        
+        // Status
+        public bool $ativo,
+        public bool $destaque,
+        public bool $novo,
+        public bool $mais_vendido,
+        
+        // Imagens
+        public ?string $imagem,
+        public ?string $imagem_url,
+        public ?array $galeria_urls,
+        
+        // Datas
+        public ?string $data_compra,
+        public ?string $created_at,
+        public ?string $updated_at,
+        
+        // Métricas
+        public ?int $visualizacoes,
     ) {}
 
     /**
-     * Criar DTO a partir de um Model
+     * Criar DTO a partir do modelo Produto
      */
     public static function fromModel(Produto $produto): self
     {
+        // Processa galeria
+        $galeriaUrls = [];
+        if ($produto->galeria) {
+            $galeria = json_decode($produto->galeria, true);
+            if (is_array($galeria)) {
+                foreach ($galeria as $path) {
+                    if ($path && Storage::disk('public')->exists($path)) {
+                        $galeriaUrls[] = Storage::disk('public')->url($path);
+                    }
+                }
+            }
+        }
+
+        // Processa imagem principal
+        $imagemUrl = null;
+        if ($produto->imagem && Storage::disk('public')->exists($produto->imagem)) {
+            $imagemUrl = Storage::disk('public')->url($produto->imagem);
+        }
+
+        // ✅ Calcula o preço com IPI
+        $precoComIPI = null;
+        $valorIPI = null;
+        if ($produto->valor_atacado && $produto->ipi) {
+            $precoComIPI = round($produto->valor_atacado * (1 + ($produto->ipi / 100)), 2);
+            $valorIPI = round($produto->valor_atacado * ($produto->ipi / 100), 2);
+        }
+
+        // ✅ Verifica se tem promoção
+        $temPromocao = $produto->preco_promocional && 
+                       $produto->preco_promocional > 0 && 
+                       $produto->preco_promocional < $produto->valor_atacado;
+
+        // ✅ Calcula desconto percentual
+        $descontoPercentual = 0;
+        if ($temPromocao && $produto->valor_atacado > 0) {
+            $descontoPercentual = (int) round((($produto->valor_atacado - $produto->preco_promocional) / $produto->valor_atacado) * 100);
+        }
+
         return new self(
             id: $produto->id,
             descricao: $produto->descricao,
@@ -50,34 +119,60 @@ class ProductResponseDTO
             referencia: $produto->referencia,
             slug: $produto->slug,
             tipo: $produto->tipo,
-            disponibilidade: $produto->disponibilidade,
-            imagem: $produto->imagem,
             quantidade: $produto->quantidade,
-            estoque_minimo: $produto->estoque_minimo ?? 5,
-            valor_atacado: $produto->valor_atacado,
+            estoque_minimo: $produto->estoque_minimo,
+            disponibilidade: $produto->disponibilidade,
+            
+            // ✅ Preços
             valor_compra: $produto->valor_compra,
-            valor_unitario: $produto->valor_unitario,
             valor_custo: $produto->valor_custo,
+            valor_atacado: $produto->valor_atacado,
+            valor_unitario: $produto->valor_unitario,
             preco_promocional: $produto->preco_promocional,
+            
+            // ✅ IPI e Margem
             ipi: $produto->ipi,
-            percentual_custo: $produto->percentual_custo,
             margem_lucro: $produto->margem_lucro,
+            percentual_custo: $produto->percentual_custo,
+            
+            // ✅ Campos calculados
+            preco_formatado: 'R$ ' . number_format($produto->valor_atacado ?? 0, 2, ',', '.'),
+            preco_atacado_formatado: 'R$ ' . number_format($produto->valor_atacado ?? 0, 2, ',', '.'),
+            preco_promocional_formatado: $produto->preco_promocional ? 'R$ ' . number_format($produto->preco_promocional, 2, ',', '.') : null,
+            preco_com_ipi: $precoComIPI,
+            preco_com_ipi_formatado: $precoComIPI ? 'R$ ' . number_format($precoComIPI, 2, ',', '.') : null,
+            valor_ipi: $valorIPI,
+            valor_ipi_formatado: $valorIPI ? 'R$ ' . number_format($valorIPI, 2, ',', '.') : null,
+            ipi_aliquota: $produto->ipi ? number_format($produto->ipi, 2, ',', '.') . '%' : null,
+            possui_ipi: ($produto->ipi ?? 0) > 0,
+            tem_promocao: $temPromocao,
+            desconto_percentual: $descontoPercentual,
+            status_label: $produto->getStatusLabelAttribute(),
+            disponivel: $produto->disponivel,
+            
+            // Status
             ativo: (bool) $produto->ativo,
             destaque: (bool) $produto->destaque,
             novo: (bool) ($produto->novo ?? false),
             mais_vendido: (bool) ($produto->mais_vendido ?? false),
-            data_compra: $produto->data_compra,
+            
+            // Imagens
+            imagem: $produto->imagem,
+            imagem_url: $imagemUrl,
+            galeria_urls: $galeriaUrls,
+            
+            // Datas
+            data_compra: $produto->data_compra?->toDateString(),
+            created_at: $produto->created_at?->toISOString(),
+            updated_at: $produto->updated_at?->toISOString(),
+            
+            // Métricas
             visualizacoes: $produto->visualizacoes ?? 0,
-            created_at: $produto->created_at?->toDateTimeString(),
-            updated_at: $produto->updated_at?->toDateTimeString(),
-            preco_com_ipi: $produto->preco_com_ipi ?? 0,
-            preco_com_ipi_formatado: $produto->preco_com_ipi_formatado ?? 'R$ 0,00',
-            ipi_formatado: $produto->ipi_formatado ?? '0,00%',
         );
     }
 
     /**
-     * Converter para Array
+     * Converter para array
      */
     public function toArray(): array
     {
@@ -88,131 +183,55 @@ class ProductResponseDTO
             'referencia' => $this->referencia,
             'slug' => $this->slug,
             'tipo' => $this->tipo,
-            'disponibilidade' => $this->disponibilidade,
-            'imagem' => $this->imagem,
-            'imagem_url' => $this->getImagemUrl(),
             'quantidade' => $this->quantidade,
             'estoque_minimo' => $this->estoque_minimo,
-            'valor_atacado' => $this->valor_atacado,
-            'valor_atacado_formatado' => $this->getPrecoAtacadoFormatado(),
-            'valor_unitario' => $this->valor_unitario,
-            'valor_unitario_formatado' => $this->getPrecoFormatado(),
+            'disponibilidade' => $this->disponibilidade,
+            
+            // ✅ Preços
+            'valor_compra' => $this->valor_compra,
             'valor_custo' => $this->valor_custo,
+            'valor_atacado' => $this->valor_atacado,
+            'valor_unitario' => $this->valor_unitario,
             'preco_promocional' => $this->preco_promocional,
-            'preco_promocional_formatado' => $this->getPrecoPromocionalFormatado(),
+            
+            // ✅ IPI e Margem
             'ipi' => $this->ipi,
-            'ipi_formatado' => $this->ipi_formatado,
+            'margem_lucro' => $this->margem_lucro,
+            'percentual_custo' => $this->percentual_custo,
+            
+            // ✅ Formatados
+            'preco_formatado' => $this->preco_formatado,
+            'preco_atacado_formatado' => $this->preco_atacado_formatado,
+            'preco_promocional_formatado' => $this->preco_promocional_formatado,
             'preco_com_ipi' => $this->preco_com_ipi,
             'preco_com_ipi_formatado' => $this->preco_com_ipi_formatado,
-            'tem_ipi' => ($this->ipi ?? 0) > 0,
-            'percentual_custo' => $this->percentual_custo,
-            'margem_lucro' => $this->margem_lucro,
+            'valor_ipi' => $this->valor_ipi,
+            'valor_ipi_formatado' => $this->valor_ipi_formatado,
+            'ipi_aliquota' => $this->ipi_aliquota,
+            'possui_ipi' => $this->possui_ipi,
+            'tem_promocao' => $this->tem_promocao,
+            'desconto_percentual' => $this->desconto_percentual,
+            'status_label' => $this->status_label,
+            'disponivel' => $this->disponivel,
+            
+            // Status
             'ativo' => $this->ativo,
             'destaque' => $this->destaque,
             'novo' => $this->novo,
             'mais_vendido' => $this->mais_vendido,
+            
+            // Imagens
+            'imagem' => $this->imagem,
+            'imagem_url' => $this->imagem_url,
+            'galeria_urls' => $this->galeria_urls,
+            
+            // Datas
             'data_compra' => $this->data_compra,
-            'visualizacoes' => $this->visualizacoes,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'created_at_formatado' => $this->getCreatedAtFormatted(),
-            'tem_promocao' => $this->temPromocao(),
-            'status' => $this->getStatus(),
-            'disponivel' => $this->isDisponivel(),
-            'status_badge' => $this->getStatusBadge(),
+            
+            // Métricas
+            'visualizacoes' => $this->visualizacoes,
         ];
-    }
-
-    // ============================================
-    // MÉTODOS AUXILIARES
-    // ============================================
-
-    public function getPrecoFormatado(): string
-    {
-        if ($this->valor_unitario) {
-            return 'R$ ' . number_format($this->valor_unitario, 2, ',', '.');
-        }
-        return 'R$ 0,00';
-    }
-
-    public function getPrecoAtacadoFormatado(): string
-    {
-        if ($this->valor_atacado) {
-            return 'R$ ' . number_format($this->valor_atacado, 2, ',', '.');
-        }
-        return 'R$ 0,00';
-    }
-
-    public function getPrecoPromocionalFormatado(): string
-    {
-        if ($this->preco_promocional) {
-            return 'R$ ' . number_format($this->preco_promocional, 2, ',', '.');
-        }
-        return '';
-    }
-
-    public function temPromocao(): bool
-    {
-        return $this->preco_promocional !== null 
-            && $this->preco_promocional > 0 
-            && $this->valor_atacado !== null
-            && $this->preco_promocional < $this->valor_atacado;
-    }
-
-    public function getStatus(): string
-    {
-        if (!$this->ativo) {
-            return 'Inativo';
-        }
-        if ($this->quantidade <= 0) {
-            return 'Esgotado';
-        }
-        if ($this->disponibilidade === 'INDISPONÍVEL') {
-            return 'Indisponível';
-        }
-        return 'Disponível';
-    }
-
-    public function getStatusBadge(): string
-    {
-        $status = $this->getStatus();
-        return match($status) {
-            'Disponível' => 'success',
-            'Indisponível' => 'warning',
-            'Esgotado' => 'danger',
-            'Inativo' => 'secondary',
-            default => 'secondary'
-        };
-    }
-
-    public function isDisponivel(): bool
-    {
-        return $this->ativo 
-            && $this->disponibilidade === 'DISPONÍVEL'
-            && $this->quantidade > 0;
-    }
-
-    public function getImagemUrl(): string
-    {
-        if ($this->imagem) {
-            return asset('storage/produtos/' . $this->imagem);
-        }
-        return asset('images/produto-placeholder.jpg');
-    }
-
-    public function getCreatedAtFormatted(): string
-    {
-        if ($this->created_at) {
-            return \Carbon\Carbon::parse($this->created_at)->format('d/m/Y H:i');
-        }
-        return '-';
-    }
-
-    public function getUpdatedAtFormatted(): string
-    {
-        if ($this->updated_at) {
-            return \Carbon\Carbon::parse($this->updated_at)->format('d/m/Y H:i');
-        }
-        return '-';
     }
 }

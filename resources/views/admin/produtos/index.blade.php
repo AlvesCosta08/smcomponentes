@@ -129,7 +129,7 @@
                                 <th style="width: 8%;">Imagem</th>
                                 <th style="width: 25%;">Produto</th>
                                 <th style="width: 15%;">Categoria</th>
-                                <th style="width: 15%;">Preço</th>
+                                <th style="width: 15%;">Preço (Atacado)</th>
                                 <th style="width: 10%;">Estoque</th>
                                 <th style="width: 12%;">Status</th>
                                 <th style="width: 10%;">Ações</th>
@@ -141,7 +141,7 @@
                                     <td>{{ $produto->id }}</td>
                                     <td>
                                         @if($produto->imagem)
-                                            <img src="{{ asset('storage/' . $produto->imagem) }}" 
+                                            <img src="{{ $produto->imagem_url }}" 
                                                  alt="{{ $produto->descricao }}"
                                                  style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                                         @else
@@ -155,21 +155,31 @@
                                         <strong>{{ Str::limit($produto->descricao, 40) }}</strong>
                                         <br>
                                         <small class="text-muted">Ref: {{ $produto->referencia ?? '-' }}</small>
+                                        @if($produto->ipi > 0)
+                                            <br>
+                                            <small class="badge bg-info">IPI: {{ $produto->ipi }}%</small>
+                                        @endif
                                     </td>
                                     <td>{{ Str::limit($produto->categoria, 20) }}</td>
                                     <td>
                                         @if($produto->preco_promocional && $produto->preco_promocional > 0)
                                             <span class="text-decoration-line-through text-muted small">
-                                                R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}
+                                                {{ $produto->preco_atacado_formatado }}
                                             </span>
                                             <br>
                                             <span class="fw-bold text-danger">
-                                                R$ {{ number_format($produto->preco_promocional, 2, ',', '.') }}
+                                                {{ $produto->preco_promocional_formatado }}
                                             </span>
                                         @else
                                             <span class="fw-bold">
-                                                R$ {{ number_format($produto->valor_unitario, 2, ',', '.') }}
+                                                {{ $produto->preco_atacado_formatado }}
                                             </span>
+                                        @endif
+                                        @if($produto->possui_ipi)
+                                            <br>
+                                            <small class="text-muted">
+                                                + IPI: {{ $produto->preco_com_ipi_formatado }}
+                                            </small>
                                         @endif
                                     </td>
                                     <td>
@@ -189,6 +199,9 @@
                                         </span>
                                         @if($produto->destaque)
                                             <span class="badge bg-warning text-dark">⭐</span>
+                                        @endif
+                                        @if($produto->novo)
+                                            <span class="badge bg-info text-dark">NEW</span>
                                         @endif
                                     </td>
                                     <td>
@@ -218,7 +231,7 @@
                     </table>
                 </div>
                 
-                <!-- Paginação Corrigida -->
+                <!-- Paginação -->
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center flex-wrap">
                         <div class="text-muted small">
@@ -298,8 +311,6 @@
     .admin-table tr:hover {
         background-color: #f8f9fa;
     }
-    
-    /* Estilos para a paginação */
     .pagination {
         margin-bottom: 0;
     }
@@ -313,35 +324,10 @@
         border-color: #0d6efd;
         color: #fff;
     }
-    .pagination .page-item.disabled .page-link {
-        color: #6c757d;
-    }
-    .pagination .page-link:hover {
-        background-color: #e9ecef;
-        border-color: #dee2e6;
-    }
-    
-    /* Responsivo */
-    @media (max-width: 768px) {
-        .admin-table {
-            font-size: 0.85rem;
-        }
-        .admin-table th,
-        .admin-table td {
-            padding: 6px 8px;
-        }
-        .stat-number {
-            font-size: 1.5rem;
-        }
-        .admin-stat-card {
-            padding: 10px 15px;
-        }
-    }
 </style>
 
 @push('scripts')
 <script>
-    // Auto-submit do formulário ao mudar os selects
     document.addEventListener('DOMContentLoaded', function() {
         const selects = document.querySelectorAll('#categoria, #ativo, #estoque');
         selects.forEach(select => {

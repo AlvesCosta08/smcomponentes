@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BannerRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class BannerRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('Admin') ?? false;
+        return true;
     }
 
     /**
@@ -24,22 +25,22 @@ class BannerRequest extends FormRequest
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
         
         return [
-            'titulo' => ['required', 'string', 'max:100'],
-            'subtitulo' => ['nullable', 'string', 'max:200'],
-            'descricao' => ['nullable', 'string', 'max:500'],
+            'titulo' => ['nullable', 'string', 'max:255'], // TÍTULO OPCIONAL
+            'subtitulo' => ['nullable', 'string', 'max:255'],
+            'descricao' => ['nullable', 'string'],
             'imagem' => $isUpdate 
-                ? ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048']
-                : ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
-            'tipo' => ['nullable', 'string', 'in:produto,categoria,promocao,link'],
+                ? ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp,svg', 'max:5120']
+                : ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp,svg', 'max:5120'], // IMAGEM OBRIGATÓRIA
+            'tipo' => ['nullable', 'string', Rule::in(['imagem', 'texto', 'misto', 'hero', 'promocional', 'informativo'])],
             'cor_fundo' => ['nullable', 'string', 'max:50'],
             'cor_texto' => ['nullable', 'string', 'max:50'],
-            'link' => ['nullable', 'string', 'max:255'],
+            'link' => ['nullable', 'url', 'max:255'],
             'texto_botao' => ['nullable', 'string', 'max:50'],
             'cor_botao' => ['nullable', 'string', 'max:50'],
             'ordem' => ['nullable', 'integer', 'min:0'],
             'ativo' => ['nullable', 'boolean'],
             'inicio_em' => ['nullable', 'date'],
-            'termino_em' => ['nullable', 'date', 'after:inicio_em'],
+            'termino_em' => ['nullable', 'date', 'after_or_equal:inicio_em'],
         ];
     }
 
@@ -49,12 +50,29 @@ class BannerRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'titulo.required' => 'O título do banner é obrigatório.',
+            // Imagem (OBRIGATÓRIA)
             'imagem.required' => 'A imagem do banner é obrigatória.',
-            'imagem.image' => 'O arquivo deve ser uma imagem.',
-            'imagem.mimes' => 'A imagem deve ser um dos formatos: JPEG, PNG, JPG, GIF ou WEBP.',
-            'imagem.max' => 'A imagem não pode ter mais que 2MB.',
-            'termino_em.after' => 'A data de término deve ser após a data de início.',
+            'imagem.image' => 'O arquivo deve ser uma imagem válida.',
+            'imagem.mimes' => 'A imagem deve ser um dos formatos: JPEG, PNG, JPG, GIF, WEBP ou SVG.',
+            'imagem.max' => 'A imagem não pode ter mais que 5MB.',
+            'imagem.uploaded' => 'Falha ao enviar a imagem. Tente novamente.',
+            
+            // Título (OPCIONAL)
+            'titulo.max' => 'O título não pode ter mais que 255 caracteres.',
+            
+            // Tipo
+            'tipo.in' => 'O tipo selecionado não é válido.',
+            
+            // Link
+            'link.url' => 'O link deve ser uma URL válida (ex: https://exemplo.com).',
+            'link.max' => 'O link não pode ter mais que 255 caracteres.',
+            
+            // Datas
+            'termino_em.after_or_equal' => 'A data de término deve ser após ou igual à data de início.',
+            
+            // Ordem
+            'ordem.integer' => 'A ordem deve ser um número inteiro.',
+            'ordem.min' => 'A ordem deve ser maior ou igual a 0.',
         ];
     }
 
@@ -64,7 +82,8 @@ class BannerRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'ativo' => $this->boolean('ativo', true),
+            'ativo' => $this->has('ativo') ? filter_var($this->ativo, FILTER_VALIDATE_BOOLEAN) : false,
+            'ordem' => $this->ordem ?? 0,
         ]);
     }
 }

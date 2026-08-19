@@ -1,4 +1,3 @@
-{{-- admin/banners/edit.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Editar Banner - Admin')

@@ -2,208 +2,127 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTOs\ProductDTO;
+use App\DTOs\Requests\CreateProductRequestDTO;
+use App\DTOs\Responses\ProductResponseDTO;
 use App\Http\Controllers\Controller;
-use App\Models\Produto;
-use App\Models\Categoria;
-use App\Models\ProdutoImagem;
 use App\Http\Requests\ProdutoRequest;
+use App\Models\Categoria;
+use App\Models\Produto;
+use App\Models\ProdutoImagem;
+use App\Services\ProdutoService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class ProdutoAdminController extends Controller
 {
-    /**
-     * Listagem admin
-     */
-    public function index(Request $request)
+    public function __construct(
+        private readonly ProdutoService $produtoService
+    ) {}
+
+    public function index(Request $request): View
     {
         $query = Produto::query()->with(['categoria']);
         
-        // Busca
         if ($request->has('busca') && $request->busca) {
             $query->buscar($request->busca);
         }
         
-        // Filtro por status
         if ($request->has('status') && $request->status) {
-            switch ($request->status) {
-                case 'disponivel':
-                    $query->disponivel();
-                    break;
-                case 'indisponivel':
-                    $query->where('disponibilidade', Produto::INDISPONIVEL);
-                    break;
-                case 'estoque_baixo':
-                    $query->baixoEstoque();
-                    break;
-                case 'inativo':
-                    $query->where('ativo', false);
-                    break;
-            }
+            $query->when($request->status === 'disponivel', fn($q) => $q->disponivel())
+                 ->when($request->status === 'indisponivel', fn($q) => $q->where('disponibilidade', 'INDISPONIVEL'))
+                 ->when($request->status === 'estoque_baixo', fn($q) => $q->baixoEstoque())
+                 ->when($request->status === 'inativo', fn($q) => $q->where('ativo', false));
         }
         
-        // Filtro por categoria
         if ($request->has('categoria') && $request->categoria) {
             $query->where('categoria_id', $request->categoria);
         }
         
         $produtos = $query->latest()->paginate(15);
         $categorias = Categoria::ativo()->ordenado()->get();
+
+        $estatisticas = [
+            'total' => Produto::count(),
+            'com_estoque' => Produto::disponivel()->count(),
+            'estoque_baixo' => Produto::baixoEstoque()->count(),
+            'sem_estoque' => Produto::where('quantidade', 0)->count(),
+            'ativos' => Produto::where('ativo', true)->count(),
+            'inativos' => Produto::where('ativo', false)->count(),
+        ];
         
-        return view('admin.produtos.index', compact('produtos', 'categorias'));
+        return view('admin.produtos.index', compact('produtos', 'categorias', 'estatisticas'));
     }
 
-    /**
-     * Formulário de criação
-     */
-    public function create()
+    public function create(): View
     {
         $categorias = Categoria::ativo()->ordenado()->get();
-        return view('admin.produtos.create', compact('categorias'));
+        $margens = Produto::getMargensDisponiveis();
+        return view('admin.produtos.create', compact('categorias', 'margens'));
     }
 
-    /**
-     * Salvar produto
-     */
-    public function store(ProdutoRequest $request)
+    public function store(ProdutoRequest $request): RedirectResponse
     {
-        $data = $request->validated();
+        $dto = CreateProductRequestDTO::fromRequest($request);
         
-        // Gerar slug
-        $data['slug'] = Str::slug($data['descricao']);
-        
-        // Processar imagem principal
-        if ($request->hasFile('imagem')) {
-            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
+        $errors = $dto->validate();
+        if (!empty($errors)) {
+            return back()->withErrors($errors)->withInput();
         }
-        
-        // Calcular disponibilidade
-        $data['disponibilidade'] = $this->calcularDisponibilidade(
-            $data['quantidade'] ?? 0,
-            $data['ativo'] ?? true
-        );
-        
-        $produto = Produto::create($data);
-        
-        // Processar imagens adicionais
-        if ($request->hasFile('imagens')) {
-            foreach ($request->file('imagens') as $index => $imagem) {
-                $nome = $this->uploadImagem($imagem);
-                ProdutoImagem::create([
-                    'produto_id' => $produto->id,
-                    'imagem' => $nome,
-                    'ordem' => $index,
-                    'principal' => $index === 0,
-                ]);
-            }
-        }
+
+        $produto = $this->produtoService->create($dto);
         
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto criado com sucesso!');
     }
 
-    /**
-     * Mostrar produto
-     */
-    public function show($id)
+    public function show(int $id): View
     {
-        $produto = Produto::with(['categoria', 'imagens', 'itensPedido'])
-            ->findOrFail($id);
+        $produto = Produto::with(['categoria', 'imagens'])->findOrFail($id);
         return view('admin.produtos.show', compact('produto'));
     }
 
-    /**
-     * Formulário de edição
-     */
-    public function edit($id)
+    public function edit(int $id): View
     {
         $produto = Produto::with(['imagens'])->findOrFail($id);
         $categorias = Categoria::ativo()->ordenado()->get();
-        return view('admin.produtos.edit', compact('produto', 'categorias'));
+        $margens = Produto::getMargensDisponiveis();
+        return view('admin.produtos.edit', compact('produto', 'categorias', 'margens'));
     }
 
-    /**
-     * Atualizar produto
-     */
-    public function update(ProdutoRequest $request, $id)
+    public function update(ProdutoRequest $request, int $id): RedirectResponse
     {
         $produto = Produto::findOrFail($id);
-        $data = $request->validated();
+        $dto = CreateProductRequestDTO::fromRequest($request);
         
-        // Gerar slug se mudou
-        if ($produto->descricao !== $data['descricao']) {
-            $data['slug'] = Str::slug($data['descricao']);
+        $errors = $dto->validate();
+        if (!empty($errors)) {
+            return back()->withErrors($errors)->withInput();
         }
-        
-        // Processar nova imagem principal
-        if ($request->hasFile('imagem')) {
-            // Remover imagem antiga
-            if ($produto->imagem) {
-                Storage::disk('public')->delete('produtos/' . $produto->imagem);
-            }
-            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
-        }
-        
-        // Processar imagens adicionais
-        if ($request->hasFile('imagens')) {
-            foreach ($request->file('imagens') as $index => $imagem) {
-                $nome = $this->uploadImagem($imagem);
-                ProdutoImagem::create([
-                    'produto_id' => $produto->id,
-                    'imagem' => $nome,
-                    'ordem' => $index,
-                ]);
-            }
-        }
-        
-        // Atualizar disponibilidade
-        $data['disponibilidade'] = $this->calcularDisponibilidade(
-            $data['quantidade'] ?? $produto->quantidade,
-            $data['ativo'] ?? $produto->ativo
-        );
-        
-        $produto->update($data);
+
+        $this->produtoService->update($produto, $dto);
         
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto atualizado com sucesso!');
     }
 
-    /**
-     * Excluir produto
-     */
-    public function destroy($id)
+    public function destroy(int $id): RedirectResponse
     {
         $produto = Produto::findOrFail($id);
-        
-        // Verificar se tem pedidos
-        if ($produto->itensPedido()->exists()) {
-            return back()->with('error', 'Não é possível excluir um produto que possui pedidos.');
-        }
-        
-        // Remover imagens
-        if ($produto->imagem) {
-            Storage::disk('public')->delete('produtos/' . $produto->imagem);
-        }
-        
-        foreach ($produto->imagens as $imagem) {
-            Storage::disk('public')->delete('produtos/' . $imagem->imagem);
-            $imagem->delete();
-        }
-        
-        $produto->delete();
+        $this->produtoService->delete($produto);
         
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto excluído com sucesso!');
     }
 
-    /**
-     * Ajustar estoque
-     */
-    public function ajustarEstoque(Request $request, $id)
+    public function ajustarEstoque(Request $request, int $id): RedirectResponse
     {
         $request->validate([
             'quantidade' => 'required|integer|min:1',
@@ -212,68 +131,74 @@ class ProdutoAdminController extends Controller
         
         $produto = Produto::findOrFail($id);
         
-        switch ($request->operacao) {
-            case 'adicionar':
-                $produto->aumentarEstoque($request->quantidade);
-                $mensagem = "Adicionados {$request->quantidade} itens ao estoque.";
-                break;
-            case 'remover':
-                if (!$produto->reduzirEstoque($request->quantidade)) {
-                    return back()->with('error', 'Estoque insuficiente!');
-                }
-                $mensagem = "Removidos {$request->quantidade} itens do estoque.";
-                break;
-            case 'definir':
-                $produto->quantidade = $request->quantidade;
-                $produto->atualizarDisponibilidade();
-                $produto->save();
-                $mensagem = "Estoque definido para {$request->quantidade} itens.";
-                break;
-        }
+        $mensagem = match($request->operacao) {
+            'adicionar' => $this->produtoService->adicionarEstoque($produto, $request->quantidade),
+            'remover' => $this->produtoService->removerEstoque($produto, $request->quantidade),
+            'definir' => $this->produtoService->definirEstoque($produto, $request->quantidade),
+        };
         
         return back()->with('success', $mensagem);
     }
 
-    /**
-     * Exportar produtos (CSV)
-     */
-    public function export(Request $request)
+    public function removerImagem(int $id): JsonResponse
+    {
+        $imagem = ProdutoImagem::findOrFail($id);
+        Storage::disk('public')->delete($imagem->imagem);
+        $imagem->delete();
+        return response()->json(['success' => true]);
+    }
+
+    public function definirPrincipal(int $id): JsonResponse
+    {
+        $imagem = ProdutoImagem::findOrFail($id);
+        ProdutoImagem::where('produto_id', $imagem->produto_id)->update(['principal' => false]);
+        $imagem->principal = true;
+        $imagem->save();
+        return response()->json(['success' => true]);
+    }
+
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $produtos = Produto::with('categoria')->get();
         
-        $filename = 'produtos_' . date('Y-m-d') . '.csv';
+        $filename = 'produtos_' . now()->format('Y-m-d') . '.csv';
         $handle = fopen('php://output', 'w');
         
-        // UTF-8 BOM
         fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
         
-        // Cabeçalhos
         fputcsv($handle, [
-            'ID', 'Descrição', 'Categoria', 'Preço Unitário', 
-            'Preço Atacado', 'Preço Promocional', 'Quantidade', 
-            'Disponibilidade', 'Ativo', 'Referência', 'Visualizações',
-            'Destaque', 'Novo', 'Mais Vendido', 'IPI', 'Data Criação'
+            'ID', 'Descrição', 'Categoria', 'Referência', 'Tipo',
+            'Preço Atacado', 'Valor Unitário', 'Valor Compra', 'Valor Custo',
+            'IPI (%)', 'Preço com IPI', 'Margem Lucro (%)', 'Percentual Custo',
+            'Quantidade', 'Estoque Mínimo', 'Disponibilidade',
+            'Ativo', 'Destaque', 'Novo', 'Mais Vendido',
+            'Data Compra', 'Data Criação'
         ], ';');
         
-        // Dados
         foreach ($produtos as $produto) {
             fputcsv($handle, [
                 $produto->id,
                 $produto->descricao,
-                $produto->categoria->nome ?? '',
-                number_format($produto->valor_unitario, 2, ',', '.'),
-                number_format($produto->valor_atacado ?? 0, 2, ',', '.'),
-                number_format($produto->preco_promocional ?? 0, 2, ',', '.'),
-                $produto->quantidade,
-                $produto->status_label,
-                $produto->ativo ? 'Sim' : 'Não',
+                $produto->categoria,
                 $produto->referencia ?? '',
-                $produto->visualizacoes,
+                $produto->tipo ?? '',
+                number_format($produto->valor_atacado ?? 0, 2, ',', '.'),
+                number_format($produto->valor_unitario ?? 0, 2, ',', '.'),
+                number_format($produto->valor_compra ?? 0, 2, ',', '.'),
+                number_format($produto->valor_custo ?? 0, 2, ',', '.'),
+                number_format($produto->ipi ?? 0, 2, ',', '.'),
+                number_format($produto->preco_com_ipi ?? 0, 2, ',', '.'),
+                number_format($produto->margem_lucro ?? 0, 2, ',', '.'),
+                number_format($produto->percentual_custo ?? 0, 2, ',', '.'),
+                $produto->quantidade,
+                $produto->estoque_minimo ?? 5,
+                $produto->disponibilidade?->label() ?? '',
+                $produto->ativo ? 'Sim' : 'Não',
                 $produto->destaque ? 'Sim' : 'Não',
                 $produto->novo ? 'Sim' : 'Não',
                 $produto->mais_vendido ? 'Sim' : 'Não',
-                number_format($produto->ipi ?? 0, 2, ',', '.'),
-                $produto->created_at->format('d/m/Y H:i'),
+                $produto->data_compra?->format('d/m/Y') ?? '',
+                $produto->created_at?->format('d/m/Y H:i') ?? '',
             ], ';');
         }
         
@@ -287,65 +212,5 @@ class ProdutoAdminController extends Controller
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
             ]
         );
-    }
-
-    /**
-     * Upload de imagem
-     */
-    private function uploadImagem($file): string
-    {
-        $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-        $file->storeAs('produtos', $filename, 'public');
-        return $filename;
-    }
-
-    /**
-     * Calcular disponibilidade
-     */
-    private function calcularDisponibilidade(int $quantidade, bool $ativo): string
-    {
-        if (!$ativo) {
-            return Produto::INDISPONIVEL;
-        }
-        
-        if ($quantidade <= 0) {
-            return Produto::INDISPONIVEL;
-        }
-        
-        if ($quantidade <= 5) {
-            return Produto::ESTOQUE_BAIXO;
-        }
-        
-        return Produto::DISPONIVEL;
-    }
-
-    /**
-     * Remover imagem
-     */
-    public function removerImagem($id)
-    {
-        $imagem = ProdutoImagem::findOrFail($id);
-        
-        Storage::disk('public')->delete('produtos/' . $imagem->imagem);
-        $imagem->delete();
-        
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Definir imagem principal
-     */
-    public function definirPrincipal($id)
-    {
-        $imagem = ProdutoImagem::findOrFail($id);
-        
-        // Remover principal das outras imagens
-        ProdutoImagem::where('produto_id', $imagem->produto_id)
-            ->update(['principal' => false]);
-        
-        $imagem->principal = true;
-        $imagem->save();
-        
-        return response()->json(['success' => true]);
     }
 }

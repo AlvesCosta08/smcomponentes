@@ -6,32 +6,22 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class AdicionarRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
+    // Adicione esta constante local
+    private const MAX_QUANTITY_PER_ITEM = 999;
+
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'produto_id' => ['required', 'exists:produtos,id'],
-            'quantidade' => ['required', 'integer', 'min:1', 'max:' . \App\Http\Controllers\CarrinhoController::MAX_QUANTITY_PER_ITEM],
+            'quantidade' => ['required', 'integer', 'min:1', 'max:' . self::MAX_QUANTITY_PER_ITEM],
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     *
-     * @return array<string, string>
-     */
     public function messages(): array
     {
         return [
@@ -40,7 +30,7 @@ class AdicionarRequest extends FormRequest
             'quantidade.required' => 'Informe a quantidade.',
             'quantidade.integer' => 'A quantidade deve ser um número inteiro.',
             'quantidade.min' => 'A quantidade deve ser pelo menos 1.',
-            'quantidade.max' => "A quantidade máxima por item é " . \App\Http\Controllers\CarrinhoController::MAX_QUANTITY_PER_ITEM . ".",
+            'quantidade.max' => "A quantidade máxima por item é " . self::MAX_QUANTITY_PER_ITEM . ".",
         ];
     }
 }

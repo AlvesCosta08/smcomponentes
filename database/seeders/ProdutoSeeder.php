@@ -20,8 +20,9 @@ class ProdutoSeeder extends Seeder
             return;
         }
 
+        // Usar ; como delimitador
         $handle = fopen($path, 'r');
-        $headers = fgetcsv($handle, 0, ',', '"', '\\');
+        $headers = fgetcsv($handle, 0, ';'); // ← MUDADO para ;
         
         if (!$headers) {
             $this->command->error("❌ Erro ao ler cabeçalho do CSV");
@@ -29,90 +30,145 @@ class ProdutoSeeder extends Seeder
             return;
         }
 
-        $this->command->info("📋 Cabeçalhos: " . implode(', ', $headers));
+        $this->command->info("📋 Cabeçalhos: " . implode('; ', $headers));
 
         $count = 0;
         $errors = 0;
+        $pulados = 0;
         $line = 1;
 
-        while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+        // Barra de progresso
+        $totalLinhas = $this->countLines($path) - 1;
+        $this->command->info("📊 Total de produtos no CSV: $totalLinhas");
+        $bar = $this->command->getOutput()->createProgressBar($totalLinhas);
+        $bar->start();
+
+        while (($row = fgetcsv($handle, 0, ';')) !== false) { // ← MUDADO para ;
             $line++;
             
-            if (count($row) < 2 || empty(trim($row[0] ?? ''))) {
+            // Pular linhas vazias
+            if (count($row) < 5) {
+                $pulados++;
+                $bar->advance();
                 continue;
             }
             
             try {
+                // Criar array associativo com os cabeçalhos
                 $record = [];
                 foreach ($headers as $index => $header) {
-                    $record[$header] = $row[$index] ?? '';
+                    $record[trim($header)] = $row[$index] ?? '';
                 }
                 
-                $categoria = trim($record['Categoria'] ?? '');
-                $referencia = trim($record['Refefencia_Produto'] ?? '');
-                $imagem = trim($record['Imagem_Produto'] ?? '');
-                $descricao = trim($record['Descricao'] ?? '');
-                $tipo = trim($record['Tipo'] ?? '');
-                $valor_atacado = $this->parseCurrency($record['Valor_Atacado'] ?? '');
-                $disponibilidade = trim($record['Disponibilidade'] ?? '');
-                $quantidade = $this->parseInteger($record['Quantidade'] ?? 0);
-                $valor_compra = $this->parseCurrency($record['Valor_Compra'] ?? '');
-                $data_compra = $this->parseDate($record['Data'] ?? '');
-                $ipi = $this->parsePercentage($record['IPI'] ?? '');
-                $percentual_custo = $this->parsePercentage($record['Percentual_custo'] ?? '');
-                $valor_custo = $this->parseCurrency($record['Valor_Custo'] ?? '');
-                $valor_unitario = $this->parseCurrency($record['Valor_Unitario'] ?? '');
+                // Mapear os campos do CSV
+                $categoria = trim($record['categoria'] ?? '');
+                $categoria_id = !empty($record['categoria_id']) && $record['categoria_id'] !== 'NULL' ? $record['categoria_id'] : null;
+                $referencia = trim($record['referencia'] ?? '');
+                $descricao = trim($record['descricao'] ?? '');
+                $tipo = trim($record['tipo'] ?? '');
+                $disponibilidade = trim($record['disponibilidade'] ?? '');
+                $imagem = trim($record['imagem'] ?? '');
+                $galeria = trim($record['galeria'] ?? '');
+                $slug = trim($record['slug'] ?? '');
+                $quantidade = intval($record['quantidade'] ?? 0);
+                $estoque = intval($record['estoque'] ?? 0);
+                $status = trim($record['status'] ?? 'ativo');
+                $estoque_minimo = intval($record['estoque_minimo'] ?? 5);
+                $valor_atacado = $this->parseCurrency($record['valor_atacado'] ?? '');
+                $valor_compra = $this->parseCurrency($record['valor_compra'] ?? '');
+                $valor_unitario = $this->parseCurrency($record['valor_unitario'] ?? '');
+                $valor_custo = $this->parseCurrency($record['valor_custo'] ?? '');
+                $preco_promocional = $this->parseCurrency($record['preco_promocional'] ?? '');
+                $ipi = $this->parsePercentage($record['ipi'] ?? '');
+                $percentual_custo = $this->parsePercentage($record['percentual_custo'] ?? '');
+                $margem_lucro = $this->parsePercentage($record['margem_lucro'] ?? '');
+                $ativo = intval($record['ativo'] ?? 1);
+                $destaque = intval($record['destaque'] ?? 0);
+                $novo = intval($record['novo'] ?? 0);
+                $mais_vendido = intval($record['mais_vendido'] ?? 0);
+                $visualizacoes = intval($record['visualizacoes'] ?? 0);
+                $rating = floatval(str_replace(',', '.', $record['rating'] ?? 0));
+                $total_avaliacoes = intval($record['total_avaliacoes'] ?? 0);
+                $data_compra = $this->parseDate($record['data_compra'] ?? '');
+                $created_at = $record['created_at'] ?? now();
+                $updated_at = $record['updated_at'] ?? now();
                 
+                // Validar referência
                 if (empty($referencia)) {
-                    $this->command->warn("⚠️ Linha {$line}: Referência vazia, pulando...");
+                    $pulados++;
+                    $bar->advance();
                     continue;
                 }
                 
+                // Verificar se já existe
                 if (Produto::where('referencia', $referencia)->exists()) {
-                    $this->command->warn("⚠️ Linha {$line}: Produto {$referencia} já existe, pulando...");
+                    $bar->advance();
                     continue;
                 }
                 
+                // Criar produto
                 $produto = new Produto();
+                $produto->categoria_id = $categoria_id;
                 $produto->categoria = $categoria ?: 'GERAL';
                 $produto->referencia = $referencia;
                 $produto->descricao = $descricao ?: $referencia;
                 $produto->tipo = $tipo;
-                $produto->imagem = $imagem;
-                $produto->valor_atacado = $valor_atacado;
                 $produto->disponibilidade = $this->validateDisponibilidade($disponibilidade);
+                $produto->imagem = $imagem;
+                $produto->galeria = $galeria !== 'NULL' ? $galeria : null;
+                $produto->slug = $slug ?: Str::slug($referencia . '-' . substr($descricao, 0, 30));
                 $produto->quantidade = $quantidade;
+                $produto->estoque = $estoque;
+                $produto->status = $status;
+                $produto->estoque_minimo = $estoque_minimo;
+                $produto->valor_atacado = $valor_atacado;
                 $produto->valor_compra = $valor_compra;
-                $produto->data_compra = $data_compra;
+                $produto->valor_unitario = $valor_unitario;
+                $produto->valor_custo = $valor_custo;
+                $produto->preco_promocional = $preco_promocional;
                 $produto->ipi = $ipi;
                 $produto->percentual_custo = $percentual_custo;
-                $produto->valor_custo = $valor_custo;
-                $produto->valor_unitario = $valor_unitario;
-                $produto->slug = Str::slug($referencia . '-' . substr($descricao, 0, 30));
-                $produto->ativo = true;
-                $produto->estoque_minimo = 5;
+                $produto->margem_lucro = $margem_lucro;
+                $produto->ativo = $ativo;
+                $produto->destaque = $destaque;
+                $produto->novo = $novo;
+                $produto->mais_vendido = $mais_vendido;
+                $produto->visualizacoes = $visualizacoes;
+                $produto->rating = $rating;
+                $produto->total_avaliacoes = $total_avaliacoes;
+                $produto->data_compra = $data_compra;
+                $produto->created_at = $created_at;
+                $produto->updated_at = $updated_at;
                 
                 $produto->save();
                 $count++;
-                
-                if ($count % 10 === 0) {
-                    $this->command->info("📊 {$count} produtos importados...");
-                }
                 
             } catch (\Exception $e) {
                 $errors++;
                 $this->command->error("❌ Erro linha {$line}: " . $e->getMessage());
             }
+
+            $bar->advance();
         }
 
         fclose($handle);
+        $bar->finish();
         
-        $this->command->info("\n✅ Importação concluída!");
+        $this->command->newLine(2);
+        $this->command->info("✅ Importação concluída!");
         $this->command->info("📊 {$count} produtos importados com sucesso!");
         
-        if ($errors > 0) {
-            $this->command->warn("⚠️ {$errors} erros encontrados");
+        if ($pulados > 0) {
+            $this->command->warn("⏭️  {$pulados} linhas puladas (sem referência)");
         }
+        
+        if ($errors > 0) {
+            $this->command->error("❌ {$errors} erros encontrados");
+        }
+        
+        // Mostrar total no banco
+        $total = Produto::count();
+        $this->command->info("📊 Total de produtos no banco: $total");
     }
 
     private function validateDisponibilidade(string $value): string
@@ -138,7 +194,7 @@ class ProdutoSeeder extends Seeder
     private function parseCurrency($value): ?float
     {
         $value = trim($value);
-        if (empty($value) || $value === '0' || $value === '-' || $value === '') {
+        if (empty($value) || $value === '0' || $value === '-' || $value === '' || $value === 'NULL') {
             return null;
         }
         
@@ -152,20 +208,10 @@ class ProdutoSeeder extends Seeder
         return null;
     }
 
-    private function parseInteger($value): int
-    {
-        $value = trim($value);
-        if (empty($value) || $value === '-') {
-            return 0;
-        }
-        $value = preg_replace('/[^\d]/', '', $value);
-        return (int) $value;
-    }
-
     private function parsePercentage($value): ?float
     {
         $value = trim($value);
-        if (empty($value) || $value === '-' || $value === '') {
+        if (empty($value) || $value === '-' || $value === '' || $value === 'NULL') {
             return null;
         }
         
@@ -182,7 +228,7 @@ class ProdutoSeeder extends Seeder
     private function parseDate($value): ?string
     {
         $value = trim($value);
-        if (empty($value) || $value === '-' || $value === '') {
+        if (empty($value) || $value === '-' || $value === '' || $value === 'NULL') {
             return null;
         }
         
@@ -195,5 +241,17 @@ class ProdutoSeeder extends Seeder
         }
         
         return null;
+    }
+
+    private function countLines($file)
+    {
+        $linecount = 0;
+        $handle = fopen($file, 'r');
+        while (!feof($handle)) {
+            $line = fgets($handle);
+            $linecount++;
+        }
+        fclose($handle);
+        return $linecount;
     }
 }

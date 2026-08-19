@@ -26,37 +26,42 @@ class HomeController extends Controller
     public function index(Request $request): \Illuminate\View\View
     {
         $banners = $this->getBanners();
+        
         $produtosDestaque = $this->getProdutosPaginated(
             'produtos_destaque',
-            fn() => Produto::emDestaque(),
+            fn() => Produto::emDestaque()->get(),
             $request->get('page_destaque', 1),
             8,
             'page_destaque'
         );
+        
         $ofertas = $this->getProdutosPaginated(
             'ofertas_ativas',
-            fn() => Produto::ofertas(),
+            fn() => Produto::ofertas()->get(),
             $request->get('page_ofertas', 1),
             8,
             'page_ofertas'
         );
+        
         $novosProdutos = $this->getProdutosPaginated(
             'novos_produtos',
-            fn() => Produto::novos(),
+            fn() => Produto::novos()->get(),
             $request->get('page_novos', 1),
             8,
             'page_novos'
         );
+        
         $maisVendidos = $this->getProdutosPaginated(
             'mais_vendidos',
-            fn() => Produto::maisVendidos(),
+            fn() => Produto::maisVendidos()->get(),
             $request->get('page_vendidos', 1),
             8,
             'page_vendidos'
         );
+        
         $produtosDisponiveis = $this->getProdutosPaginated(
             'produtos_disponiveis',
-            fn() => Produto::todosDisponiveis(),
+            fn() => Produto::disponivel()->get(),
             $request->get('page_todos', 1),
             12,
             'page_todos'
@@ -178,7 +183,8 @@ class HomeController extends Controller
     }
 
     /**
-     * Obtém produtos paginados com cache.
+     * ✅ CORRIGIDO: Obtém produtos paginados com cache
+     * Resolve o problema do Attribute::get() convertendo para array
      */
     private function getProdutosPaginated(
         string $cacheKey,
@@ -190,33 +196,34 @@ class HomeController extends Controller
         $fullCacheKey = "{$cacheKey}_{$pageName}_{$page}";
 
         return Cache::remember($fullCacheKey, self::CACHE_TTL, function () use ($queryBuilder, $perPage, $page, $pageName) {
-            $result = $queryBuilder();
+            // ✅ Obtém os itens do query builder
+            $items = $queryBuilder();
             
-            // Se o resultado já for um paginator, usa ele
-            if ($result instanceof LengthAwarePaginator) {
-                return $result;
+            // ✅ Se for uma Collection, converte para array
+            if ($items instanceof Collection) {
+                $items = $items->all();
             }
             
-            // Se for um Builder, aplica paginação
-            if (method_exists($result, 'paginate')) {
-                $paginator = $result->paginate($perPage, ['*'], $pageName, $page);
-            } else {
-                // Se for uma Collection, converte para paginator
-                $items = $result instanceof Collection ? $result : collect($result);
-                $paginator = new LengthAwarePaginator(
-                    $items->forPage($page, $perPage),
-                    $items->count(),
-                    $perPage,
-                    $page,
-                    ['path' => request()->url(), 'query' => request()->query(), 'pageName' => $pageName]
-                );
+            // ✅ Se for uma query builder, executa e converte
+            if (is_object($items) && method_exists($items, 'get')) {
+                $items = $items->get()->all();
+            }
+            
+            // ✅ GARANTE QUE É UM ARRAY
+            if (!is_array($items)) {
+                $items = [];
             }
 
+            // ✅ Cria o paginator manualmente
+            $total = count($items);
+            $offset = ($page - 1) * $perPage;
+            $items = array_slice($items, $offset, $perPage);
+            
             return new LengthAwarePaginator(
-                $paginator->items(),
-                $paginator->total(),
-                $paginator->perPage(),
-                $paginator->currentPage(),
+                $items,
+                $total,
+                $perPage,
+                $page,
                 [
                     'path' => request()->url(),
                     'query' => request()->query(),
@@ -246,7 +253,7 @@ class HomeController extends Controller
 
             Log::info('Cache limpo pelo administrador', [
                 'usuario_id' => auth()->id(),
-                'email' => auth()->user()->email
+                'email' => auth()->user()->email ?? 'desconhecido'
             ]);
 
             return redirect()->back()->with('success', '✅ Cache limpo com sucesso!');
@@ -318,16 +325,31 @@ class HomeController extends Controller
     }
 
     /**
-     * Limpar cache de produtos.
+     * ✅ CORRIGIDO: Limpar cache de produtos específicos
      */
     public function clearProductCache(): \Illuminate\Http\RedirectResponse
     {
         try {
-            Cache::forget('produtos_destaque');
-            Cache::forget('ofertas_ativas');
-            Cache::forget('novos_produtos');
-            Cache::forget('mais_vendidos');
-            Cache::forget('produtos_disponiveis');
+            // Limpa chaves específicas
+            $keys = [
+                'produtos_destaque',
+                'ofertas_ativas',
+                'novos_produtos',
+                'mais_vendidos',
+                'produtos_disponiveis'
+            ];
+            
+            foreach ($keys as $key) {
+                Cache::forget($key);
+                // Limpa também as versões paginadas
+                for ($i = 1; $i <= 10; $i++) {
+                    Cache::forget($key . '_page_destaque_' . $i);
+                    Cache::forget($key . '_page_ofertas_' . $i);
+                    Cache::forget($key . '_page_novos_' . $i);
+                    Cache::forget($key . '_page_vendidos_' . $i);
+                    Cache::forget($key . '_page_todos_' . $i);
+                }
+            }
 
             Log::info('Cache de produtos limpo', [
                 'usuario_id' => auth()->id()

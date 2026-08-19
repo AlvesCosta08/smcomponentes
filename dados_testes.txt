@@ -14,3 +14,38 @@ phpMyAdmin: http://localhost:8081 (usuário: root, senha: root123)
 Admin (se criado): admin@smcomponentes.com / password123
 
 cliente@loja.com cliente123
+
+Admin: admin@smcomponentes.com / admin123
+
+Usuário: usuario@smcomponentes.com / usuario123
+
+ Acessar phpMyAdmin
+Abra no navegador: http://localhost:8081
+
+Credenciais:
+
+Servidor: mysql (ou smcomponentes_db)
+
+Usuário: root
+
+Senha: root123
+
+admin@teste.com', 'password' => 12345678'
+
+
+
+
+# Primeira vez ou quando precisar configurar tudo
+./setup.sh
+
+# Reconstruir do zero (limpa tudo)
+./rebuild.sh
+
+# Iniciar containers (MySQL + phpMyAdmin)
+./start.sh
+
+# Parar containers
+./stop.sh
+
+# Verificar status
+./status.sh

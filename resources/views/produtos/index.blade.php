@@ -17,10 +17,10 @@
                 <option value="{{ request()->fullUrlWithQuery(['order' => 'created_at', 'dir' => 'desc']) }}" {{ request('order') == 'created_at' ? 'selected' : '' }}>
                     Mais recentes
                 </option>
-                <option value="{{ request()->fullUrlWithQuery(['order' => 'valor_unitario', 'dir' => 'asc']) }}" {{ request('order') == 'valor_unitario' && request('dir') == 'asc' ? 'selected' : '' }}>
+                <option value="{{ request()->fullUrlWithQuery(['order' => 'valor_atacado', 'dir' => 'asc']) }}" {{ request('order') == 'valor_atacado' && request('dir') == 'asc' ? 'selected' : '' }}>
                     Menor preço
                 </option>
-                <option value="{{ request()->fullUrlWithQuery(['order' => 'valor_unitario', 'dir' => 'desc']) }}" {{ request('order') == 'valor_unitario' && request('dir') == 'desc' ? 'selected' : '' }}>
+                <option value="{{ request()->fullUrlWithQuery(['order' => 'valor_atacado', 'dir' => 'desc']) }}" {{ request('order') == 'valor_atacado' && request('dir') == 'desc' ? 'selected' : '' }}>
                     Maior preço
                 </option>
                 <option value="{{ request()->fullUrlWithQuery(['order' => 'descricao', 'dir' => 'asc']) }}" {{ request('order') == 'descricao' ? 'selected' : '' }}>
@@ -64,7 +64,7 @@
                     <div class="card product-card h-100">
                         <div class="position-relative">
                             @if($produto->imagem)
-                                <img src="{{ asset('storage/' . $produto->imagem) }}" class="card-img-top" alt="{{ $produto->descricao }}" style="height: 200px; object-fit: cover;">
+                                <img src="{{ $produto->imagem_url }}" class="card-img-top" alt="{{ $produto->descricao }}" style="height: 200px; object-fit: cover;">
                             @else
                                 <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
                                     <i class="bi bi-plug" style="font-size: 3.5rem; color: #dfe6e9;"></i>
@@ -85,6 +85,13 @@
                                     <i class="bi bi-x-circle"></i> Indisponível
                                 </span>
                             @endif
+
+                            <!-- Badge IPI -->
+                            @if($produto->possui_ipi)
+                                <span class="badge bg-info position-absolute bottom-0 start-0 m-2 px-2 py-1" style="font-size: 0.7rem;">
+                                    IPI {{ $produto->ipi }}%
+                                </span>
+                            @endif
                         </div>
                         <div class="card-body d-flex flex-column">
                             <h6 class="card-title text-truncate" title="{{ $produto->descricao }}">
@@ -95,9 +102,14 @@
                                     <i class="bi bi-tag"></i> {{ Str::limit($produto->categoria, 20) }}
                                 </span>
                                 <p class="card-text mt-2 mb-0">
-                                    <span class="price">R$ {{ number_format($produto->valor_unitario ?? $produto->valor_atacado, 2, ',', '.') }}</span>
-                                    @if($produto->preco_promocional && $produto->preco_promocional < $produto->valor_atacado)
-                                        <span class="old-price">R$ {{ number_format($produto->valor_atacado, 2, ',', '.') }}</span>
+                                    <span class="price">{{ $produto->preco_atacado_formatado }}</span>
+                                    @if($produto->tem_promocao)
+                                        <span class="old-price">{{ $produto->preco_promocional_formatado }}</span>
+                                        <span class="badge bg-danger ms-1">-{{ $produto->desconto_percentual }}%</span>
+                                    @endif
+                                    @if($produto->possui_ipi)
+                                        <br>
+                                        <small class="text-muted">+ IPI: {{ $produto->preco_com_ipi_formatado }}</small>
                                     @endif
                                 </p>
                                 <a href="{{ route('produtos.show', $produto->slug) }}" class="btn btn-outline-primary w-100 mt-2 rounded-pill">
@@ -110,7 +122,7 @@
             @endforeach
         </div>
 
-        <!-- Paginação Moderna -->
+        <!-- Paginação -->
         <div class="mt-5 pt-3 border-top">
             <div class="d-flex flex-wrap justify-content-between align-items-center">
                 <div class="text-muted small mb-2 mb-md-0">
@@ -139,9 +151,6 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
-    .product-card .card-img-top {
-        border-bottom: 1px solid #e9ecef;
-    }
     .categoria-badge {
         font-size: 0.75rem;
         color: #6c757d;
@@ -164,7 +173,6 @@
     .btn-outline-primary {
         border-width: 2px;
     }
-    /* Filtros ativos */
     .btn-outline-success.active {
         background: #198754;
         color: #fff;
