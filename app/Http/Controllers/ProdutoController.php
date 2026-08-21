@@ -36,6 +36,11 @@ class ProdutoController extends Controller
 
         $produtos = $query->paginate($paginacao['per_page']);
         
+        // FORÇAR DISPONIBILIDADE
+        foreach ($produtos as $produto) {
+            $produto->forceDisponivel();
+        }
+        
         // Categorias com cache
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::ativo()->ordenado()->get();
@@ -61,6 +66,9 @@ class ProdutoController extends Controller
             ->where('slug', $slug)
             ->where('ativo', true)
             ->firstOrFail();
+
+        // FORÇAR DISPONIBILIDADE
+        $produto->forceDisponivel();
 
         // Incrementar visualizações
         $produto->incrementarVisualizacoes();
@@ -98,6 +106,11 @@ class ProdutoController extends Controller
             ->buscar($termo)
             ->paginate($porPagina);
 
+        // FORÇAR DISPONIBILIDADE
+        foreach ($produtos as $produto) {
+            $produto->forceDisponivel();
+        }
+
         return view('produtos.busca', compact('produtos', 'termo'));
     }
 
@@ -113,6 +126,11 @@ class ProdutoController extends Controller
         $produtos = Produto::disponivel()
             ->where('categoria_id', $categoria->id)
             ->paginate(12);
+
+        // FORÇAR DISPONIBILIDADE
+        foreach ($produtos as $produto) {
+            $produto->forceDisponivel();
+        }
 
         return view('produtos.categoria', compact('produtos', 'categoria'));
     }
@@ -130,6 +148,11 @@ class ProdutoController extends Controller
         $titulo = $this->getStatusTitle($status);
 
         $produtos = $query->paginate(12);
+        
+        // FORÇAR DISPONIBILIDADE
+        foreach ($produtos as $produto) {
+            $produto->forceDisponivel();
+        }
         
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::ativo()->ordenado()->get();

@@ -419,13 +419,14 @@
         font-weight: 600;
         color: var(--sm-dark);
         display: block;
-        margin-bottom: 6px;
+        margin-bottom: 8px;
     }
     .sm-coupon .coupon-input-group {
         display: flex;
         gap: 8px;
+        align-items: stretch;
     }
-    .sm-coupon input {
+    .sm-coupon .coupon-input-group input {
         flex: 1;
         padding: 10px 14px;
         border: 2px solid var(--sm-gray);
@@ -434,8 +435,10 @@
         outline: none;
         transition: var(--transition);
         background: var(--sm-white);
+        min-width: 0;
+        height: 44px;
     }
-    .sm-coupon input:focus {
+    .sm-coupon .coupon-input-group input:focus {
         border-color: var(--sm-primary);
         box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
     }
@@ -446,12 +449,20 @@
         border: none;
         border-radius: 10px;
         font-weight: 600;
+        font-size: 14px;
         cursor: pointer;
         transition: var(--transition);
+        white-space: nowrap;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
     }
     .sm-coupon .btn-apply:hover {
         background: var(--sm-primary-dark);
         transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
 
     /* Frete */
@@ -472,6 +483,7 @@
     .sm-shipping .shipping-input {
         display: flex;
         gap: 8px;
+        align-items: stretch;
     }
     .sm-shipping .shipping-input input {
         flex: 1;
@@ -482,6 +494,8 @@
         outline: none;
         transition: var(--transition);
         background: var(--sm-white);
+        min-width: 0;
+        height: 44px;
     }
     .sm-shipping .shipping-input input:focus {
         border-color: var(--sm-primary);
@@ -490,16 +504,26 @@
     .sm-shipping .shipping-input button {
         padding: 10px 20px;
         background: var(--sm-gray);
-        border: none;
+        border: 2px solid var(--sm-gray);
         border-radius: 10px;
         font-weight: 600;
+        font-size: 14px;
         cursor: pointer;
         transition: var(--transition);
         color: var(--sm-dark);
+        white-space: nowrap;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
     }
     .sm-shipping .shipping-input button:hover {
         background: var(--sm-primary);
+        border-color: var(--sm-primary);
         color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     .sm-shipping .shipping-result {
         margin-top: 8px;
@@ -637,9 +661,29 @@
         .sm-summary { padding: 16px; }
         .sm-summary .summary-title { font-size: 16px; }
         .sm-summary .summary-row.total .total-value { font-size: 20px; }
-        .sm-coupon .coupon-input-group { flex-direction: column; }
-        .sm-shipping .shipping-input { flex-direction: column; }
         .sm-breadcrumb { font-size: 12px; padding: 10px 14px; }
+        .sm-coupon .coupon-input-group {
+            flex-direction: column;
+        }
+        .sm-coupon .coupon-input-group input {
+            height: 42px;
+        }
+        .sm-coupon .btn-apply {
+            height: 42px;
+            width: 100%;
+            min-width: unset;
+        }
+        .sm-shipping .shipping-input {
+            flex-direction: column;
+        }
+        .sm-shipping .shipping-input input {
+            height: 42px;
+        }
+        .sm-shipping .shipping-input button {
+            height: 42px;
+            width: 100%;
+            min-width: unset;
+        }
     }
     @media (max-width: 480px) {
         .sm-header { padding: 14px 0; border-radius: 0 0 20px 20px; }
@@ -697,8 +741,6 @@
             <span class="current">Carrinho</span>
         </div>
 
-        {{-- ⚠️ ALERTAS REMOVIDOS DAQUI - O LAYOUT JÁ EXIBE GLOBALMENTE ⚠️ --}}
-
         <!-- CONTEÚDO PRINCIPAL -->
         @if(empty($carrinho) || count($carrinho) == 0)
             <div class="sm-empty">
@@ -734,8 +776,26 @@
                                 </div>
                                 <div class="col-auto">
                                     <div class="product-image">
-                                        @if(isset($item['imagem']))
-                                            <img src="{{ asset('storage/' . $item['imagem']) }}" alt="{{ $item['nome'] ?? 'Produto' }}">
+                                        @if(isset($item['imagem']) && $item['imagem'])
+                                            @php
+                                                // Remove a URL base se já estiver no caminho
+                                                $imagemPath = $item['imagem'];
+                                                // Se o caminho já contém 'storage/', remove a duplicação
+                                                if (strpos($imagemPath, 'storage/') === 0) {
+                                                    $imagemPath = substr($imagemPath, 8);
+                                                }
+                                                // Se o caminho já contém a URL completa, extrai apenas o caminho
+                                                if (strpos($imagemPath, 'http://') !== false || strpos($imagemPath, 'https://') !== false) {
+                                                    $imagemPath = parse_url($imagemPath, PHP_URL_PATH);
+                                                    $imagemPath = ltrim($imagemPath, '/');
+                                                    if (strpos($imagemPath, 'storage/') === 0) {
+                                                        $imagemPath = substr($imagemPath, 8);
+                                                    }
+                                                }
+                                            @endphp
+                                            <img src="{{ asset('storage/' . $imagemPath) }}" 
+                                                 alt="{{ $item['nome'] ?? 'Produto' }}"
+                                                 onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                         @else
                                             <i class="fas fa-microchip" style="font-size: 28px; color: var(--sm-primary-light);"></i>
                                         @endif
@@ -976,19 +1036,32 @@
             return;
         }
 
-        const cupons = { 'SM10': 0.10, 'SM20': 0.20, 'SMFRETE': 0 };
+        const cupons = { 
+            'SM10': 0.10, 
+            'SM20': 0.20, 
+            'SMFRETE': 0,
+            'SM15': 0.15,
+            'SM25': 0.25,
+            'FRETEGRATIS': 0,
+            'BLACKSM': 0.30
+        };
 
-        if (cupons[codigo.toUpperCase()] !== undefined) {
-            const desconto = cupons[codigo.toUpperCase()];
+        const codigoUpper = codigo.toUpperCase();
+
+        if (cupons[codigoUpper] !== undefined) {
+            const desconto = cupons[codigoUpper];
+            const totalElement = document.getElementById('totalValue');
+            const totalAtualTexto = totalElement.textContent.replace(/[^0-9,]/g, '').replace(',', '.');
+            const totalAtual = parseFloat(totalAtualTexto) || 0;
+            
             if (desconto === 0) {
                 result.innerHTML = '<span style="color: var(--color-success-500);">✅ Frete grátis aplicado!</span>';
                 mostrarToast('Sucesso', 'Frete grátis aplicado!', 'success');
             } else {
-                const totalAtual = parseFloat(document.getElementById('totalValue').textContent.replace(/[^0-9,]/g, '').replace(',', '.'));
                 const novoTotal = totalAtual * (1 - desconto);
-                document.getElementById('totalValue').textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
+                totalElement.textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
                 result.innerHTML = `<span style="color: var(--color-success-500);">✅ Cupom aplicado! ${desconto * 100}% de desconto.</span>`;
-                mostrarToast('Sucesso', `Cupom ${codigo.toUpperCase()} aplicado! ${desconto * 100}% de desconto.`, 'success');
+                mostrarToast('Sucesso', `Cupom ${codigoUpper} aplicado! ${desconto * 100}% de desconto.`, 'success');
             }
             input.value = '';
         } else {
@@ -1010,16 +1083,32 @@
         resultado.innerHTML = '<span>⏳ Calculando frete...</span>';
 
         setTimeout(() => {
+            const cepNum = parseInt(cep);
+            let freteBase = 0;
+            
+            if (cepNum >= 60000000 && cepNum <= 69999999) {
+                freteBase = 5.00;
+            } else if (cepNum >= 70000000 && cepNum <= 79999999) {
+                freteBase = 8.00;
+            } else if (cepNum >= 80000000 && cepNum <= 89999999) {
+                freteBase = 10.00;
+            } else if (cepNum >= 90000000 && cepNum <= 99999999) {
+                freteBase = 12.00;
+            } else {
+                freteBase = 15.00;
+            }
+
             const fretes = [
-                { nome: 'Sedex', preco: (Math.random() * 20 + 15).toFixed(2), prazo: Math.floor(Math.random() * 3 + 2) },
-                { nome: 'PAC', preco: (Math.random() * 10 + 8).toFixed(2), prazo: Math.floor(Math.random() * 5 + 5) }
+                { nome: 'Sedex', preco: (freteBase + Math.random() * 10 + 5).toFixed(2), prazo: Math.floor(Math.random() * 3 + 2) },
+                { nome: 'PAC', preco: (freteBase + Math.random() * 5 + 3).toFixed(2), prazo: Math.floor(Math.random() * 5 + 5) },
+                { nome: 'Motoboy (Fortaleza)', preco: (freteBase + Math.random() * 2 + 1).toFixed(2), prazo: '1 dia' }
             ];
 
             let html = '<div class="d-flex flex-column gap-1">';
             fretes.forEach(f => {
                 html += `
                     <div class="d-flex justify-content-between align-items-center" style="padding: 4px 0; border-bottom: 1px solid var(--sm-gray);">
-                        <span><strong>${f.nome}</strong> (${f.prazo} dias úteis)</span>
+                        <span><strong>${f.nome}</strong> (${f.prazo} ${typeof f.prazo === 'number' ? 'dias úteis' : ''})</span>
                         <span style="font-weight: 600; color: var(--sm-dark);">R$ ${f.preco.replace('.', ',')}</span>
                     </div>
                 `;

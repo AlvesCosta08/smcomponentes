@@ -208,11 +208,12 @@
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
-                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
                                     <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         class="img-fluid"
+                                         style="width: 100%; height: 100%; object-fit: cover;"
                                          onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
@@ -221,11 +222,6 @@
                             @if($produto->hasPromocao())
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
                                     -{{ $produto->getDescontoPercentual() }}%
-                                </span>
-                            @endif
-                            @if($produto->hasIpi())
-                                <span class="badge bg-info position-absolute bottom-0 start-0 m-2" style="font-size: 0.6rem;">
-                                    IPI {{ $produto->getIpiAliquota() }}
                                 </span>
                             @endif
                         </div>
@@ -244,17 +240,17 @@
                                         {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                 @endif
-                                @if($produto->hasIpi())
-                                    <br>
-                                    <small class="text-muted" style="font-size: 0.65rem;">
-                                        + IPI: {{ $produto->getPrecoComIpiFormatado() }}
-                                    </small>
-                                @endif
                             </p>
-                            <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
-                               class="btn btn-sm btn-outline-primary w-100 rounded-pill">
-                                <i class="bi bi-eye me-1"></i> Ver Detalhes
-                            </a>
+                            @if($produto->quantidade > 0 && $produto->ativo)
+                                <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
+                                   class="btn btn-sm btn-outline-primary w-100 rounded-pill">
+                                    <i class="bi bi-eye me-1"></i> Ver Detalhes
+                                </a>
+                            @else
+                                <button class="btn btn-sm btn-secondary w-100 rounded-pill" disabled>
+                                    <i class="bi bi-x-circle me-1"></i> Indisponível
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -291,11 +287,12 @@
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0 border-warning border-2">
                         <div class="position-relative">
-                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
                                     <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         class="img-fluid"
+                                         style="width: 100%; height: 100%; object-fit: cover;"
                                          onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
@@ -323,10 +320,16 @@
                                     </span>
                                 @endif
                             </p>
-                            <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
-                               class="btn btn-sm btn-outline-danger w-100 rounded-pill">
-                                <i class="bi bi-eye me-1"></i> Ver Detalhes
-                            </a>
+                            @if($produto->quantidade > 0 && $produto->ativo)
+                                <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
+                                   class="btn btn-sm btn-outline-danger w-100 rounded-pill">
+                                    <i class="bi bi-eye me-1"></i> Ver Detalhes
+                                </a>
+                            @else
+                                <button class="btn btn-sm btn-secondary w-100 rounded-pill" disabled>
+                                    <i class="bi bi-x-circle me-1"></i> Indisponível
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -363,11 +366,12 @@
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
-                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
                                     <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         class="img-fluid"
+                                         style="width: 100%; height: 100%; object-fit: cover;"
                                          onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
@@ -393,10 +397,16 @@
                                     </span>
                                 @endif
                             </p>
-                            <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
-                               class="btn btn-sm btn-outline-warning w-100 rounded-pill">
-                                <i class="bi bi-eye me-1"></i> Ver Detalhes
-                            </a>
+                            @if($produto->quantidade > 0 && $produto->ativo)
+                                <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
+                                   class="btn btn-sm btn-outline-warning w-100 rounded-pill">
+                                    <i class="bi bi-eye me-1"></i> Ver Detalhes
+                                </a>
+                            @else
+                                <button class="btn btn-sm btn-secondary w-100 rounded-pill" disabled>
+                                    <i class="bi bi-x-circle me-1"></i> Indisponível
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -436,11 +446,12 @@
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
-                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px;">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
                                     <img src="{{ $produto->getImagemUrl() }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
-                                         style="height: 100%; width: 100%; object-fit: cover;"
+                                         class="img-fluid"
+                                         style="width: 100%; height: 100%; object-fit: cover;"
                                          onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                 @else
                                     <i class="bi bi-plug fs-1 text-muted"></i>
@@ -467,17 +478,17 @@
                                         {{ $produto->getPrecoAtacadoFormatado() }}
                                     </span>
                                 @endif
-                                @if($produto->hasIpi())
-                                    <br>
-                                    <small class="text-muted" style="font-size: 0.65rem;">
-                                        IPI: {{ $produto->getPrecoComIpiFormatado() }}
-                                    </small>
-                                @endif
                             </p>
-                            <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
-                               class="btn btn-sm btn-outline-primary w-100 rounded-pill">
-                                <i class="bi bi-eye me-1"></i> Ver Detalhes
-                            </a>
+                            @if($produto->quantidade > 0 && $produto->ativo)
+                                <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
+                                   class="btn btn-sm btn-outline-primary w-100 rounded-pill">
+                                    <i class="bi bi-eye me-1"></i> Ver Detalhes
+                                </a>
+                            @else
+                                <button class="btn btn-sm btn-secondary w-100 rounded-pill" disabled>
+                                    <i class="bi bi-x-circle me-1"></i> Indisponível
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -645,7 +656,20 @@
     }
     .produto-card-smart .card-img-top {
         background: #f8f9fa;
-        padding: 8px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .produto-card-smart .card-img-top img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .produto-card-smart .card-img-top i {
+        font-size: 3rem;
+        color: #adb5bd;
     }
     .produto-card-smart .card-body {
         padding: 10px 12px 12px;

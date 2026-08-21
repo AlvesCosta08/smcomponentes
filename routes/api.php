@@ -90,6 +90,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 // LÓGICA 4: FERRAMENTAS DE DEBUG (APENAS DESENVOLVIMENTO)
 // ============================================================
 
-if (app()->environment('local')) {
-    require __DIR__ . '/debug.php';
-}
+// CORRIGIDO: Rotas de debug carregadas apenas em web.php para evitar conflito
+// if (app()->environment('local')) {
+//     require __DIR__ . '/debug.php';
+// }

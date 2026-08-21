@@ -55,19 +55,15 @@
                 </p>
             @endif
             
-            <!-- STATUS -->
+            <!-- STATUS - CORRIGIDO -->
             <div class="mb-3">
                 @php
-                    $disponivel = ($produto->disponibilidade === 'DISPONIVEL' && $produto->quantidade > 0 && $produto->ativo);
+                    $disponivel = $produto->quantidade > 0 && $produto->ativo;
                 @endphp
                 
                 @if($disponivel)
                     <span class="badge bg-success fs-6">
                         <i class="bi bi-check-circle"></i> ✓ Disponível
-                    </span>
-                @elseif($produto->disponibilidade === 'EST.BAIXO' && $produto->quantidade > 0)
-                    <span class="badge bg-warning text-dark fs-6">
-                        <i class="bi bi-exclamation-triangle"></i> ⚠ Estoque Baixo
                     </span>
                 @else
                     <span class="badge bg-danger fs-6">
@@ -101,7 +97,7 @@
                 @endif
             </div>
 
-            <!-- BOTÃO -->
+            <!-- BOTÃO - CORRIGIDO -->
             @if($disponivel)
                 <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2">
                     @csrf

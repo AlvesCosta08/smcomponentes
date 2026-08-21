@@ -35,7 +35,7 @@ Route::prefix('debug')->name('debug.')->group(function () {
             'total' => $banners->count(),
             'banners' => $result
         ]);
-    })->name('banners');
+    })->name('banners.list');  // ← ALTERADO: de 'banners' para 'banners.list'
 
     // --- 2. Debug de Cache ---
     Route::get('/cache', function() {

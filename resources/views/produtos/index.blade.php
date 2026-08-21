@@ -71,14 +71,13 @@
                                 </div>
                             @endif
                             
-                            <!-- Badge de Disponibilidade -->
-                            @if($produto->disponibilidade == 'DISPONIVEL')
+                            <!-- Badge de Disponibilidade - CORRIGIDO -->
+                            @php
+                                $disponivel = $produto->quantidade > 0 && $produto->ativo;
+                            @endphp
+                            @if($disponivel)
                                 <span class="badge bg-success position-absolute top-0 end-0 m-2 px-3 py-1 rounded-pill">
                                     <i class="bi bi-check-circle"></i> Disponível
-                                </span>
-                            @elseif($produto->disponibilidade == 'EST.BAIXO')
-                                <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2 px-3 py-1 rounded-pill">
-                                    <i class="bi bi-exclamation-triangle"></i> Estoque Baixo
                                 </span>
                             @else
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 px-3 py-1 rounded-pill">

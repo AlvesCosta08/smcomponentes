@@ -8,8 +8,59 @@ use Illuminate\Support\Str;
 
 class CreateProductRequestDTO extends ProductDTO
 {
+    /**
+     * Converter valor monetário brasileiro para float
+     * Exemplo: "1.719,00" => 1719.00 ou "17,19" => 17.19
+     */
+    private function parseMoney(?string $value): ?float
+    {
+        if (empty($value) || $value === '0,00' || $value === '0.00' || $value === '') {
+            return null;
+        }
+
+        // Remove espaços em branco
+        $value = trim($value);
+        
+        // Se o valor já estiver no formato americano (ex: 17.19)
+        if (preg_match('/^\d+\.\d{1,2}$/', $value)) {
+            return (float) $value;
+        }
+
+        // Formato brasileiro: 1.719,00 ou 17,19
+        // Remove pontos de milhar e troca vírgula por ponto decimal
+        $cleaned = str_replace('.', '', $value);
+        $cleaned = str_replace(',', '.', $cleaned);
+        
+        return (float) $cleaned;
+    }
+
+    /**
+     * Parseia um valor percentual (pode vir com vírgula)
+     */
+    private function parsePercent(?string $value): ?float
+    {
+        if (empty($value) || $value === '') {
+            return null;
+        }
+
+        $value = trim($value);
+        $value = str_replace('%', '', $value);
+        $value = str_replace(',', '.', $value);
+        
+        return (float) $value;
+    }
+
     public static function fromRequest(Request $request): self
     {
+        // Criar uma instância temporária para usar os métodos parse
+        $temp = new self();
+        
+        // Obter os valores do request
+        $valorCompra = $temp->parseMoney($request->input('valor_compra'));
+        $precoPromocional = $temp->parseMoney($request->input('preco_promocional'));
+        $ipi = $temp->parsePercent($request->input('ipi')) ?? 9.75;
+        $margemLucro = $temp->parsePercent($request->input('margem_lucro')) ?? 80;
+        
         $dto = new self(
             descricao: $request->input('descricao'),
             categoria: $request->input('categoria'),
@@ -21,17 +72,17 @@ class CreateProductRequestDTO extends ProductDTO
             quantidade: (int) $request->input('quantidade', 0),
             estoque_minimo: (int) $request->input('estoque_minimo', 5),
             
-            // ✅ PREÇOS - valor_compra é obrigatório, os outros são calculados
-            valor_compra: $request->has('valor_compra') ? (float) $request->input('valor_compra') : null,
-            valor_atacado: null, // Será calculado
-            valor_unitario: null, // Será calculado
-            valor_custo: null, // Será calculado
-            preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : null,
+            // ✅ PREÇOS - CORRIGIDO
+            valor_compra: $valorCompra,
+            valor_atacado: null,
+            valor_unitario: null,
+            valor_custo: null,
+            preco_promocional: $precoPromocional,
             
             // ✅ IPI e Margem
-            ipi: $request->has('ipi') ? (float) $request->input('ipi') : 9.75,
-            margem_lucro: $request->has('margem_lucro') ? (float) $request->input('margem_lucro') : 80,
-            percentual_custo: null, // Será calculado
+            ipi: $ipi,
+            margem_lucro: $margemLucro,
+            percentual_custo: null,
             
             // Status
             disponibilidade: $request->input('disponibilidade', 'DISPONIVEL'),

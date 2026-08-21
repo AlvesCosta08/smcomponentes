@@ -84,7 +84,47 @@ class Produto extends Model
         'tem_promocao',
         'desconto_percentual',
         'lucro_bruto_formatado',
+        'pode_comprar', // NOVO
     ];
+
+    // ==============================================
+    // MÉTODOS ESTÁTICOS
+    // ==============================================
+
+    /**
+     * Retorna as margens de lucro disponíveis para seleção
+     */
+    public static function getMargensDisponiveis(): array
+    {
+        return [
+            '10' => '10%',
+            '15' => '15%',
+            '20' => '20%',
+            '25' => '25%',
+            '30' => '30%',
+            '35' => '35%',
+            '40' => '40%',
+            '45' => '45%',
+            '50' => '50%',
+            '55' => '55%',
+            '60' => '60%',
+            '65' => '65%',
+            '70' => '70%',
+            '75' => '75%',
+            '80' => '80%',
+            '85' => '85%',
+            '90' => '90%',
+            '95' => '95%',
+            '100' => '100%',
+            '110' => '110%',
+            '120' => '120%',
+            '130' => '130%',
+            '140' => '140%',
+            '150' => '150%',
+            '175' => '175%',
+            '200' => '200%',
+        ];
+    }
 
     // ==============================================
     // RELACIONAMENTOS
@@ -171,6 +211,14 @@ class Produto extends Model
         return $this->getLucroBrutoFormatado();
     }
 
+    /**
+     * NOVO: Atributo para verificar se pode comprar
+     */
+    public function getPodeComprarAttribute(): bool
+    {
+        return $this->isDisponivel();
+    }
+
     // ==============================================
     // MÉTODOS AUXILIARES
     // ==============================================
@@ -249,11 +297,30 @@ class Produto extends Model
         return $this->disponibilidade?->label() ?? 'Desconhecido';
     }
 
+    /**
+     * MODIFICADO: Verifica disponibilidade priorizando estoque e status
+     */
     public function isDisponivel(): bool
     {
+        // Se o produto está ativo e tem estoque, considera disponível
+        if ($this->ativo && ($this->quantidade ?? 0) > 0) {
+            return true;
+        }
+        
+        // Fallback para a lógica original
         return $this->ativo 
             && ($this->quantidade ?? 0) > 0 
             && $this->disponibilidade === DisponibilidadeEnum::DISPONIVEL;
+    }
+
+    /**
+     * NOVO: Força a disponibilidade do produto
+     */
+    public function forceDisponivel(): void
+    {
+        if ($this->ativo && $this->quantidade > 0) {
+            $this->disponibilidade = DisponibilidadeEnum::DISPONIVEL;
+        }
     }
 
     public function getImagemUrl(): string
