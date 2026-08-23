@@ -203,24 +203,98 @@ if (app()->environment('local')) {
 }
 
 // ============================================================
-// LÓGICA 8: ROTAS PARA IMAGENS (SERVIDAS PELO LARAVEL)
+// LÓGICA 8: ROTAS PARA IMAGENS (CORRIGIDAS)
 // ============================================================
 
-// Rotas para servir imagens de produtos
-Route::get('/storage/produtos/{filename}', [ImageController::class, 'show'])
-    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg)$')
-    ->name('produto.imagem');
+/**
+ * ROTAS DE IMAGENS
+ * 
+ * As imagens são servidas pelo ImageController que:
+ * - Busca em múltiplas pastas (produtos/, uploads/, images/, etc)
+ * - Gera placeholder quando não encontra
+ * - Aplica cache de 1 ano
+ * - Suporta redimensionamento via URL
+ */
 
-// Rota otimizada (redimensiona na URL)
-Route::get('/storage/produtos/{width}x{height}/{filename}', [ImageController::class, 'showOptimized'])
-    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg)$')
-    ->where('width', '\d+')
-    ->where('height', '\d+')
-    ->name('produto.imagem.otimizada');
+// Rota principal para servir imagens
+// Uso: /images/nome-da-imagem.jpg
+Route::get('/images/{filename}', [ImageController::class, 'show'])
+    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$')
+    ->name('image.show');
 
-// Rotas API para upload (opcional)
-Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
-    Route::post('/upload-image', [ImageController::class, 'upload'])->name('upload');
+// Rota para imagens otimizadas (redimensionadas)
+// Uso: /images/400x400/nome-da-imagem.jpg
+Route::get('/images/{width}x{height}/{filename}', [ImageController::class, 'showOptimized'])
+    ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$')
+    ->where('width', '[1-9][0-9]*')
+    ->where('height', '[1-9][0-9]*')
+    ->name('image.optimized');
+
+// Rota legada para compatibilidade com URLs antigas
+// Uso: /storage/produtos/nome-da-imagem.jpg (redireciona para /images/nome-da-imagem.jpg)
+Route::get('/storage/produtos/{filename}', function ($filename) {
+    return redirect()->route('image.show', ['filename' => $filename], 301);
+})->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$');
+
+// Rota legada para compatibilidade com URLs antigas (otimizadas)
+Route::get('/storage/produtos/{width}x{height}/{filename}', function ($width, $height, $filename) {
+    return redirect()->route('image.optimized', [
+        'width' => $width,
+        'height' => $height,
+        'filename' => $filename
+    ], 301);
+})->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$')
+  ->where('width', '[1-9][0-9]*')
+  ->where('height', '[1-9][0-9]*');
+
+// ============================================================
+// LÓGICA 9: ROTAS API PARA UPLOAD DE IMAGENS (REQUER AUTENTICAÇÃO)
+// ============================================================
+
+Route::middleware(['auth'])->prefix('api/images')->name('api.images.')->group(function () {
+    // Upload de imagem única
+    Route::post('/upload', [ImageController::class, 'upload'])->name('upload');
+    
+    // Upload de imagem otimizada
     Route::post('/upload-optimized', [ImageController::class, 'uploadOptimized'])->name('upload.optimized');
-    Route::delete('/delete-image', [ImageController::class, 'delete'])->name('delete.image');
+    
+    // Deletar imagem
+    Route::delete('/delete', [ImageController::class, 'delete'])->name('delete');
+    
+    // Upload de múltiplas imagens
+    Route::post('/upload-multiple', [ImageController::class, 'uploadMultiple'])->name('upload.multiple');
 });
+
+// ============================================================
+// LÓGICA 10: ROTA PARA TESTAR IMAGENS (APENAS DESENVOLVIMENTO)
+// ============================================================
+
+if (app()->environment('local')) {
+    Route::get('/test-image/{filename}', function ($filename) {
+        $paths = [
+            'produtos/' . $filename,
+            'uploads/' . $filename,
+            'images/' . $filename,
+        ];
+        
+        $results = [];
+        foreach ($paths as $path) {
+            $results[$path] = [
+                'exists' => Storage::disk('public')->exists($path),
+                'url' => $path,
+                'full_url' => route('image.show', ['filename' => $filename]),
+            ];
+        }
+        
+        return response()->json([
+            'filename' => $filename,
+            'paths' => $results,
+            'image_url' => route('image.show', ['filename' => $filename]),
+            'optimized_url' => route('image.optimized', [
+                'filename' => $filename,
+                'width' => 100,
+                'height' => 100
+            ]),
+        ]);
+    })->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$');
+}
