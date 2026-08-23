@@ -21,7 +21,10 @@
         <div class="col-md-5">
             <div class="product-image-container">
                 @if($produto->imagem)
-                    <img src="{{ $produto->imagem_url }}" 
+                    @php
+                        $filename = basename($produto->imagem);
+                    @endphp
+                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
                          alt="{{ $produto->descricao }}" 
                          class="img-fluid rounded-3 w-100"
                          style="object-fit: contain; max-height: 400px; background: #f8f9fa; padding: 20px;">
@@ -47,13 +50,6 @@
             @if($produto->referencia)
                 <p class="text-muted small">
                     <i class="bi bi-upc-scan"></i> Referência: {{ $produto->referencia }}
-                </p>
-            @endif
-
-            @if($produto->ipi > 0)
-                <p class="text-muted small">
-                    <i class="bi bi-percent"></i> IPI: {{ $produto->ipi }}%
-                    <span class="text-muted ms-2">(+ {{ $produto->preco_com_ipi_formatado }})</span>
                 </p>
             @endif
             
@@ -85,13 +81,6 @@
                     </p>
                 @else
                     <h2 class="price">{{ $produto->preco_atacado_formatado }}</h2>
-                @endif
-                
-                @if($produto->ipi > 0)
-                    <p class="text-muted small">
-                        <i class="bi bi-info-circle"></i> 
-                        Com IPI: <span class="fw-bold text-primary">{{ $produto->preco_com_ipi_formatado }}</span>
-                    </p>
                 @endif
             </div>
 
@@ -134,7 +123,10 @@
                 <div class="col-6 col-md-3">
                     <div class="card h-100 shadow-sm hover-card">
                         @if($relacionado->imagem)
-                            <img src="{{ $relacionado->imagem_url }}" 
+                            @php
+                                $filename = basename($relacionado->imagem);
+                            @endphp
+                            <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                  class="card-img-top" 
                                  alt="{{ $relacionado->descricao }}"
                                  style="height: 150px; object-fit: contain; padding: 10px; background: #f8f9fa;">

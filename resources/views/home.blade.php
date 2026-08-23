@@ -210,7 +210,10 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->imagem_url }}" 
+                                    @php
+                                        $filename = basename($produto->imagem);
+                                    @endphp
+                                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -289,7 +292,10 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->imagem_url }}" 
+                                    @php
+                                        $filename = basename($produto->imagem);
+                                    @endphp
+                                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -368,7 +374,10 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->imagem_url }}" 
+                                    @php
+                                        $filename = basename($produto->imagem);
+                                    @endphp
+                                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -448,7 +457,10 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->imagem_url }}" 
+                                    @php
+                                        $filename = basename($produto->imagem);
+                                    @endphp
+                                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"

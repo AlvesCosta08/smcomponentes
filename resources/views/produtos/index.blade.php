@@ -65,7 +65,6 @@
                         <div class="position-relative">
                             @if($produto->imagem)
                                 @php
-                                    // ✅ CORRIGIDO: Padrão Laravel - extrair apenas o nome do arquivo
                                     $filename = basename($produto->imagem);
                                 @endphp
                                 <img src="{{ asset('storage/produtos/' . $filename) }}" 
@@ -89,13 +88,6 @@
                                     <i class="bi bi-x-circle"></i> Indisponível
                                 </span>
                             @endif
-
-                            <!-- Badge IPI -->
-                            @if($produto->ipi > 0)
-                                <span class="badge bg-info position-absolute bottom-0 start-0 m-2 px-2 py-1" style="font-size: 0.7rem;">
-                                    IPI {{ $produto->ipi }}%
-                                </span>
-                            @endif
                         </div>
                         <div class="card-body d-flex flex-column">
                             <h6 class="card-title text-truncate" title="{{ $produto->descricao }}">
@@ -110,10 +102,6 @@
                                     @if($produto->tem_promocao)
                                         <span class="old-price">{{ $produto->preco_promocional_formatado }}</span>
                                         <span class="badge bg-danger ms-1">-{{ $produto->desconto_percentual }}%</span>
-                                    @endif
-                                    @if($produto->ipi > 0)
-                                        <br>
-                                        <small class="text-muted">+ IPI: {{ $produto->preco_com_ipi_formatado }}</small>
                                     @endif
                                 </p>
                                 <a href="{{ route('produtos.show', $produto->slug) }}" class="btn btn-outline-primary w-100 mt-2 rounded-pill">

@@ -39,10 +39,20 @@
                     <div class="col product-item">
                         <div class="card h-100 shadow-sm">
                             <div class="position-relative">
-                                <img src="{{ $produto->imagem_url }}" 
-                                     class="card-img-top" 
-                                     alt="{{ $produto->descricao }}"
-                                     style="height: 200px; object-fit: cover;">
+                                @if($produto->imagem)
+                                    @php
+                                        $filename = basename($produto->imagem);
+                                    @endphp
+                                    <img src="{{ asset('storage/produtos/' . $filename) }}" 
+                                         class="card-img-top" 
+                                         alt="{{ $produto->descricao }}"
+                                         style="height: 200px; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
+                                @else
+                                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                                        <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                                    </div>
+                                @endif
                                 
                                 @if($produto->tem_promocao)
                                     <span class="badge bg-danger position-absolute top-0 end-0 m-2">
