@@ -124,67 +124,31 @@ class HomeController extends Controller
     {
         $obj = new stdClass();
         $obj->id = $banner->id;
-        $obj->titulo = $banner->titulo;
-        $obj->subtitulo = $banner->subtitulo;
-        $obj->descricao = $banner->descricao;
-        $obj->imagem_url = $this->getImageUrl($banner->imagem);
-        $obj->link = $banner->link;
-        $obj->texto_botao = $banner->texto_botao;
+        
+        // Textos
+        $obj->titulo = $banner->titulo ?? 'SM Componentes';
+        $obj->subtitulo = $banner->subtitulo ?? 'Qualidade em Componentes Eletrônicos';
+        $obj->descricao = $banner->descricao ?? 'Encontre os melhores componentes para seus projetos';
+        
+        // Imagem - USANDO O ACCESSOR DO MODEL
+        $obj->imagem_url = $banner->imagem_url;
+        
+        // Link e botão
+        $obj->link = $banner->link ?? route('produtos.index');
+        $obj->texto_botao = $banner->texto_botao ?? 'Ver Produtos';
+        
+        // Cores
         $obj->cor_texto = $banner->cor_texto ?? '#ffffff';
         $obj->cor_botao = $banner->cor_botao ?? 'primary';
-        $obj->estilo_fundo = $this->getEstiloFundo($banner->cor_fundo);
+        
+        // Estilo de fundo - USANDO O ACCESSOR DO MODEL
+        $obj->estilo_fundo = $banner->estilo_fundo;
 
         return $obj;
     }
 
     /**
-     * Gera a URL da imagem.
-     */
-    private function getImageUrl(?string $imagem): ?string
-    {
-        if (empty($imagem)) {
-            return null;
-        }
-
-        if (filter_var($imagem, FILTER_VALIDATE_URL)) {
-            return $imagem;
-        }
-
-        $cleanPath = str_replace('banners/', '', $imagem);
-        $storagePath = 'banners/' . $cleanPath;
-
-        if (Storage::disk('public')->exists($storagePath)) {
-            return Storage::disk('public')->url($storagePath);
-        }
-
-        return asset('storage/' . $storagePath);
-    }
-
-    /**
-     * Gera o estilo de fundo do banner.
-     */
-    private function getEstiloFundo(?string $corFundo): string
-    {
-        if (empty($corFundo)) {
-            return 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
-        }
-
-        $corFundo = trim($corFundo);
-
-        if (str_starts_with($corFundo, '#')) {
-            return "background-color: {$corFundo};";
-        }
-
-        if (str_contains($corFundo, 'gradient')) {
-            return "background: {$corFundo};";
-        }
-
-        return "background: {$corFundo};";
-    }
-
-    /**
-     * ✅ CORRIGIDO: Obtém produtos paginados com cache
-     * Resolve o problema do Attribute::get() convertendo para array
+     * Obtém produtos paginados com cache
      */
     private function getProdutosPaginated(
         string $cacheKey,
@@ -196,25 +160,20 @@ class HomeController extends Controller
         $fullCacheKey = "{$cacheKey}_{$pageName}_{$page}";
 
         return Cache::remember($fullCacheKey, self::CACHE_TTL, function () use ($queryBuilder, $perPage, $page, $pageName) {
-            // ✅ Obtém os itens do query builder
             $items = $queryBuilder();
             
-            // ✅ Se for uma Collection, converte para array
             if ($items instanceof Collection) {
                 $items = $items->all();
             }
             
-            // ✅ Se for uma query builder, executa e converte
             if (is_object($items) && method_exists($items, 'get')) {
                 $items = $items->get()->all();
             }
             
-            // ✅ GARANTE QUE É UM ARRAY
             if (!is_array($items)) {
                 $items = [];
             }
 
-            // ✅ Cria o paginator manualmente
             $total = count($items);
             $offset = ($page - 1) * $perPage;
             $items = array_slice($items, $offset, $perPage);
@@ -237,9 +196,6 @@ class HomeController extends Controller
     // MÉTODOS DE CACHE
     // ================================================================
 
-    /**
-     * Limpar cache do sistema.
-     */
     public function clearCache(): \Illuminate\Http\RedirectResponse
     {
         try {
@@ -267,9 +223,6 @@ class HomeController extends Controller
         }
     }
 
-    /**
-     * Limpar cache de banners.
-     */
     public function clearBannerCache(): \Illuminate\Http\RedirectResponse
     {
         try {
@@ -293,9 +246,6 @@ class HomeController extends Controller
         }
     }
 
-    /**
-     * Recarregar banners (forçar recache).
-     */
     public function reloadBanners(): \Illuminate\Http\RedirectResponse
     {
         try {
@@ -324,13 +274,9 @@ class HomeController extends Controller
         }
     }
 
-    /**
-     * ✅ CORRIGIDO: Limpar cache de produtos específicos
-     */
     public function clearProductCache(): \Illuminate\Http\RedirectResponse
     {
         try {
-            // Limpa chaves específicas
             $keys = [
                 'produtos_destaque',
                 'ofertas_ativas',
@@ -341,7 +287,6 @@ class HomeController extends Controller
             
             foreach ($keys as $key) {
                 Cache::forget($key);
-                // Limpa também as versões paginadas
                 for ($i = 1; $i <= 10; $i++) {
                     Cache::forget($key . '_page_destaque_' . $i);
                     Cache::forget($key . '_page_ofertas_' . $i);
@@ -366,9 +311,6 @@ class HomeController extends Controller
         }
     }
 
-    /**
-     * Limpar todos os caches.
-     */
     public function clearAllCache(): \Illuminate\Http\RedirectResponse
     {
         try {
@@ -400,41 +342,26 @@ class HomeController extends Controller
     // PÁGINAS ESTÁTICAS
     // ================================================================
 
-    /**
-     * Página de termos e condições.
-     */
     public function termos(): \Illuminate\View\View
     {
         return view('pages.termos');
     }
 
-    /**
-     * Página de política de privacidade.
-     */
     public function privacidade(): \Illuminate\View\View
     {
         return view('pages.privacidade');
     }
 
-    /**
-     * Página de contato.
-     */
     public function contato(): \Illuminate\View\View
     {
         return view('pages.contato');
     }
 
-    /**
-     * Página sobre nós.
-     */
     public function sobre(): \Illuminate\View\View
     {
         return view('pages.sobre');
     }
 
-    /**
-     * Página de perguntas frequentes.
-     */
     public function faq(): \Illuminate\View\View
     {
         return view('pages.faq');

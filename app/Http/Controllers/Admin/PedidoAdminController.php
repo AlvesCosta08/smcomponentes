@@ -6,10 +6,13 @@ use App\Domain\Pedidos\Enums\StatusPedidoEnum;
 use App\Domain\Pedidos\Repositories\PedidoRepositoryInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdatePedidoStatusRequest;
+use App\Models\Pedido;
+use App\Models\PedidoItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PedidoAdminController extends Controller
 {
@@ -27,9 +30,8 @@ class PedidoAdminController extends Controller
             $filters = array_filter($filters, fn($value) => $value !== null && $value !== '');
 
             $pedidos = $this->repository->getFiltered($filters, 15);
-            $stats = $this->repository->getStats(); // Certifique-se que este método existe no seu Repository
+            $stats = $this->repository->getStats();
             
-            // Mapeamento do Enum para a View (Fonte única da verdade)
             $statusList = collect(StatusPedidoEnum::cases())
                 ->mapWithKeys(fn($case) => [$case->value => $case->label()])
                 ->toArray();
@@ -76,7 +78,7 @@ class PedidoAdminController extends Controller
     }
 
     /**
-     * Atualiza o status do pedido (Delegado para um Handler de Domínio)
+     * Atualiza o status do pedido
      */
     public function updateStatus(UpdatePedidoStatusRequest $request, int $id): RedirectResponse
     {
@@ -87,8 +89,6 @@ class PedidoAdminController extends Controller
                 return redirect()->back()->with('error', 'Pedido não encontrado.');
             }
 
-            // Aqui você deve chamar um Handler, ex: (new UpdateOrderStatusHandler())->handle($pedido, $request->status);
-            // Por enquanto, atualizamos via repositório, mas a validação de domínio deve ocorrer no Model/Entity
             $pedido->status = $request->status;
             $this->repository->update($pedido, ['status' => $request->status]);
             
@@ -98,7 +98,6 @@ class PedidoAdminController extends Controller
                 ->with('success', "Status do pedido #{$pedido->numero_pedido} alterado para '{$statusLabel}'.");
                 
         } catch (\DomainException $e) {
-            // Captura exceções de regra de negócio (ex: tentar cancelar um pedido já enviado)
             return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Erro ao atualizar status: ' . $e->getMessage());
@@ -118,12 +117,12 @@ class PedidoAdminController extends Controller
                 return redirect()->back()->with('error', 'Pedido não encontrado.');
             }
 
-            // Regra de Domínio: Só pode deletar se estiver cancelado
             if ($pedido->status !== StatusPedidoEnum::CANCELADO) {
-                return redirect()->back()->with('error', 'Apenas pedidos cancelados podem ser exclcidos.');
+                return redirect()->back()->with('error', 'Apenas pedidos cancelados podem ser excluídos.');
             }
 
-            $this->repository->delete($pedido);
+            $pedido->itens()->delete();
+            $pedido->delete();
             
             return redirect()->route('admin.pedidos.index')
                 ->with('success', "Pedido #{$pedido->numero_pedido} excluído com sucesso!");
@@ -135,15 +134,112 @@ class PedidoAdminController extends Controller
     }
 
     /**
+     * Relatório de pedidos
+     */
+    public function relatorio(Request $request): View
+    {
+        try {
+            // Filtros de data
+            $dataInicio = $request->get('data_inicio', now()->startOfMonth()->format('Y-m-d'));
+            $dataFim = $request->get('data_fim', now()->format('Y-m-d'));
+            
+            // Query base com filtros de data
+            $query = Pedido::query();
+            
+            if ($dataInicio && $dataFim) {
+                $query->whereBetween('created_at', [
+                    \Carbon\Carbon::parse($dataInicio)->startOfDay(),
+                    \Carbon\Carbon::parse($dataFim)->endOfDay()
+                ]);
+            }
+            
+            // Estatísticas
+            $totalPedidos = $query->count();
+            $totalVendas = $query->where('status', 'entregue')->sum('total') ?? 0;
+            $mediaTicket = $totalPedidos > 0 ? $totalVendas / $totalPedidos : 0;
+            
+            // Vendas por dia (últimos 30 dias)
+            $vendasPorDia = Pedido::where('status', 'entregue')
+                ->where('created_at', '>=', now()->subDays(30))
+                ->selectRaw('DATE(created_at) as data')
+                ->selectRaw('COUNT(*) as quantidade')
+                ->selectRaw('SUM(total) as total')
+                ->groupBy('data')
+                ->orderBy('data', 'asc')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'data' => $item->data,
+                        'quantidade' => $item->quantidade,
+                        'total' => $item->total ?? 0,
+                    ];
+                })
+                ->toArray();
+            
+            // Pedidos do período (para listagem)
+            $pedidos = $query->with(['user'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
+            
+            // Vendas por mês (últimos 6 meses)
+            $vendasPorMes = Pedido::where('status', 'entregue')
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as mes')
+                ->selectRaw('SUM(total) as total')
+                ->groupBy('mes')
+                ->orderBy('mes', 'asc')
+                ->get();
+            
+            // Top produtos mais vendidos
+            $topProdutos = PedidoItem::select('produto_id', 'nome_produto')
+                ->selectRaw('SUM(quantidade) as total_quantidade')
+                ->selectRaw('SUM(subtotal) as total_vendido')
+                ->groupBy('produto_id', 'nome_produto')
+                ->orderBy('total_vendido', 'desc')
+                ->limit(10)
+                ->get();
+            
+            // Status dos pedidos
+            $statusCounts = Pedido::select('status')
+                ->selectRaw('count(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status')
+                ->toArray();
+            
+            $pedidosPendentes = $statusCounts['pendente'] ?? 0;
+            $pedidosHoje = Pedido::whereDate('created_at', today())->count();
+            
+            return view('admin.pedidos.relatorio', compact(
+                'totalPedidos',
+                'totalVendas',
+                'mediaTicket',
+                'vendasPorDia',
+                'vendasPorMes',
+                'pedidos',
+                'topProdutos',
+                'statusCounts',
+                'pedidosPendentes',
+                'pedidosHoje',
+                'dataInicio',
+                'dataFim'
+            ));
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao carregar relatório: ' . $e->getMessage());
+            return redirect()->route('admin.pedidos.index')
+                ->with('error', 'Erro ao carregar relatório.');
+        }
+    }
+
+    /**
      * Exporta pedidos para CSV
      */
-    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    public function export(Request $request): StreamedResponse|RedirectResponse
     {
         try {
             $filters = $request->only(['status', 'data_inicio', 'data_fim']);
             $filters = array_filter($filters, fn($value) => $value !== null && $value !== '');
 
-            // O repositório deve ter um método getForExport ou similar, ou usamos getFiltered com perPage alto
             $pedidos = $this->repository->getFiltered($filters, 10000); 
             
             if ($pedidos->isEmpty()) {
@@ -162,7 +258,7 @@ class PedidoAdminController extends Controller
             
             $callback = function() use ($pedidos) {
                 $handle = fopen('php://output', 'w');
-                fputs($handle, "\xEF\xBB\xBF"); // BOM para UTF-8 no Excel
+                fputs($handle, "\xEF\xBB\xBF");
                 
                 fputcsv($handle, [
                     'ID', 'Número', 'Cliente', 'Email', 'Total', 'Status', 'Data'

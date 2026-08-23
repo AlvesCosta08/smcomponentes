@@ -34,7 +34,7 @@
                     @endif
 
                     <!-- Form -->
-                    <form method="POST" action="{{ route('login') }}">
+                    <form method="POST" action="{{ route('login') }}" id="login-form">
                         @csrf
 
                         <div class="mb-3">
@@ -91,6 +91,26 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('login-form');
+    
+    // Verificar se o token existe antes de enviar
+    form.addEventListener('submit', function(e) {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        const csrfInput = this.querySelector('input[name="_token"]');
+        
+        if (!token || !csrfInput || !csrfInput.value) {
+            e.preventDefault();
+            alert('Erro de segurança: Token CSRF não encontrado. Recarregue a página.');
+            window.location.reload();
+        }
+    });
+});
+</script>
+@endpush
 
 @push('styles')
 <style>

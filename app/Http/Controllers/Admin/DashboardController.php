@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Admin/DashboardController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -7,14 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Log; // 🔥 ADICIONAR ESTE IMPORT
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
     public function __construct(
         protected DashboardService $dashboardService
     ) {
-        // 🔥 ADICIONAR MIDDLEWARE
         $this->middleware(['auth', 'role:Admin']);
     }
 
@@ -28,36 +26,29 @@ class DashboardController extends Controller
             $stats = $this->dashboardService->getStats();
 
             // Extrair dados para a view
-            $totalUsuarios = $stats['usuarios']['total'];
-            $novosUsuariosHoje = $stats['usuarios']['novos_hoje'];
+            $totalUsuarios = $stats['usuarios']['total'] ?? 0;
+            $novosUsuariosHoje = $stats['usuarios']['novos_hoje'] ?? 0;
             
-            $totalProdutos = $stats['produtos']['total'];
-            $produtosAtivos = $stats['produtos']['ativos'];
-            $produtosIndisponiveis = $stats['produtos']['inativos'];
+            $totalProdutos = $stats['produtos']['total'] ?? 0;
+            $produtosAtivos = $stats['produtos']['ativos'] ?? 0;
+            $produtosIndisponiveis = $stats['produtos']['inativos'] ?? 0;
             
-            $estoqueBaixo = $stats['produtos']['estoque_baixo'];
-            $estoqueZero = $stats['produtos']['estoque_zero'];
-            $estoqueBaixoCount = $estoqueBaixo->count() + $estoqueZero->count();
+            $estoqueBaixo = $stats['produtos']['estoque_baixo'] ?? collect();
+            $estoqueZero = $stats['produtos']['estoque_zero'] ?? collect();
             
-            $totalPedidos = $stats['pedidos']['total'];
-            $pedidosStatus = [
-                'pendente' => $stats['pedidos']['pendentes'],
-                'processando' => $stats['pedidos']['processando'],
-                'enviado' => $stats['pedidos']['enviados'],
-                'entregue' => $stats['pedidos']['entregues'],
-                'cancelado' => $stats['pedidos']['cancelados'],
-            ];
-            $pedidosPendentesCount = $stats['pedidos']['pendentes'];
-            $pedidosHoje = $stats['pedidos']['hoje'];
-            $ultimosPedidos = $stats['pedidos']['ultimos'];
+            $totalPedidos = $stats['pedidos']['total'] ?? 0;
+            $pedidosStatus = $stats['pedidos']['status'] ?? [];
+            $pedidosPendentesCount = $stats['pedidos']['pendentes'] ?? 0;
+            $pedidosHoje = $stats['pedidos']['hoje'] ?? 0;
+            $ultimosPedidos = $stats['pedidos']['ultimos'] ?? collect();
             
-            $faturamentoTotal = $stats['faturamento']['total'];
-            $faturamentoMes = $stats['faturamento']['mes'];
-            $faturamentoDia = $stats['faturamento']['dia'];
-            $mediaPedidosDia = $stats['faturamento']['media_dia'];
+            $faturamentoTotal = $stats['faturamento']['total'] ?? 0;
+            $faturamentoMes = $stats['faturamento']['mes'] ?? 0;
+            $faturamentoDia = $stats['faturamento']['dia'] ?? 0;
+            $mediaPedidosDia = $stats['faturamento']['media_dia'] ?? 0;
             
-            $vendasMensais = $stats['vendas_mensais'];
-            $clientesTop = $stats['clientes_top'];
+            $vendasMensais = $stats['vendas_mensais'] ?? [];
+            $clientesTop = $stats['clientes_top'] ?? [];
 
             return view('admin.dashboard', compact(
                 'totalUsuarios',
@@ -77,8 +68,7 @@ class DashboardController extends Controller
                 'faturamentoDia',
                 'mediaPedidosDia',
                 'vendasMensais',
-                'clientesTop',
-                'estoqueBaixoCount'
+                'clientesTop'
             ));
 
         } catch (\Exception $e) {
@@ -104,7 +94,6 @@ class DashboardController extends Controller
                 'mediaPedidosDia' => 0,
                 'vendasMensais' => [],
                 'clientesTop' => [],
-                'estoqueBaixoCount' => 0,
             ])->with('error', 'Erro ao carregar dashboard: ' . $e->getMessage());
         }
     }

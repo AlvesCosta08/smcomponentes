@@ -7,7 +7,7 @@ enum DisponibilidadeEnum: string
 {
     case DISPONIVEL = 'DISPONIVEL';
     case INDISPONIVEL = 'INDISPONIVEL';
-    case ESTOQUE_BAIXO = 'EST.BAIXO';
+    case ESTOQUE_BAIXO = 'ESTOQUE_BAIXO';  // ✅ Corrigido para ESTOQUE_BAIXO
 
     public function label(): string
     {

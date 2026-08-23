@@ -31,42 +31,43 @@
                 <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                     
                     {{-- BANNER COM IMAGEM --}}
-                    @if(isset($banner->imagem_url) && $banner->imagem_url)
+                    @if(!empty($banner->imagem_url))
                     <div class="position-relative">
                         <img class="d-block w-100" 
                              src="{{ $banner->imagem_url }}" 
                              alt="{{ $banner->titulo ?? 'Banner' }}"
-                             style="height: 450px; object-fit: cover;">
+                             style="height: 450px; object-fit: cover;"
+                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         
                         {{-- OVERLAY COM TEXTO --}}
-                        @if(isset($banner->titulo) || isset($banner->subtitulo) || isset($banner->descricao) || isset($banner->texto_botao))
+                        @if(!empty($banner->titulo) || !empty($banner->subtitulo) || !empty($banner->descricao) || !empty($banner->texto_botao))
                         <div class="banner-overlay d-flex align-items-center">
                             <div class="container">
                                 <div class="row">
                                     <div class="col-lg-6 col-md-8">
                                         <div class="banner-content">
-                                            @if(isset($banner->titulo) && $banner->titulo)
+                                            @if(!empty($banner->titulo))
                                                 <h1 class="display-4 fw-bold mb-3" 
                                                     style="text-shadow: 2px 2px 10px rgba(0,0,0,0.5); color: {{ $banner->cor_texto ?? '#ffffff' }};">
                                                     {{ $banner->titulo }}
                                                 </h1>
                                             @endif
                                             
-                                            @if(isset($banner->subtitulo) && $banner->subtitulo)
+                                            @if(!empty($banner->subtitulo))
                                                 <h4 class="fw-semibold mb-3" 
                                                     style="text-shadow: 2px 2px 10px rgba(0,0,0,0.5); color: {{ $banner->cor_texto ?? '#ffffff' }};">
                                                     {{ $banner->subtitulo }}
                                                 </h4>
                                             @endif
                                             
-                                            @if(isset($banner->descricao) && $banner->descricao)
+                                            @if(!empty($banner->descricao))
                                                 <p class="lead mb-4" 
                                                     style="text-shadow: 2px 2px 10px rgba(0,0,0,0.5); color: {{ $banner->cor_texto ?? '#ffffff' }};">
                                                     {{ $banner->descricao }}
                                                 </p>
                                             @endif
                                             
-                                            @if(isset($banner->link) && isset($banner->texto_botao) && $banner->link && $banner->texto_botao)
+                                            @if(!empty($banner->link) && !empty($banner->texto_botao))
                                                 <a href="{{ $banner->link }}" 
                                                    class="btn btn-{{ $banner->cor_botao ?? 'primary' }} btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg"
                                                    style="transition: all 0.3s ease;"
@@ -86,16 +87,16 @@
                     <div class="banner-placeholder d-flex align-items-center justify-content-center text-center" 
                          style="height: 450px; {{ $banner->estilo_fundo ?? 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);' }}">
                         <div class="text-white p-4" style="max-width: 700px; color: {{ $banner->cor_texto ?? '#ffffff' }};">
-                            @if(isset($banner->titulo) && $banner->titulo)
+                            @if(!empty($banner->titulo))
                                 <h1 class="display-3 fw-bold mb-3">{{ $banner->titulo }}</h1>
                             @endif
-                            @if(isset($banner->subtitulo) && $banner->subtitulo)
+                            @if(!empty($banner->subtitulo))
                                 <h4 class="fw-semibold mb-3">{{ $banner->subtitulo }}</h4>
                             @endif
-                            @if(isset($banner->descricao) && $banner->descricao)
+                            @if(!empty($banner->descricao))
                                 <p class="lead mb-4">{{ $banner->descricao }}</p>
                             @endif
-                            @if(isset($banner->link) && isset($banner->texto_botao) && $banner->link && $banner->texto_botao)
+                            @if(!empty($banner->link) && !empty($banner->texto_botao))
                                 <a href="{{ $banner->link }}" 
                                    class="btn btn-{{ $banner->cor_botao ?? 'light' }} btn-lg rounded-pill px-5 py-3 fw-bold shadow-lg"
                                    @if(str_starts_with($banner->link, 'http')) target="_blank" rel="noopener noreferrer" @endif>
@@ -192,7 +193,7 @@
 </section>
 
 {{-- ============================================ --}}
-{{-- PRODUTOS EM DESTAQUE - CORRIGIDO            --}}
+{{-- PRODUTOS EM DESTAQUE                       --}}
 {{-- ============================================ --}}
 @if(isset($produtosDestaque) && $produtosDestaque->count() > 0)
 <section class="produtos-smart py-4">
@@ -274,7 +275,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- OFERTAS DO DIA - CORRIGIDO                 --}}
+{{-- OFERTAS DO DIA                             --}}
 {{-- ============================================ --}}
 @if(isset($ofertas) && $ofertas->count() > 0)
 <section class="ofertas-smart py-4 bg-light">
@@ -356,7 +357,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- MAIS VENDIDOS - CORRIGIDO                  --}}
+{{-- MAIS VENDIDOS                              --}}
 {{-- ============================================ --}}
 @if(isset($maisVendidos) && $maisVendidos->count() > 0)
 <section class="mais-vendidos-smart py-4">
@@ -436,7 +437,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- TODOS OS PRODUTOS - CORRIGIDO               --}}
+{{-- TODOS OS PRODUTOS                          --}}
 {{-- ============================================ --}}
 @if(isset($produtosDisponiveis) && $produtosDisponiveis->count() > 0)
 <section class="todos-produtos-smart py-4 bg-light">

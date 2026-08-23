@@ -38,7 +38,7 @@ trait ImageUploadTrait
             'mime' => $file->getMimeType()
         ]);
         
-        return $path; // Retorna "produtos/123_abc.jpg"
+        return $path;
     }
 
     /**
@@ -60,9 +60,10 @@ trait ImageUploadTrait
         $path = $folder . '/' . $filename;
 
         try {
-            // Verifica se Intervention Image está instalado
-            if (class_exists('Intervention\Image\Laravel\Facades\Image')) {
-                $image = \Intervention\Image\Laravel\Facades\Image::read($file->getRealPath());
+            // Verifica se Intervention Image está instalado (Laravel 13)
+            if (class_exists('Intervention\Image\ImageManager')) {
+                $manager = new \Intervention\Image\ImageManager(['driver' => 'gd']);
+                $image = $manager->make($file->getRealPath());
                 
                 // Redimensionar mantendo proporção
                 $image->resize($width, $height, function ($constraint) {
@@ -129,7 +130,6 @@ trait ImageUploadTrait
             }
         }
         
-        // Log de erros se houver
         if (!empty($errors)) {
             Log::warning('Algumas imagens da galeria falharam no upload', [
                 'errors' => $errors,
@@ -182,20 +182,14 @@ trait ImageUploadTrait
                 $deleted = Storage::disk('public')->delete($path);
                 
                 if ($deleted) {
-                    Log::info('Imagem deletada com sucesso', [
-                        'path' => $path
-                    ]);
+                    Log::info('Imagem deletada com sucesso', ['path' => $path]);
                 } else {
-                    Log::warning('Falha ao deletar imagem', [
-                        'path' => $path
-                    ]);
+                    Log::warning('Falha ao deletar imagem', ['path' => $path]);
                 }
                 
                 return $deleted;
             } else {
-                Log::warning('Imagem não encontrada para deletar', [
-                    'path' => $path
-                ]);
+                Log::warning('Imagem não encontrada para deletar', ['path' => $path]);
             }
         } catch (\Exception $e) {
             Log::error('Erro ao deletar imagem', [
@@ -249,6 +243,17 @@ trait ImageUploadTrait
             return Storage::disk('public')->url($path);
         }
 
+        // Tenta verificar em pastas alternativas
+        $filename = basename($path);
+        $folders = ['banners', 'produtos', 'images'];
+        
+        foreach ($folders as $folder) {
+            $testPath = $folder . '/' . $filename;
+            if (Storage::disk('public')->exists($testPath)) {
+                return Storage::disk('public')->url($testPath);
+            }
+        }
+
         Log::debug('Imagem não encontrada no storage', ['path' => $path]);
         return $default;
     }
@@ -262,7 +267,6 @@ trait ImageUploadTrait
             return false;
         }
 
-        // Se for URL, verifica se existe via HTTP
         if (filter_var($path, FILTER_VALIDATE_URL)) {
             try {
                 $headers = @get_headers($path);
@@ -280,24 +284,19 @@ trait ImageUploadTrait
      */
     public function validateImage(UploadedFile $file, int $maxSize = 2048, array $allowedTypes = null): bool
     {
-        // Tipos permitidos padrão
         $allowedTypes = $allowedTypes ?? ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'];
         
-        // Valida tamanho (KB)
         if ($file->getSize() > $maxSize * 1024) {
             throw new \Exception("Arquivo muito grande. Máximo: {$maxSize}KB. Atual: " . round($file->getSize() / 1024, 2) . "KB");
         }
 
-        // Valida formato
         $extension = strtolower($file->getClientOriginalExtension());
         $mimeType = $file->getMimeType();
         
-        // Verifica extensão
         if (!in_array($extension, $allowedTypes)) {
             throw new \Exception("Formato não permitido. Permitidos: " . implode(', ', $allowedTypes));
         }
         
-        // Verifica MIME type (segurança extra)
         $allowedMimes = [
             'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 
             'image/gif', 'image/svg+xml', 'image/bmp'
@@ -315,12 +314,7 @@ trait ImageUploadTrait
      */
     public function getImageInfo(?string $path): ?array
     {
-        if (!$path) {
-            return null;
-        }
-        
-        if (!Storage::disk('public')->exists($path)) {
-            Log::debug('Imagem não encontrada para obter informações', ['path' => $path]);
+        if (!$path || !Storage::disk('public')->exists($path)) {
             return null;
         }
 
@@ -362,28 +356,15 @@ trait ImageUploadTrait
             $testPath = 'temp/test_' . time() . '.txt';
             $testContent = 'Teste de acesso ao storage - ' . date('Y-m-d H:i:s');
             
-            // Tenta escrever
             Storage::disk('public')->put($testPath, $testContent);
-            
-            // Tenta ler
             $content = Storage::disk('public')->get($testPath);
-            
-            // Tenta verificar
             $exists = Storage::disk('public')->exists($testPath);
-            
-            // Tenta deletar
             Storage::disk('public')->delete($testPath);
             
-            Log::info('Storage acessível', [
-                'test_path' => $testPath,
-                'success' => true
-            ]);
-            
+            Log::info('Storage acessível', ['test_path' => $testPath, 'success' => true]);
             return true;
         } catch (\Exception $e) {
-            Log::error('Storage inacessível', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Storage inacessível', ['error' => $e->getMessage()]);
             return false;
         }
     }
@@ -394,13 +375,10 @@ trait ImageUploadTrait
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
         $bytes = max($bytes, 0);
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
-        
         $bytes /= pow(1024, $pow);
-        
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
@@ -444,8 +422,9 @@ trait ImageUploadTrait
             $path = $folder . '/' . $filename;
             
             try {
-                if (class_exists('Intervention\Image\Laravel\Facades\Image')) {
-                    $image = \Intervention\Image\Laravel\Facades\Image::read($file->getRealPath());
+                if (class_exists('Intervention\Image\ImageManager')) {
+                    $manager = new \Intervention\Image\ImageManager(['driver' => 'gd']);
+                    $image = $manager->make($file->getRealPath());
                     $image->resize($config['width'], $config['height'], function ($constraint) {
                         $constraint->aspectRatio();
                         $constraint->upsize();
@@ -459,6 +438,14 @@ trait ImageUploadTrait
                         'url' => Storage::disk('public')->url($path),
                         'width' => $config['width'],
                         'height' => $config['height'],
+                    ];
+                } else {
+                    Storage::disk('public')->putFileAs($folder, $file, $filename);
+                    $variants[$key] = [
+                        'path' => $path,
+                        'url' => Storage::disk('public')->url($path),
+                        'width' => null,
+                        'height' => null,
                     ];
                 }
             } catch (\Exception $e) {

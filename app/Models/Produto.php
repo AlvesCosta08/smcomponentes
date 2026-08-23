@@ -432,6 +432,26 @@ class Produto extends Model
     }
 
     // ==============================================
+    // MÉTODOS ESTÁTICOS ✅ ADICIONADO
+    // ==============================================
+
+    /**
+     * Retorna as margens de lucro disponíveis para seleção
+     */
+    public static function getMargensDisponiveis(): array
+    {
+        return [
+            20 => '20% - Lucro Baixo',
+            30 => '30% - Lucro Médio',
+            40 => '40% - Lucro Bom',
+            50 => '50% - Lucro Ótimo',
+            60 => '60% - Lucro Excelente',
+            80 => '80% - Lucro Premium',
+            100 => '100% - Lucro Máximo',
+        ];
+    }
+
+    // ==============================================
     // BOOT
     // ==============================================
 

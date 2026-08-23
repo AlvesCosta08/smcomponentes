@@ -37,7 +37,8 @@ class EloquentPedidoRepository implements PedidoRepositoryInterface
 
             return $pedido->load('itens', 'user');
         });
-.
+    }
+
     public function findById(int $id): ?Pedido
     {
         return Pedido::with(['itens.produto', 'user'])->find($id);
@@ -90,5 +91,37 @@ class EloquentPedidoRepository implements PedidoRepositoryInterface
             ->with('user')
             ->orderBy('created_at', 'asc')
             ->get();
+    }
+
+    /**
+     * Obtém estatísticas dos pedidos
+     */
+    public function getStats(): array
+    {
+        $total = Pedido::count();
+        $pendentes = Pedido::where('status', 'pendente')->count();
+        $processando = Pedido::where('status', 'processando')->count();
+        $enviados = Pedido::where('status', 'enviado')->count();
+        $entregues = Pedido::where('status', 'entregue')->count();
+        $cancelados = Pedido::where('status', 'cancelado')->count();
+        
+        $faturamentoTotal = Pedido::where('status', 'entregue')->sum('total') ?? 0;
+        $faturamentoMes = Pedido::where('status', 'entregue')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('total') ?? 0;
+        
+        return [
+            'total' => $total,
+            'pendentes' => $pendentes,
+            'processando' => $processando,
+            'enviados' => $enviados,
+            'entregues' => $entregues,
+            'cancelados' => $cancelados,
+            'faturamento' => [
+                'total' => $faturamentoTotal,
+                'mes' => $faturamentoMes,
+            ],
+        ];
     }
 }

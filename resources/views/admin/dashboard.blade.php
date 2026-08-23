@@ -197,8 +197,19 @@
                         Produtos com Estoque Crítico
                     </span>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @php
+                            // ✅ CORRIGIDO: Verificar se são coleções ou inteiros
+                            $totalEstoqueCritico = 0;
+                            if (isset($estoqueBaixo) && isset($estoqueZero)) {
+                                if ($estoqueBaixo instanceof \Illuminate\Support\Collection) {
+                                    $totalEstoqueCritico = $estoqueBaixo->count() + $estoqueZero->count();
+                                } else {
+                                    $totalEstoqueCritico = $estoqueBaixo + $estoqueZero;
+                                }
+                            }
+                        @endphp
                         <span class="badge bg-warning text-dark">
-                            {{ ($estoqueBaixo->count() ?? 0) + ($estoqueZero->count() ?? 0) }} em alerta
+                            {{ $totalEstoqueCritico }} em alerta
                         </span>
                         <a href="{{ route('admin.produtos.index') }}?estoque=baixo" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-box-seam"></i> Ver todos
@@ -207,9 +218,10 @@
                 </div>
                 <div class="card-body p-0">
                     @php
+                        // ✅ CORRIGIDO: Inicializar coleção vazia
                         $produtosCriticos = collect();
                         
-                        if(isset($estoqueZero) && $estoqueZero->count() > 0) {
+                        if (isset($estoqueZero) && $estoqueZero instanceof \Illuminate\Support\Collection && $estoqueZero->count() > 0) {
                             $produtosCriticos = $produtosCriticos->merge($estoqueZero->map(function($p) {
                                 $p->status_critico = 'Sem Estoque';
                                 $p->classe_critico = 'table-danger';
@@ -219,7 +231,7 @@
                             }));
                         }
                         
-                        if(isset($estoqueBaixo) && $estoqueBaixo->count() > 0) {
+                        if (isset($estoqueBaixo) && $estoqueBaixo instanceof \Illuminate\Support\Collection && $estoqueBaixo->count() > 0) {
                             $produtosCriticos = $produtosCriticos->merge($estoqueBaixo->map(function($p) {
                                 $p->status_critico = 'Estoque Baixo';
                                 $p->classe_critico = 'table-warning';
@@ -379,8 +391,8 @@
                         @foreach($vendasMensais as $venda)
                             <div class="col-4 col-lg-4 mb-2">
                                 <div class="p-2 bg-light rounded text-center">
-                                    <small class="text-muted d-block">{{ $venda['mes'] }}</small>
-                                    <strong class="text-primary small small-md">R$ {{ number_format($venda['total'], 2, ',', '.') }}</strong>
+                                    <small class="text-muted d-block">{{ $venda['mes'] ?? $venda->mes }}</small>
+                                    <strong class="text-primary small small-md">R$ {{ number_format($venda['total'] ?? $venda->total, 2, ',', '.') }}</strong>
                                 </div>
                             </div>
                         @endforeach

@@ -12,14 +12,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // ✅ Alias para middlewares de permissão
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'checkout' => \App\Http\Middleware\CheckoutMiddleware::class,
+            'redirect.role' => \App\Http\Middleware\RedirectBasedOnRole::class,
+        ]);
+
+        // ✅ Middlewares globais (executados em todas as requisições)
+        $middleware->append([
+            \App\Http\Middleware\RedirectBasedOnRole::class,
         ]);
 
         // 🔒 MANTER CSRF ATIVO PARA SEGURANÇA
-        // Adicione exceções APENAS se absolutamente necessário
+        // NÃO desabilitar CSRF para login!
         $middleware->validateCsrfTokens(except: [
             // 'carrinho/*', // DESCOMENTE APENAS EM ÚLTIMO CASO
         ]);

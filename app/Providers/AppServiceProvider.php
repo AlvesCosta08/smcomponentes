@@ -29,17 +29,16 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // 2. Bind do Repositório de Produtos (Arquitetura Hexagonal)
-        // A aplicação depende da Interface (Domínio), não da implementação concreta (Infraestrutura)
         $this->app->bind(
             ProdutoRepositoryInterface::class,
             EloquentProdutoRepository::class
         );
 
-        // 3. Bind do Repositório de Pedidos (Preparado para o próximo módulo)
-        // $this->app->bind(
-        //     \App\Domain\Pedidos\Repositories\PedidoRepositoryInterface::class,
-        //     \App\Infrastructure\Repositories\EloquentPedidoRepository::class
-        // );
+        // 3. ✅ Bind do Repositório de Pedidos (DESCOMENTADO)
+        $this->app->bind(
+            \App\Domain\Pedidos\Repositories\PedidoRepositoryInterface::class,
+            \App\Infrastructure\Repositories\EloquentPedidoRepository::class
+        );
     }
 
     /**

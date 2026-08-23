@@ -4,19 +4,19 @@
 
 @section('content')
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h1 class="h2 mb-0">📊 Relatório de Pedidos</h1>
             <small class="text-muted">Análise de vendas e pedidos</small>
         </div>
-        <div>
-            <a href="{{ route('admin.pedidos.index') }}" class="btn btn-secondary">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('admin.pedidos.index') }}" class="btn btn-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            <button onclick="window.print()" class="btn btn-primary">
+            <button onclick="window.print()" class="btn btn-primary btn-sm">
                 <i class="bi bi-printer"></i> Imprimir
             </button>
-            <a href="{{ route('admin.pedidos.export') }}" class="btn btn-success">
+            <a href="{{ route('admin.pedidos.export') }}" class="btn btn-success btn-sm">
                 <i class="bi bi-file-excel"></i> Exportar
             </a>
         </div>
@@ -92,11 +92,11 @@
     @if(isset($vendasPorDia) && count($vendasPorDia) > 0)
     <div class="admin-card mb-4">
         <div class="card-header">
-            <span><i class="bi bi-graph-up me-2 text-primary"></i>Vendas por Dia</span>
+            <span><i class="bi bi-graph-up me-2 text-primary"></i>Vendas por Dia (Últimos 30 dias)</span>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover admin-table">
+                <table class="table table-hover admin-table mb-0">
                     <thead>
                         <tr>
                             <th>Data</th>
@@ -125,9 +125,65 @@
     </div>
     @endif
 
+    <!-- Vendas por Mês -->
+    @if(isset($vendasPorMes) && $vendasPorMes->count() > 0)
+    <div class="admin-card mb-4">
+        <div class="card-header">
+            <span><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Vendas por Mês</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                @foreach($vendasPorMes as $venda)
+                    <div class="col-4 col-md-2 text-center">
+                        <div class="p-2 bg-light rounded">
+                            <small class="text-muted d-block">{{ $venda->mes }}</small>
+                            <strong class="text-primary">R$ {{ number_format($venda->total, 2, ',', '.') }}</strong>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Top Produtos -->
+    @if(isset($topProdutos) && $topProdutos->count() > 0)
+    <div class="admin-card mb-4">
+        <div class="card-header">
+            <span><i class="bi bi-trophy me-2 text-warning"></i>Top 10 Produtos Mais Vendidos</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Produto</th>
+                            <th>Quantidade</th>
+                            <th>Total Vendido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($topProdutos as $index => $produto)
+                            <tr>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $produto->nome_produto ?? 'Produto #' . $produto->produto_id }}</td>
+                                <td>{{ number_format($produto->total_quantidade, 0, ',', '.') }}</td>
+                                <td class="fw-bold text-success">
+                                    R$ {{ number_format($produto->total_vendido, 2, ',', '.') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Lista de Pedidos -->
     <div class="admin-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span><i class="bi bi-list-ul me-2 text-primary"></i>Pedidos no Período</span>
             <span class="badge bg-secondary">{{ $totalPedidos ?? 0 }} pedidos</span>
         </div>
@@ -175,6 +231,9 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+                <div class="p-3 border-top">
+                    {{ $pedidos->links('pagination::bootstrap-5') }}
                 </div>
             @else
                 <div class="text-center py-5">
