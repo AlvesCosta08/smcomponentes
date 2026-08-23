@@ -13,15 +13,8 @@ class PedidoItem extends Model
     protected $table = 'pedido_itens';
 
     protected $fillable = [
-        'pedido_id',
-        'produto_id',
-        'quantidade',
-        'preco_unitario',
-        'preco_promocional',
-        'subtotal',
-        'nome_produto',
-        'imagem_produto',
-        'variacao'
+        'pedido_id', 'produto_id', 'quantidade', 'preco_unitario', 
+        'preco_promocional', 'subtotal', 'nome_produto', 'imagem_produto', 'variacao'
     ];
 
     protected $casts = [
@@ -31,20 +24,9 @@ class PedidoItem extends Model
         'quantidade' => 'integer'
     ];
 
-    // ===== RELACIONAMENTOS =====
-    
-    public function pedido(): BelongsTo
-    {
-        return $this->belongsTo(Pedido::class);
-    }
+    public function pedido(): BelongsTo { return $this->belongsTo(Pedido::class); }
+    public function produto(): BelongsTo { return $this->belongsTo(Produto::class); }
 
-    public function produto(): BelongsTo
-    {
-        return $this->belongsTo(Produto::class);
-    }
-
-    // ===== MÉTODOS ÚTEIS =====
-    
     public function getPrecoExibicaoAttribute(): float
     {
         return $this->preco_promocional ?? $this->preco_unitario;
@@ -55,30 +37,10 @@ class PedidoItem extends Model
         return 'R$ ' . number_format($this->preco_unitario, 2, ',', '.');
     }
 
-    public function getPrecoPromocionalFormatadoAttribute(): string
-    {
-        return $this->preco_promocional ? 'R$ ' . number_format($this->preco_promocional, 2, ',', '.') : null;
-    }
-
     public function getSubtotalFormatadoAttribute(): string
     {
         return 'R$ ' . number_format($this->subtotal, 2, ',', '.');
     }
 
-    public function getPrecoExibicaoFormatadoAttribute(): string
-    {
-        return 'R$ ' . number_format($this->getPrecoExibicaoAttribute(), 2, ',', '.');
-    }
-
-    // ===== SCOPES =====
-    
-    public function scopeDoPedido($query, $pedidoId)
-    {
-        return $query->where('pedido_id', $pedidoId);
-    }
-
-    public function scopeDoProduto($query, $produtoId)
-    {
-        return $query->where('produto_id', $produtoId);
-    }
+    public function scopeDoPedido($query, $pedidoId) { return $query->where('pedido_id', $pedidoId); }
 }

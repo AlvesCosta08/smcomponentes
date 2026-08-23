@@ -2,92 +2,35 @@
 
 namespace App\Actions\Admin\Produto;
 
+use App\DTOs\Requests\CreateProductRequestDTO;
+use App\Domain\Produtos\Repositories\ProdutoRepositoryInterface;
+use App\Interfaces\Storage\ImageUploaderInterface;
 use App\Models\Produto;
-use App\Repositories\ProdutoRepository;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class CriarProdutoAction
 {
-    protected ProdutoRepository $repository;
+    public function __construct(
+        private readonly ProdutoRepositoryInterface $repository,
+        private readonly ImageUploaderInterface $imageUploader
+    ) {}
 
-    public function __construct(ProdutoRepository $repository)
+    public function executar(CreateProductRequestDTO $dto): Produto
     {
-        $this->repository = $repository;
-    }
+        // 1. Processar Infraestrutura (Upload de Imagem)
+        $caminhoImagem = $dto->imagem ? $this->imageUploader->upload($dto->imagem) : null;
 
-    /**
-     * Executar criação do produto
-     */
-    public function executar(array $dados, $imagem = null): Produto
-    {
-        // Gerar slug
-        $dados['slug'] = Str::slug($dados['descricao']);
+        // 2. Preparar dados para o Domínio/Repositório
+        $dados = $dto->toArray();
+        $dados['imagem'] = $caminhoImagem;
 
-        // Garantir que o slug é único
-        $dados['slug'] = $this->gerarSlugUnico($dados['slug']);
-
-        // Processar imagem se existir
-        if ($imagem) {
-            $dados['imagem'] = $this->processarImagem($imagem);
-        }
-
-        // Aplicar regras de disponibilidade
-        $dados = $this->aplicarRegrasDisponibilidade($dados);
-
-        // Ativar por padrão
-        $dados['ativo'] = $dados['ativo'] ?? true;
-
-        // Criar produto
+        // 3. Delegar a persistência. 
+        // O Model (via evento 'creating') ou o Repository aplicará as regras de domínio:
+        // - Geração de slug único
+        // - Validação da margem (60% a 150%) via PricingCalculator
+        // - Cálculo automático de valor_custo, valor_atacado e percentual_custo
+        // - Definição da disponibilidade baseada no estoque
         $produto = $this->repository->criar($dados);
 
-        // Log de atividade
-        Log::info('Produto criado', [
-            'produto_id' => $produto->id,
-            'descricao' => $produto->descricao,
-            'usuario' => auth()->user()->email ?? 'sistema'
-        ]);
-
         return $produto;
-    }
-
-    /**
-     * Gerar slug único
-     */
-    private function gerarSlugUnico(string $slug): string
-    {
-        $original = $slug;
-        $contador = 1;
-
-        while (Produto::where('slug', $slug)->exists()) {
-            $slug = $original . '-' . $contador;
-            $contador++;
-        }
-
-        return $slug;
-    }
-
-    /**
-     * Processar upload da imagem
-     */
-    private function processarImagem($imagem): string
-    {
-        $nome = Str::uuid() . '.' . $imagem->getClientOriginalExtension();
-        $caminho = $imagem->storeAs('produtos', $nome, 'public');
-        return $caminho;
-    }
-
-    /**
-     * Aplicar regras de disponibilidade
-     */
-    private function aplicarRegrasDisponibilidade(array $dados): array
-    {
-        // Se quantidade for 0 ou negativa, marcar como indisponível
-        if (($dados['quantidade'] ?? 0) <= 0) {
-            $dados['disponibilidade'] = 'INDISPONÍVEL';
-        }
-
-        return $dados;
     }
 }

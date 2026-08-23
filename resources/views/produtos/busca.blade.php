@@ -8,21 +8,20 @@
         <div class="col-12">
             <h1 class="h2 mb-3">Busca de Produtos</h1>
             
-            <!-- Barra de busca com autocomplete -->
+            <!-- Barra de busca -->
             <div class="mb-4">
-                <div class="position-relative">
+                <form action="{{ route('produtos.buscar') }}" method="GET" class="position-relative">
+                    @csrf
                     <input type="text" 
-                           id="search-input"
+                           name="q"
                            class="form-control form-control-lg" 
                            placeholder="Digite para buscar produtos..." 
                            value="{{ $termo ?? '' }}"
                            autocomplete="off">
-                    <div id="search-loading" class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
-                        <div class="spinner-border spinner-border-sm text-primary" role="status">
-                            <span class="visually-hidden">Carregando...</span>
-                        </div>
-                    </div>
-                </div>
+                    <button type="submit" class="position-absolute top-50 end-0 translate-middle-y btn btn-primary me-2">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
                 <small class="text-muted" id="result-count">
                     @if(isset($produtos))
                         {{ $produtos->total() }} produto(s) encontrado(s)
@@ -40,55 +39,44 @@
                     <div class="col product-item">
                         <div class="card h-100 shadow-sm">
                             <div class="position-relative">
-                                <img src="{{ $produto->imagem_url ?? asset('images/produto-placeholder.jpg') }}" 
+                                <img src="{{ $produto->imagem_url }}" 
                                      class="card-img-top" 
                                      alt="{{ $produto->descricao }}"
                                      style="height: 200px; object-fit: cover;">
                                 
-                                @if($produto->tem_promocao ?? false)
-                                    @php
-                                        $desconto = $produto->valor_unitario > 0 
-                                            ? round((1 - ($produto->preco_promocional / $produto->valor_unitario)) * 100) 
-                                            : 0;
-                                    @endphp
+                                @if($produto->tem_promocao)
                                     <span class="badge bg-danger position-absolute top-0 end-0 m-2">
-                                        -{{ $desconto }}%
+                                        -{{ $produto->desconto_percentual }}%
                                     </span>
                                 @endif
                             </div>
                             
                             <div class="card-body d-flex flex-column">
-                                <h5 class="card-title">{{ $produto->descricao }}</h5>
+                                <h5 class="card-title">{{ Str::limit($produto->descricao, 50) }}</h5>
                                 
                                 @if(isset($produto->categoria))
-                                    @if(is_object($produto->categoria))
-                                        <small class="text-muted">{{ $produto->categoria->nome ?? 'Sem categoria' }}</small>
-                                    @elseif(is_string($produto->categoria))
-                                        <small class="text-muted">{{ $produto->categoria }}</small>
-                                    @else
-                                        <small class="text-muted">Sem categoria</small>
-                                    @endif
+                                    <small class="text-muted">{{ $produto->categoria }}</small>
                                 @else
                                     <small class="text-muted">Sem categoria</small>
                                 @endif
                                 
                                 <div class="mt-2">
-                                    @if($produto->tem_promocao ?? false)
+                                    @if($produto->tem_promocao)
                                         <span class="text-decoration-line-through text-muted me-2">
-                                            R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                            {{ $produto->preco_atacado_formatado }}
                                         </span>
                                         <span class="text-danger fw-bold">
-                                            R$ {{ number_format($produto->preco_promocional ?? 0, 2, ',', '.') }}
+                                            {{ $produto->preco_promocional_formatado }}
                                         </span>
                                     @else
                                         <span class="fw-bold">
-                                            R$ {{ number_format($produto->valor_unitario ?? 0, 2, ',', '.') }}
+                                            {{ $produto->preco_atacado_formatado }}
                                         </span>
                                     @endif
                                 </div>
                                 
                                 <div class="mt-2">
-                                    @if(isset($produto->quantidade) && $produto->quantidade > 0)
+                                    @if($produto->pode_comprar)
                                         <span class="badge bg-success">Em estoque</span>
                                     @else
                                         <span class="badge bg-danger">Indisponível</span>
@@ -97,7 +85,7 @@
                             </div>
                             
                             <div class="card-footer bg-transparent border-0">
-                                <a href="{{ route('produtos.show', $produto->slug ?? $produto->id) }}" 
+                                <a href="{{ route('produtos.show', $produto->slug) }}" 
                                    class="btn btn-outline-primary w-100">
                                     Ver detalhes
                                 </a>
@@ -131,126 +119,4 @@
         @endif
     </div>
 </div>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('search-input');
-    const resultsContainer = document.getElementById('search-results');
-    const loadingIndicator = document.getElementById('search-loading');
-    const resultCount = document.getElementById('result-count');
-    let searchTimeout = null;
-    let currentTerm = '{{ $termo ?? '' }}';
-
-    // Função para realizar a busca
-    function performSearch(term) {
-        if (term.length < 1) {
-            // Se o termo estiver vazio, recarrega a página para mostrar todos os produtos
-            window.location.href = '{{ route("produtos.index") }}';
-            return;
-        }
-
-        // Mostrar loading
-        loadingIndicator.classList.remove('d-none');
-        resultCount.textContent = 'Buscando...';
-
-        // Fazer a requisição AJAX
-        fetch(`{{ route('produtos.buscar') }}?q=${encodeURIComponent(term)}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro na resposta do servidor');
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Atualizar resultados
-            resultsContainer.innerHTML = data.html;
-            
-            // Atualizar contagem
-            if (data.total > 0) {
-                resultCount.textContent = `${data.total} produto(s) encontrado(s)`;
-            } else {
-                resultCount.textContent = 'Nenhum produto encontrado';
-            }
-            
-            // Esconder loading
-            loadingIndicator.classList.add('d-none');
-            
-            // Atualizar URL sem recarregar a página
-            if (term) {
-                const url = new URL(window.location);
-                url.searchParams.set('q', term);
-                window.history.pushState({}, '', url);
-            }
-        })
-        .catch(error => {
-            console.error('Erro na busca:', error);
-            resultCount.textContent = 'Erro ao buscar produtos';
-            loadingIndicator.classList.add('d-none');
-            
-            // Mostrar mensagem de erro amigável
-            resultsContainer.innerHTML = `
-                <div class="row">
-                    <div class="col-12 text-center py-5">
-                        <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
-                        <h3 class="mt-3">Ops! Algo deu errado</h3>
-                        <p class="text-muted">Não foi possível realizar a busca. Tente novamente.</p>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    // Evento de input com debounce
-    searchInput.addEventListener('input', function() {
-        const term = this.value.trim();
-        
-        // Limpar timeout anterior
-        if (searchTimeout) {
-            clearTimeout(searchTimeout);
-        }
-
-        // Se o termo não mudou, não faz nada
-        if (term === currentTerm) {
-            return;
-        }
-
-        currentTerm = term;
-
-        // Se o termo tem menos de 1 caractere, recarrega a página
-        if (term.length < 1) {
-            window.location.href = '{{ route("produtos.index") }}';
-            return;
-        }
-
-        // Aguardar 500ms para fazer a busca
-        searchTimeout = setTimeout(function() {
-            performSearch(term);
-        }, 500);
-    });
-
-    // Buscar ao pressionar Enter
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const term = this.value.trim();
-            if (term.length > 0) {
-                performSearch(term);
-            }
-        }
-    });
-
-    // Atualizar ao carregar a página com termo
-    if (currentTerm) {
-        resultCount.textContent = 'Carregando...';
-        performSearch(currentTerm);
-    }
-});
-</script>
-@endpush
 @endsection

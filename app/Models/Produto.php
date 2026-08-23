@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domain\Produtos\Services\PricingCalculator;
+use App\Domain\Produtos\ValueObjects\Stock;
 use App\Enums\DisponibilidadeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -113,7 +115,7 @@ class Produto extends Model
     }
 
     // ==============================================
-    // ACESSORS (GETTERS) - CORRIGIDOS
+    // ACESSORS (GETTERS) - PADRÃO LARAVEL 13
     // ==============================================
 
     public function getPrecoFormatadoAttribute(): string
@@ -134,95 +136,138 @@ class Produto extends Model
     }
 
     /**
-     * CORRIGIDO: Obtém URL da imagem via rota do ImageController
+     * ✅ ACESSOR DE IMAGEM - PADRÃO LARAVEL 13
+     * 
+     * Busca a imagem em:
+     * 1. storage/app/public/produtos/{filename}
+     * 2. storage/app/public/images/{filename}
+     * 3. Usa placeholder se não encontrar
      */
     public function getImagemUrlAttribute(): string
     {
-        // Se tem imagem no campo
-        if ($this->imagem) {
+        // 1. Se tiver imagem principal no banco
+        if (!empty($this->imagem)) {
+            // Normalizar caminho: extrair apenas o nome do arquivo
             $filename = basename($this->imagem);
             
-            // Verifica se existe no storage
-            $paths = [
-                'produtos/' . $filename,
-                'uploads/produtos/' . $filename,
-                'images/produtos/' . $filename,
-            ];
-            
-            foreach ($paths as $path) {
-                if (Storage::disk('public')->exists($path)) {
-                    return route('image.show', ['filename' => $filename]);
-                }
+            // Verificar se existe em produtos/
+            $path = 'produtos/' . $filename;
+            if (Storage::disk('public')->exists($path)) {
+                return asset('storage/' . $path);
             }
             
-            // Se não encontrou, tenta sem a pasta
-            if (Storage::disk('public')->exists($this->imagem)) {
-                return route('image.show', ['filename' => basename($this->imagem)]);
+            // Verificar se existe em images/
+            $altPath = 'images/' . $filename;
+            if (Storage::disk('public')->exists($altPath)) {
+                return asset('storage/' . $altPath);
             }
         }
 
-        // Tenta imagens relacionadas
+        // 2. Fallback: Se não tiver principal, pega a primeira da galeria
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
-            foreach ($this->imagens as $imagem) {
-                $filename = basename($imagem->imagem);
+            $primeiraImagem = $this->imagens->first();
+            if ($primeiraImagem && !empty($primeiraImagem->imagem)) {
+                $filename = basename($primeiraImagem->imagem);
                 $path = 'produtos/' . $filename;
                 if (Storage::disk('public')->exists($path)) {
-                    return route('image.show', ['filename' => $filename]);
+                    return asset('storage/' . $path);
+                }
+                $altPath = 'images/' . $filename;
+                if (Storage::disk('public')->exists($altPath)) {
+                    return asset('storage/' . $altPath);
                 }
             }
         }
 
-        // Fallback: imagem padrão via controller
-        return route('image.show', ['filename' => 'placeholder.png']);
+        // 3. Fallback final: Placeholder
+        return asset('images/produto-placeholder.jpg');
     }
 
     /**
-     * CORRIGIDO: Obtém URL da imagem otimizada
+     * ✅ GETTER DE MÚLTIPLAS IMAGENS - PADRÃO LARAVEL 13
      */
-    public function getImageOptimizedUrl(int $width = 400, int $height = 400): string
-    {
-        if ($this->imagem) {
-            $filename = basename($this->imagem);
-            $paths = [
-                'produtos/' . $filename,
-                'uploads/produtos/' . $filename,
-            ];
-            
-            foreach ($paths as $path) {
-                if (Storage::disk('public')->exists($path)) {
-                    return route('image.optimized', [
-                        'filename' => $filename,
-                        'width' => $width,
-                        'height' => $height
-                    ]);
-                }
-            }
-        }
-
-        return route('image.show', ['filename' => 'placeholder.png']);
-    }
-
     public function getImagensUrlsAttribute(): array
     {
         $urls = [];
 
+        // 1. Prioriza a galeria de imagens
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
             foreach ($this->imagens as $imagem) {
-                $filename = basename($imagem->imagem);
-                $path = 'produtos/' . $filename;
-                if (Storage::disk('public')->exists($path)) {
-                    $urls[] = route('image.show', ['filename' => $filename]);
+                if (!empty($imagem->imagem)) {
+                    $filename = basename($imagem->imagem);
+                    $path = 'produtos/' . $filename;
+                    if (Storage::disk('public')->exists($path)) {
+                        $urls[] = asset('storage/' . $path);
+                        continue;
+                    }
+                    $altPath = 'images/' . $filename;
+                    if (Storage::disk('public')->exists($altPath)) {
+                        $urls[] = asset('storage/' . $altPath);
+                    }
                 }
             }
         }
 
-        // Fallback para uma única imagem
-        if (empty($urls) && $this->imagem) {
-            $urls[] = $this->imagem_url;
+        // 2. Se a galeria estiver vazia, usa a imagem principal
+        if (empty($urls) && !empty($this->imagem)) {
+            $filename = basename($this->imagem);
+            $path = 'produtos/' . $filename;
+            if (Storage::disk('public')->exists($path)) {
+                $urls[] = asset('storage/' . $path);
+            } else {
+                $altPath = 'images/' . $filename;
+                if (Storage::disk('public')->exists($altPath)) {
+                    $urls[] = asset('storage/' . $altPath);
+                }
+            }
+        }
+
+        // 3. Se ainda estiver vazio, placeholder
+        if (empty($urls)) {
+            $urls[] = asset('images/produto-placeholder.jpg');
         }
 
         return $urls;
     }
+
+    /**
+     * ✅ IMAGEM OTIMIZADA - PADRÃO LARAVEL 13
+     */
+    public function getImageOptimizedUrl(int $width = 400, int $height = 400): string
+    {
+        if (!empty($this->imagem)) {
+            $filename = basename($this->imagem);
+            $path = 'produtos/' . $filename;
+            if (Storage::disk('public')->exists($path)) {
+                return asset('storage/' . $path);
+            }
+            $altPath = 'images/' . $filename;
+            if (Storage::disk('public')->exists($altPath)) {
+                return asset('storage/' . $altPath);
+            }
+        }
+
+        if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
+            $primeiraImagem = $this->imagens->first();
+            if ($primeiraImagem && !empty($primeiraImagem->imagem)) {
+                $filename = basename($primeiraImagem->imagem);
+                $path = 'produtos/' . $filename;
+                if (Storage::disk('public')->exists($path)) {
+                    return asset('storage/' . $path);
+                }
+                $altPath = 'images/' . $filename;
+                if (Storage::disk('public')->exists($altPath)) {
+                    return asset('storage/' . $altPath);
+                }
+            }
+        }
+
+        return asset('images/produto-placeholder.jpg');
+    }
+
+    // ==============================================
+    // OUTROS ACESSORS
+    // ==============================================
 
     public function getStatusLabelAttribute(): string
     {
@@ -263,10 +308,6 @@ class Produto extends Model
 
     public function isDisponivel(): bool
     {
-        if ($this->ativo && ($this->quantidade ?? 0) > 0) {
-            return true;
-        }
-        
         return $this->ativo 
             && ($this->quantidade ?? 0) > 0 
             && $this->disponibilidade === DisponibilidadeEnum::DISPONIVEL;
@@ -313,14 +354,15 @@ class Produto extends Model
 
     public function atualizarDisponibilidade(): void
     {
+        $stockVO = new Stock(
+            (int) ($this->quantidade ?? 0),
+            (int) ($this->estoque_minimo ?? 5)
+        );
+        
         if (!$this->ativo) {
             $this->disponibilidade = DisponibilidadeEnum::INDISPONIVEL;
-        } elseif (($this->quantidade ?? 0) <= 0) {
-            $this->disponibilidade = DisponibilidadeEnum::INDISPONIVEL;
-        } elseif (($this->quantidade ?? 0) <= ($this->estoque_minimo ?? 5)) {
-            $this->disponibilidade = DisponibilidadeEnum::ESTOQUE_BAIXO;
         } else {
-            $this->disponibilidade = DisponibilidadeEnum::DISPONIVEL;
+            $this->disponibilidade = $stockVO->getDisponibilidade();
         }
     }
 
@@ -405,7 +447,6 @@ class Produto extends Model
                     $slug = $baseSlug . '-' . $counter;
                     $counter++;
                 }
-                
                 $produto->slug = $slug;
             }
             
@@ -414,11 +455,13 @@ class Produto extends Model
             $produto->estoque_minimo ??= 5;
 
             if (!empty($produto->valor_compra)) {
-                $resultados = $produto->calcularTodosPrecos([
-                    'valor_compra' => $produto->valor_compra,
-                    'margem_lucro' => $produto->margem_lucro ?? 80,
-                    'ipi' => $produto->ipi ?? 0,
-                ]);
+                $calculator = new PricingCalculator();
+                $resultados = $calculator->calculate(
+                    (float) $produto->valor_compra,
+                    (float) ($produto->margem_lucro ?? 80),
+                    (float) ($produto->ipi ?? 0)
+                );
+                
                 $produto->valor_custo = $resultados['valor_custo'];
                 $produto->valor_atacado = $resultados['valor_atacado'];
                 $produto->percentual_custo = $resultados['percentual_custo'];
@@ -435,12 +478,15 @@ class Produto extends Model
                     $slug = $baseSlug . '-' . $counter;
                     $counter++;
                 }
-                
                 $produto->slug = $slug;
             }
             
-            if ($produto->isDirty(['quantidade', 'ativo'])) {
-                $produto->atualizarDisponibilidade();
+            if ($produto->isDirty(['quantidade', 'ativo', 'estoque_minimo'])) {
+                $stockVO = new Stock(
+                    (int) ($produto->quantidade ?? 0),
+                    (int) ($produto->estoque_minimo ?? 5)
+                );
+                $produto->disponibilidade = $stockVO->getDisponibilidade();
             }
 
             if ($produto->isDirty('quantidade')) {
@@ -448,42 +494,17 @@ class Produto extends Model
             }
 
             if ($produto->isDirty(['valor_compra', 'margem_lucro', 'ipi'])) {
-                $resultados = $produto->calcularTodosPrecos([
-                    'valor_compra' => $produto->valor_compra,
-                    'margem_lucro' => $produto->margem_lucro ?? 80,
-                    'ipi' => $produto->ipi ?? 0,
-                ]);
+                $calculator = new PricingCalculator();
+                $resultados = $calculator->calculate(
+                    (float) $produto->valor_compra,
+                    (float) ($produto->margem_lucro ?? 80),
+                    (float) ($produto->ipi ?? 0)
+                );
+                
                 $produto->valor_custo = $resultados['valor_custo'];
                 $produto->valor_atacado = $resultados['valor_atacado'];
                 $produto->percentual_custo = $resultados['percentual_custo'];
             }
         });
-    }
-
-    private function calcularTodosPrecos(array $data): array
-    {
-        $valorCompra = (float) ($data['valor_compra'] ?? 0);
-        $margem = (float) ($data['margem_lucro'] ?? 80);
-        $ipi = (float) ($data['ipi'] ?? 0);
-
-        $custo = round($valorCompra, 2);
-        
-        $precoAtacado = 0;
-        if ($margem > 0 && $margem < 100) {
-            $precoAtacado = round($custo / (1 - ($margem / 100)), 2);
-        } else {
-            $precoAtacado = $custo;
-        }
-
-        $percentualCusto = 0;
-        if ($precoAtacado > 0) {
-            $percentualCusto = round(($custo / $precoAtacado) * 100, 2);
-        }
-
-        return [
-            'valor_custo' => $custo,
-            'valor_atacado' => $precoAtacado,
-            'percentual_custo' => $percentualCusto,
-        ];
     }
 }

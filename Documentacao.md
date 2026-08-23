@@ -3732,7 +3732,7 @@ Docker setup
 text
 
 ### 🟠 Java/Spring Boot
-LINGUAGEM: Java 17
+LINGUAGEM: Java 21
 FRAMEWORK: Spring Boot 3.0 + JPA
 TIPO: Sistema Corporativo + MCP
 ENTIDADE: Customer

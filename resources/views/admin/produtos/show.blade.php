@@ -18,7 +18,7 @@
         <!-- Imagem -->
         <div class="col-md-5">
             <div class="product-image-container">
-                <img src="{{ $produto->getImagemUrl() }}" 
+                <img src="{{ $produto->imagem_url }}" 
                      alt="{{ $produto->descricao }}" 
                      class="img-fluid rounded-3 w-100"
                      style="object-fit: contain; max-height: 400px; background: #f8f9fa; padding: 20px;">
@@ -45,32 +45,32 @@
             
             <!-- Disponibilidade -->
             <div class="mb-3">
-                <span class="badge bg-{{ $produto->isDisponivel() ? 'success' : 'danger' }} fs-6">
-                    {{ $produto->isDisponivel() ? '✓ Disponível' : '✗ Indisponível' }}
+                <span class="badge bg-{{ $produto->disponivel ? 'success' : 'danger' }} fs-6">
+                    {{ $produto->disponivel ? '✓ Disponível' : '✗ Indisponível' }}
                 </span>
                 <span class="badge bg-secondary ms-2">Estoque: {{ $produto->quantidade }} unidades</span>
-                <span class="badge bg-{{ $produto->getStatus() === 'Disponível' ? 'success' : 'warning' }} ms-2">
-                    {{ $produto->getStatus() }}
+                <span class="badge bg-{{ str_contains(strtolower($produto->status_label), 'disponível') ? 'success' : 'warning' }} ms-2">
+                    {{ $produto->status_label }}
                 </span>
             </div>
             
             <!-- Preço -->
             <div class="mb-4">
-                @if($produto->temPromocao())
-                    <h2 class="price text-success">{{ $produto->getPrecoPromocionalFormatado() }}</h2>
+                @if($produto->tem_promocao)
+                    <h2 class="price text-success">{{ $produto->preco_promocional_formatado }}</h2>
                     <p class="text-muted">
                         <span class="old-price text-decoration-line-through text-danger">
-                            {{ $produto->getPrecoFormatado() }}
+                            {{ $produto->preco_formatado }}
                         </span>
                         <span class="badge bg-danger ms-2">Promoção</span>
                     </p>
                 @else
-                    <h2 class="price">{{ $produto->getPrecoFormatado() }}</h2>
+                    <h2 class="price">{{ $produto->preco_formatado }}</h2>
                 @endif
             </div>
 
             <!-- Botão Adicionar ao Carrinho -->
-            @if($produto->isDisponivel())
+            @if($produto->disponivel)
                 <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2">
                     @csrf
                     <input type="hidden" name="produto_id" value="{{ $produto->id }}">
@@ -114,7 +114,7 @@
             @foreach($relacionados as $relacionado)
                 <div class="col-6 col-md-3">
                     <div class="card h-100 shadow-sm hover-card">
-                        <img src="{{ $relacionado->getImagemUrl() }}" 
+                        <img src="{{ $relacionado->imagem_url }}" 
                              class="card-img-top" 
                              alt="{{ $relacionado->descricao }}"
                              style="height: 150px; object-fit: contain; padding: 10px; background: #f8f9fa;">
@@ -122,7 +122,7 @@
                             <h6 class="card-title text-truncate" title="{{ $relacionado->descricao }}">
                                 {{ $relacionado->descricao }}
                             </h6>
-                            <p class="card-text text-primary fw-bold">{{ $relacionado->getPrecoFormatado() }}</p>
+                            <p class="card-text text-primary fw-bold">{{ $relacionado->preco_formatado }}</p>
                             <a href="{{ route('produtos.show', $relacionado->slug) }}" class="btn btn-sm btn-outline-primary w-100">
                                 Ver Produto
                             </a>

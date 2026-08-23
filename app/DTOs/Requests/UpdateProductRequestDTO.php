@@ -1,14 +1,36 @@
 <?php
-// app/DTOs/Requests/UpdateProductRequestDTO.php
 
 namespace App\DTOs\Requests;
 
-use App\DTOs\ProductDTO;
 use App\Models\Produto;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
-class UpdateProductRequestDTO extends ProductDTO
+final readonly class UpdateProductRequestDTO
 {
+    public function __construct(
+        public int $id,
+        public string $descricao,
+        public ?string $categoria,
+        public ?string $referencia,
+        public string $slug,
+        public ?string $tipo,
+        public int $quantidade,
+        public int $estoque_minimo,
+        public float $valor_compra,
+        public float $margem_lucro,
+        public float $ipi,
+        public ?float $preco_promocional,
+        public bool $ativo,
+        public bool $destaque,
+        public bool $novo,
+        public bool $mais_vendido,
+        public ?string $data_compra,
+        public ?UploadedFile $imagem,
+        public bool $remover_imagem_existente,
+    ) {}
+
     public static function fromRequest(Request $request, Produto $produto): self
     {
         return new self(
@@ -16,27 +38,43 @@ class UpdateProductRequestDTO extends ProductDTO
             descricao: $request->input('descricao', $produto->descricao),
             categoria: $request->input('categoria', $produto->categoria),
             referencia: $request->input('referencia', $produto->referencia),
-            slug: $request->input('slug') ?? \Illuminate\Support\Str::slug($request->input('descricao', $produto->descricao)),
+            slug: $request->input('slug') ?: Str::slug($request->input('descricao', $produto->descricao)),
             tipo: $request->input('tipo', $produto->tipo),
-            disponibilidade: $request->input('disponibilidade', $produto->disponibilidade),
-            imagem: $produto->imagem,
-            imagem_file: $request->file('imagem'),
             quantidade: (int) $request->input('quantidade', $produto->quantidade),
             estoque_minimo: (int) $request->input('estoque_minimo', $produto->estoque_minimo ?? 5),
-            valor_atacado: $request->has('valor_atacado') ? (float) $request->input('valor_atacado') : $produto->valor_atacado,
-            valor_compra: $request->has('valor_compra') ? (float) $request->input('valor_compra') : $produto->valor_compra,
-            valor_unitario: $request->has('valor_unitario') ? (float) $request->input('valor_unitario') : $produto->valor_unitario,
-            valor_custo: $request->has('valor_custo') ? (float) $request->input('valor_custo') : $produto->valor_custo,
+            valor_compra: (float) $request->input('valor_compra', $produto->valor_compra),
+            margem_lucro: (float) $request->input('margem_lucro', $produto->margem_lucro),
+            ipi: (float) $request->input('ipi', $produto->ipi),
             preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : $produto->preco_promocional,
-            ipi: $request->has('ipi') ? (float) $request->input('ipi') : $produto->ipi,
-            percentual_custo: $request->has('percentual_custo') ? (float) $request->input('percentual_custo') : $produto->percentual_custo,
-            margem_lucro: $request->has('margem_lucro') ? (float) $request->input('margem_lucro') : $produto->margem_lucro,
-            ativo: $request->has('ativo') ? filter_var($request->input('ativo'), FILTER_VALIDATE_BOOLEAN) : (bool) $produto->ativo,
-            destaque: $request->has('destaque') ? filter_var($request->input('destaque'), FILTER_VALIDATE_BOOLEAN) : (bool) $produto->destaque,
+            ativo: (bool) $request->input('ativo', $produto->ativo),
+            destaque: (bool) $request->input('destaque', $produto->destaque),
+            novo: (bool) $request->input('novo', $produto->novo),
+            mais_vendido: (bool) $request->input('mais_vendido', $produto->mais_vendido),
             data_compra: $request->input('data_compra', $produto->data_compra),
-            visualizacoes: $produto->visualizacoes ?? 0,
-            novo: $request->has('novo') ? filter_var($request->input('novo'), FILTER_VALIDATE_BOOLEAN) : ($produto->novo ?? false),
-            mais_vendido: $request->has('mais_vendido') ? filter_var($request->input('mais_vendido'), FILTER_VALIDATE_BOOLEAN) : ($produto->mais_vendido ?? false),
+            imagem: $request->file('imagem'),
+            remover_imagem_existente: (bool) $request->input('remover_imagem', false),
         );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'descricao' => $this->descricao,
+            'categoria' => $this->categoria,
+            'referencia' => $this->referencia,
+            'slug' => $this->slug,
+            'tipo' => $this->tipo,
+            'quantidade' => $this->quantidade,
+            'estoque_minimo' => $this->estoque_minimo,
+            'valor_compra' => $this->valor_compra,
+            'margem_lucro' => $this->margem_lucro,
+            'ipi' => $this->ipi,
+            'preco_promocional' => $this->preco_promocional,
+            'ativo' => $this->ativo,
+            'destaque' => $this->destaque,
+            'novo' => $this->novo,
+            'mais_vendido' => $this->mais_vendido,
+            'data_compra' => $this->data_compra,
+        ];
     }
 }

@@ -64,18 +64,23 @@
                     <div class="card product-card h-100">
                         <div class="position-relative">
                             @if($produto->imagem)
-                                <img src="{{ $produto->imagem_url }}" class="card-img-top" alt="{{ $produto->descricao }}" style="height: 200px; object-fit: cover;">
+                                @php
+                                    // ✅ CORRIGIDO: Padrão Laravel - extrair apenas o nome do arquivo
+                                    $filename = basename($produto->imagem);
+                                @endphp
+                                <img src="{{ asset('storage/produtos/' . $filename) }}" 
+                                     class="card-img-top" 
+                                     alt="{{ $produto->descricao }}" 
+                                     style="height: 200px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                             @else
                                 <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
                                     <i class="bi bi-plug" style="font-size: 3.5rem; color: #dfe6e9;"></i>
                                 </div>
                             @endif
                             
-                            <!-- Badge de Disponibilidade - CORRIGIDO -->
-                            @php
-                                $disponivel = $produto->quantidade > 0 && $produto->ativo;
-                            @endphp
-                            @if($disponivel)
+                            <!-- Badge de Disponibilidade -->
+                            @if($produto->pode_comprar)
                                 <span class="badge bg-success position-absolute top-0 end-0 m-2 px-3 py-1 rounded-pill">
                                     <i class="bi bi-check-circle"></i> Disponível
                                 </span>
@@ -86,7 +91,7 @@
                             @endif
 
                             <!-- Badge IPI -->
-                            @if($produto->possui_ipi)
+                            @if($produto->ipi > 0)
                                 <span class="badge bg-info position-absolute bottom-0 start-0 m-2 px-2 py-1" style="font-size: 0.7rem;">
                                     IPI {{ $produto->ipi }}%
                                 </span>
@@ -106,7 +111,7 @@
                                         <span class="old-price">{{ $produto->preco_promocional_formatado }}</span>
                                         <span class="badge bg-danger ms-1">-{{ $produto->desconto_percentual }}%</span>
                                     @endif
-                                    @if($produto->possui_ipi)
+                                    @if($produto->ipi > 0)
                                         <br>
                                         <small class="text-muted">+ IPI: {{ $produto->preco_com_ipi_formatado }}</small>
                                     @endif

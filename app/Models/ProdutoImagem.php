@@ -9,14 +9,9 @@ class ProdutoImagem extends Model
 {
     use HasFactory;
 
-    protected $table = 'produto_imagens'; // ← ESSENCIAL!
+    protected $table = 'produto_imagens';
 
-    protected $fillable = [
-        'produto_id',
-        'imagem',
-        'ordem',
-        'principal',
-    ];
+    protected $fillable = ['produto_id', 'imagem', 'ordem', 'principal'];
 
     protected $casts = [
         'principal' => 'boolean',

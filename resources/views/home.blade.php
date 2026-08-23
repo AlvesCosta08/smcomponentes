@@ -192,7 +192,7 @@
 </section>
 
 {{-- ============================================ --}}
-{{-- PRODUTOS EM DESTAQUE - USANDO valor_atacado --}}
+{{-- PRODUTOS EM DESTAQUE - CORRIGIDO            --}}
 {{-- ============================================ --}}
 @if(isset($produtosDestaque) && $produtosDestaque->count() > 0)
 <section class="produtos-smart py-4">
@@ -210,7 +210,7 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->getImagemUrl() }}" 
+                                    <img src="{{ $produto->imagem_url }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -219,29 +219,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->hasPromocao())
+                            @if($produto->tem_promocao)
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
-                                    -{{ $produto->getDescontoPercentual() }}%
+                                    -{{ $produto->desconto_percentual }}%
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->hasPromocao())
+                                @if($produto->tem_promocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->getPrecoPromocionalFormatado() }}
+                                        {{ $produto->preco_promocional_formatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->quantidade > 0 && $produto->ativo)
+                            @if($produto->pode_comprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-primary w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -271,7 +271,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- OFERTAS DO DIA - USANDO valor_atacado     --}}
+{{-- OFERTAS DO DIA - CORRIGIDO                 --}}
 {{-- ============================================ --}}
 @if(isset($ofertas) && $ofertas->count() > 0)
 <section class="ofertas-smart py-4 bg-light">
@@ -289,7 +289,7 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->getImagemUrl() }}" 
+                                    <img src="{{ $produto->imagem_url }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -298,29 +298,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->hasPromocao())
+                            @if($produto->tem_promocao)
                                 <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill">
-                                    -{{ $produto->getDescontoPercentual() }}% OFF
+                                    -{{ $produto->desconto_percentual }}% OFF
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->hasPromocao())
+                                @if($produto->tem_promocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->getPrecoPromocionalFormatado() }}
+                                        {{ $produto->preco_promocional_formatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->quantidade > 0 && $produto->ativo)
+                            @if($produto->pode_comprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-danger w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -350,7 +350,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- MAIS VENDIDOS - USANDO valor_atacado      --}}
+{{-- MAIS VENDIDOS - CORRIGIDO                  --}}
 {{-- ============================================ --}}
 @if(isset($maisVendidos) && $maisVendidos->count() > 0)
 <section class="mais-vendidos-smart py-4">
@@ -368,7 +368,7 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->getImagemUrl() }}" 
+                                    <img src="{{ $produto->imagem_url }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -384,20 +384,20 @@
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->hasPromocao())
+                                @if($produto->tem_promocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                     <span class="fw-bold text-warning">
-                                        {{ $produto->getPrecoPromocionalFormatado() }}
+                                        {{ $produto->preco_promocional_formatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-warning">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->quantidade > 0 && $produto->ativo)
+                            @if($produto->pode_comprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-warning w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -427,7 +427,7 @@
 @endif
 
 {{-- ============================================ --}}
-{{-- TODOS OS PRODUTOS - USANDO valor_atacado  --}}
+{{-- TODOS OS PRODUTOS - CORRIGIDO               --}}
 {{-- ============================================ --}}
 @if(isset($produtosDisponiveis) && $produtosDisponiveis->count() > 0)
 <section class="todos-produtos-smart py-4 bg-light">
@@ -448,7 +448,7 @@
                         <div class="position-relative">
                             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 180px; overflow: hidden;">
                                 @if($produto->imagem)
-                                    <img src="{{ $produto->getImagemUrl() }}" 
+                                    <img src="{{ $produto->imagem_url }}" 
                                          alt="{{ $produto->descricao ?? 'Produto' }}"
                                          class="img-fluid"
                                          style="width: 100%; height: 100%; object-fit: cover;"
@@ -457,29 +457,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->hasPromocao())
+                            @if($produto->tem_promocao)
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
-                                    -{{ $produto->getDescontoPercentual() }}%
+                                    -{{ $produto->desconto_percentual }}%
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->hasPromocao())
+                                @if($produto->tem_promocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->getPrecoPromocionalFormatado() }}
+                                        {{ $produto->preco_promocional_formatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->getPrecoAtacadoFormatado() }}
+                                        {{ $produto->preco_atacado_formatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->quantidade > 0 && $produto->ativo)
+                            @if($produto->pode_comprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-primary w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes

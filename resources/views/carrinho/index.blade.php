@@ -778,22 +778,10 @@
                                     <div class="product-image">
                                         @if(isset($item['imagem']) && $item['imagem'])
                                             @php
-                                                // Remove a URL base se já estiver no caminho
-                                                $imagemPath = $item['imagem'];
-                                                // Se o caminho já contém 'storage/', remove a duplicação
-                                                if (strpos($imagemPath, 'storage/') === 0) {
-                                                    $imagemPath = substr($imagemPath, 8);
-                                                }
-                                                // Se o caminho já contém a URL completa, extrai apenas o caminho
-                                                if (strpos($imagemPath, 'http://') !== false || strpos($imagemPath, 'https://') !== false) {
-                                                    $imagemPath = parse_url($imagemPath, PHP_URL_PATH);
-                                                    $imagemPath = ltrim($imagemPath, '/');
-                                                    if (strpos($imagemPath, 'storage/') === 0) {
-                                                        $imagemPath = substr($imagemPath, 8);
-                                                    }
-                                                }
+                                                // ✅ CORRIGIDO: Padrão Laravel - extrair apenas o nome do arquivo
+                                                $filename = basename($item['imagem']);
                                             @endphp
-                                            <img src="{{ asset('storage/' . $imagemPath) }}" 
+                                            <img src="{{ asset('storage/produtos/' . $filename) }}" 
                                                  alt="{{ $item['nome'] ?? 'Produto' }}"
                                                  onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                                         @else
@@ -804,19 +792,19 @@
                                 <div class="col">
                                     <div class="product-info">
                                         <div class="product-title">
-                                            <a href="{{ route('produtos.show', $item['produto_id'] ?? 1) }}">
+                                            <a href="{{ route('produtos.show', $item['slug'] ?? $item['produto_id'] ?? 1) }}">
                                                 {{ $item['nome'] ?? 'Produto' }}
                                             </a>
                                         </div>
                                         <div class="product-sku">
                                             <i class="fas fa-tag me-1"></i>
-                                            SKU: {{ $item['codigo'] ?? 'N/A' }}
+                                            SKU: {{ $item['codigo'] ?? $item['referencia'] ?? 'N/A' }}
                                         </div>
                                         <div class="mt-2">
                                             <span class="product-price">
                                                 R$ {{ number_format($item['preco'] ?? 0, 2, ',', '.') }}
                                             </span>
-                                            @if(isset($item['preco_promocional']) && $item['preco_promocional'] > 0)
+                                            @if(isset($item['preco_promocional']) && $item['preco_promocional'] > 0 && $item['preco_promocional'] < $item['preco'])
                                                 <span class="product-price-old">
                                                     R$ {{ number_format($item['preco_promocional'], 2, ',', '.') }}
                                                 </span>
@@ -830,23 +818,23 @@
                                 </div>
                                 <div class="col-auto">
                                     <div class="d-flex flex-column align-items-end gap-2">
-                                        <form action="{{ route('carrinho.atualizar', $index) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('carrinho.atualizar', $index) }}" method="POST" class="d-inline" id="form-atualizar-{{ $index }}">
                                             @csrf
                                             @method('PUT')
                                             <div class="sm-qty-control">
-                                                <button type="button" onclick="decrementar(this)">−</button>
-                                                <input type="number" name="quantidade" value="{{ $item['quantidade'] }}" min="1" max="{{ $item['estoque'] ?? 999 }}" onchange="this.form.submit()">
-                                                <button type="button" onclick="incrementar(this)">+</button>
+                                                <button type="button" onclick="decrementar(this, {{ $index }})">−</button>
+                                                <input type="number" name="quantidade" value="{{ $item['quantidade'] }}" min="1" max="{{ $item['estoque'] ?? 999 }}" onchange="document.getElementById('form-atualizar-{{ $index }}').submit()">
+                                                <button type="button" onclick="incrementar(this, {{ $index }})">+</button>
                                             </div>
                                         </form>
                                         <div class="d-flex gap-1 flex-wrap justify-content-end">
                                             <button class="sm-action-btn" onclick="moverParaWishlist({{ $index }})">
                                                 <i class="far fa-heart me-1"></i> Salvar
                                             </button>
-                                            <form action="{{ route('carrinho.remover', $index) }}" method="POST" class="d-inline">
+                                            <form action="{{ route('carrinho.remover', $index) }}" method="POST" class="d-inline" id="form-remover-{{ $index }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="sm-action-btn danger">
+                                                <button type="submit" class="sm-action-btn danger" onclick="return confirm('Remover este produto do carrinho?')">
                                                     <i class="fas fa-trash-alt me-1"></i> Remover
                                                 </button>
                                             </form>
@@ -880,7 +868,7 @@
                         <a href="{{ route('produtos.index') }}" class="sm-action-btn">
                             <i class="fas fa-arrow-left me-2"></i> Continuar Comprando
                         </a>
-                        <form action="{{ route('carrinho.limpar') }}" method="POST" class="d-inline">
+                        <form action="{{ route('carrinho.limpar') }}" method="POST" class="d-inline" id="form-limpar">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="sm-action-btn danger" onclick="return confirm('Limpar todo o carrinho?')">
@@ -899,7 +887,7 @@
                         </div>
                         <div class="summary-row">
                             <span>Produtos ({{ count($carrinho) }})</span>
-                            <span>R$ {{ number_format($total ?? 0, 2, ',', '.') }}</span>
+                            <span id="subtotalText">R$ {{ number_format($total ?? 0, 2, ',', '.') }}</span>
                         </div>
                         <div class="summary-row">
                             <span>Frete</span>
@@ -907,7 +895,7 @@
                         </div>
                         <div class="summary-row">
                             <span>Desconto</span>
-                            <span class="discount-value">− R$ 0,00</span>
+                            <span class="discount-value" id="descontoText">− R$ 0,00</span>
                         </div>
                         <div class="summary-row total">
                             <span>Total</span>
@@ -987,20 +975,20 @@
     // FUNÇÕES SM COMPONENTES
     // ============================================
 
-    function decrementar(btn) {
+    function decrementar(btn, index) {
         let input = btn.parentElement.querySelector('input[name="quantidade"]');
         if (parseInt(input.value) > 1) {
             input.value = parseInt(input.value) - 1;
-            input.form.submit();
+            document.getElementById('form-atualizar-' + index).submit();
         }
     }
 
-    function incrementar(btn) {
+    function incrementar(btn, index) {
         let input = btn.parentElement.querySelector('input[name="quantidade"]');
         let max = parseInt(input.max) || 999;
         if (parseInt(input.value) < max) {
             input.value = parseInt(input.value) + 1;
-            input.form.submit();
+            document.getElementById('form-atualizar-' + index).submit();
         }
     }
 
@@ -1021,8 +1009,12 @@
             total += price;
         });
         const totalEl = document.getElementById('totalValue');
+        const subtotalEl = document.getElementById('subtotalText');
         if (totalEl) {
             totalEl.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+        }
+        if (subtotalEl) {
+            subtotalEl.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
         }
     }
 
@@ -1060,6 +1052,13 @@
             } else {
                 const novoTotal = totalAtual * (1 - desconto);
                 totalElement.textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
+                
+                const descontoEl = document.getElementById('descontoText');
+                if (descontoEl) {
+                    const valorDesconto = totalAtual - novoTotal;
+                    descontoEl.textContent = '− R$ ' + valorDesconto.toFixed(2).replace('.', ',');
+                }
+                
                 result.innerHTML = `<span style="color: var(--color-success-500);">✅ Cupom aplicado! ${desconto * 100}% de desconto.</span>`;
                 mostrarToast('Sucesso', `Cupom ${codigoUpper} aplicado! ${desconto * 100}% de desconto.`, 'success');
             }

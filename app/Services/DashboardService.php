@@ -1,8 +1,8 @@
 <?php
-// app/Services/DashboardService.php
 
 namespace App\Services;
 
+use App\Domain\Pedidos\Enums\StatusPedidoEnum;
 use App\Models\Pedido;
 use App\Models\Produto;
 use App\Models\User;
@@ -50,13 +50,13 @@ class DashboardService
             'total' => Produto::count(),
             'ativos' => Produto::where('ativo', true)->count(),
             'inativos' => Produto::where('ativo', false)->count(),
-            'estoque_baixo' => Produto::where('quantidade', '>', 0)
-                ->where('quantidade', '<=', 5)
-                ->where('ativo', true)
-                ->get(),
-            'estoque_zero' => Produto::where('quantidade', 0)
-                ->where('ativo', true)
-                ->get(),
+            // CORREÇÃO: Usar count() em vez de get() para evitar sobrecarga de memória
+            'estoque_baixo' => Produto::where('ativo', true)
+                ->whereBetween('quantidade', [1, 5])
+                ->count(),
+            'estoque_zero' => Produto::where('ativo', true)
+                ->where('quantidade', 0)
+                ->count(),
         ];
     }
 
@@ -65,6 +65,9 @@ class DashboardService
      */
     protected function getOrderStats(): array
     {
+        // CORREÇÃO: Usar o Enum para garantir consistência
+        $statusEntregue = StatusPedidoEnum::ENTREGUE->value;
+
         $pedidosStatus = Pedido::select('status', DB::raw('count(*) as total'))
             ->groupBy('status')
             ->pluck('total', 'status')
@@ -72,11 +75,11 @@ class DashboardService
 
         return [
             'total' => Pedido::count(),
-            'pendentes' => $pedidosStatus['pendente'] ?? 0,
-            'processando' => $pedidosStatus['processando'] ?? 0,
-            'enviados' => $pedidosStatus['enviado'] ?? 0,
-            'entregues' => $pedidosStatus['entregue'] ?? 0,
-            'cancelados' => $pedidosStatus['cancelado'] ?? 0,
+            'pendentes' => $pedidosStatus[StatusPedidoEnum::PENDENTE->value] ?? 0,
+            'processando' => $pedidosStatus[StatusPedidoEnum::PROCESSANDO->value] ?? 0,
+            'enviados' => $pedidosStatus[StatusPedidoEnum::ENVIADO->value] ?? 0,
+            'entregues' => $pedidosStatus[$statusEntregue] ?? 0,
+            'cancelados' => $pedidosStatus[StatusPedidoEnum::CANCELADO->value] ?? 0,
             'hoje' => Pedido::whereDate('created_at', today())->count(),
             'ultimos' => Pedido::with('user')
                 ->orderBy('created_at', 'desc')
@@ -90,18 +93,21 @@ class DashboardService
      */
     protected function getRevenueStats(): array
     {
+        $statusEntregue = StatusPedidoEnum::ENTREGUE->value;
+
         return [
-            'total' => Pedido::where('status', 'entregue')->sum('total') ?? 0,
-            'mes' => Pedido::where('status', 'entregue')
+            // CORREÇÃO: Cast para float para garantir que nunca retorne null ou string inesperada
+            'total' => (float) Pedido::where('status', $statusEntregue)->sum('total'),
+            'mes' => (float) Pedido::where('status', $statusEntregue)
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
-                ->sum('total') ?? 0,
-            'dia' => Pedido::where('status', 'entregue')
+                ->sum('total'),
+            'dia' => (float) Pedido::where('status', $statusEntregue)
                 ->whereDate('created_at', today())
-                ->sum('total') ?? 0,
-            'media_dia' => Pedido::where('created_at', '>=', now()->subDays(30))
-                ->where('status', 'entregue')
-                ->count() / 30,
+                ->sum('total'),
+            'media_dia' => (float) (Pedido::where('created_at', '>=', now()->subDays(30))
+                ->where('status', $statusEntregue)
+                ->count() / 30),
         ];
     }
 
@@ -117,7 +123,9 @@ class DashboardService
             '10' => 'Out', '11' => 'Nov', '12' => 'Dez'
         ];
 
-        return Pedido::where('status', 'entregue')
+        $statusEntregue = StatusPedidoEnum::ENTREGUE->value;
+
+        return Pedido::where('status', $statusEntregue)
             ->select(
                 DB::raw('DATE_FORMAT(created_at, "%Y-%m") as mes'),
                 DB::raw('SUM(total) as total')
@@ -130,7 +138,7 @@ class DashboardService
                 $parts = explode('-', $item->mes);
                 return [
                     'mes' => $meses[$parts[1]] ?? $parts[1],
-                    'total' => $item->total
+                    'total' => (float) $item->total
                 ];
             })
             ->toArray();
@@ -141,12 +149,14 @@ class DashboardService
      */
     protected function getTopCustomers(): array
     {
-        return User::select('users.*')
+        $statusEntregue = StatusPedidoEnum::ENTREGUE->value;
+
+        return User::select('users.id', 'users.name', 'users.email') // CORREÇÃO: Selecionar apenas campos necessários, não 'users.*'
             ->selectRaw('COUNT(pedidos.id) as total_pedidos')
             ->selectRaw('SUM(pedidos.total) as total_gasto')
             ->join('pedidos', 'users.id', '=', 'pedidos.user_id')
-            ->where('pedidos.status', 'entregue')
-            ->groupBy('users.id')
+            ->where('pedidos.status', $statusEntregue)
+            ->groupBy('users.id', 'users.name', 'users.email')
             ->orderBy('total_gasto', 'desc')
             ->limit(5)
             ->get()

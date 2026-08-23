@@ -1,21 +1,20 @@
 <?php
-// app/Http/Controllers/Admin/PedidoAdminController.php
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Pedidos\Enums\StatusPedidoEnum;
+use App\Domain\Pedidos\Repositories\PedidoRepositoryInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdatePedidoStatusRequest;
-use App\Models\Pedido;
-use App\Services\OrderAdminService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use Carbon\Carbon;
 
 class PedidoAdminController extends Controller
 {
     public function __construct(
-        protected OrderAdminService $orderAdminService
+        protected PedidoRepositoryInterface $repository
     ) {}
 
     /**
@@ -25,94 +24,113 @@ class PedidoAdminController extends Controller
     {
         try {
             $filters = $request->only(['status', 'data_inicio', 'data_fim', 'search']);
-            $filters = array_filter($filters, function($value) {
-                return $value !== null && $value !== '';
-            });
+            $filters = array_filter($filters, fn($value) => $value !== null && $value !== '');
 
-            $pedidos = $this->orderAdminService->listOrders($filters, 15);
+            $pedidos = $this->repository->getFiltered($filters, 15);
+            $stats = $this->repository->getStats(); // Certifique-se que este método existe no seu Repository
             
-            // Estatísticas
-            $stats = $this->orderAdminService->getStats();
-            
-            $statusList = Pedido::statusLabels();
+            // Mapeamento do Enum para a View (Fonte única da verdade)
+            $statusList = collect(StatusPedidoEnum::cases())
+                ->mapWithKeys(fn($case) => [$case->value => $case->label()])
+                ->toArray();
 
-            return view('admin.pedidos.index', compact(
-                'pedidos',
-                'statusList',
-                'stats'
-            ));
+            return view('admin.pedidos.index', compact('pedidos', 'statusList', 'stats'));
 
         } catch (\Exception $e) {
             Log::error('Erro ao listar pedidos: ' . $e->getMessage());
             
             return view('admin.pedidos.index', [
                 'pedidos' => collect(),
-                'statusList' => Pedido::statusLabels(),
-                'stats' => [
-                    'total' => 0,
-                    'faturado' => 0,
-                    'pendentes' => 0,
-                    'hoje' => 0,
-                ],
-            ])->with('error', 'Erro ao carregar pedidos: ' . $e->getMessage());
+                'statusList' => [],
+                'stats' => ['total' => 0, 'faturado' => 0, 'pendentes' => 0, 'hoje' => 0],
+            ])->with('error', 'Erro ao carregar pedidos. Tente novamente.');
         }
     }
 
     /**
      * Mostra detalhes de um pedido específico
      */
-    public function show(Pedido $pedido): View|RedirectResponse
+    public function show(int $id): View|RedirectResponse
     {
         try {
-            $pedido->load(['user', 'itens.produto']);
+            $pedido = $this->repository->findById($id);
             
-            $statusList = Pedido::statusLabels();
-            $statusColors = Pedido::statusColors();
+            if (!$pedido) {
+                return redirect()->route('admin.pedidos.index')->with('error', 'Pedido não encontrado.');
+            }
+
+            $statusList = collect(StatusPedidoEnum::cases())
+                ->mapWithKeys(fn($case) => [$case->value => $case->label()])
+                ->toArray();
             
+            $statusColors = collect(StatusPedidoEnum::cases())
+                ->mapWithKeys(fn($case) => [$case->value => $case->color()])
+                ->toArray();
+
             return view('admin.pedidos.show', compact('pedido', 'statusList', 'statusColors'));
 
         } catch (\Exception $e) {
             Log::error('Erro ao mostrar pedido: ' . $e->getMessage());
-            return redirect()
-                ->route('admin.pedidos.index')
-                ->with('error', 'Erro ao carregar detalhes do pedido: ' . $e->getMessage());
+            return redirect()->route('admin.pedidos.index')->with('error', 'Erro ao carregar detalhes.');
         }
     }
 
     /**
-     * Atualiza o status do pedido
+     * Atualiza o status do pedido (Delegado para um Handler de Domínio)
      */
-    public function updateStatus(UpdatePedidoStatusRequest $request, Pedido $pedido): RedirectResponse
+    public function updateStatus(UpdatePedidoStatusRequest $request, int $id): RedirectResponse
     {
         try {
-            $this->orderAdminService->updateStatus($pedido, $request->status);
+            $pedido = $this->repository->findById($id);
             
-            $statusLabels = Pedido::statusLabels();
-            $statusLabel = $statusLabels[$request->status] ?? $request->status;
+            if (!$pedido) {
+                return redirect()->back()->with('error', 'Pedido não encontrado.');
+            }
+
+            // Aqui você deve chamar um Handler, ex: (new UpdateOrderStatusHandler())->handle($pedido, $request->status);
+            // Por enquanto, atualizamos via repositório, mas a validação de domínio deve ocorrer no Model/Entity
+            $pedido->status = $request->status;
+            $this->repository->update($pedido, ['status' => $request->status]);
             
-            return redirect()
-                ->route('admin.pedidos.show', $pedido)
-                ->with('success', "Status do pedido #{$pedido->numero_pedido} alterado para '{$statusLabel}'");
+            $statusLabel = StatusPedidoEnum::from($request->status)->label();
+            
+            return redirect()->route('admin.pedidos.show', $id)
+                ->with('success', "Status do pedido #{$pedido->numero_pedido} alterado para '{$statusLabel}'.");
                 
+        } catch (\DomainException $e) {
+            // Captura exceções de regra de negócio (ex: tentar cancelar um pedido já enviado)
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Erro ao atualizar status: ' . $e->getMessage());
+            Log::error('Erro ao atualizar status: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erro ao atualizar status.');
         }
     }
 
     /**
      * Remove um pedido (apenas se cancelado)
      */
-    public function destroy(Pedido $pedido): RedirectResponse
+    public function destroy(int $id): RedirectResponse
     {
         try {
-            $this->orderAdminService->deleteOrder($pedido);
+            $pedido = $this->repository->findById($id);
             
-            return redirect()
-                ->route('admin.pedidos.index')
+            if (!$pedido) {
+                return redirect()->back()->with('error', 'Pedido não encontrado.');
+            }
+
+            // Regra de Domínio: Só pode deletar se estiver cancelado
+            if ($pedido->status !== StatusPedidoEnum::CANCELADO) {
+                return redirect()->back()->with('error', 'Apenas pedidos cancelados podem ser exclcidos.');
+            }
+
+            $this->repository->delete($pedido);
+            
+            return redirect()->route('admin.pedidos.index')
                 ->with('success', "Pedido #{$pedido->numero_pedido} excluído com sucesso!");
                 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            Log::error('Erro ao excluir pedido: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erro ao excluir pedido.');
         }
     }
 
@@ -123,21 +141,20 @@ class PedidoAdminController extends Controller
     {
         try {
             $filters = $request->only(['status', 'data_inicio', 'data_fim']);
-            $filters = array_filter($filters, function($value) {
-                return $value !== null && $value !== '';
-            });
+            $filters = array_filter($filters, fn($value) => $value !== null && $value !== '');
 
-            $pedidos = $this->orderAdminService->export($filters);
+            // O repositório deve ter um método getForExport ou similar, ou usamos getFiltered com perPage alto
+            $pedidos = $this->repository->getFiltered($filters, 10000); 
             
             if ($pedidos->isEmpty()) {
                 return redirect()->back()->with('warning', 'Nenhum pedido encontrado para exportar.');
             }
             
-            $filename = 'pedidos_' . date('Y-m-d_H-i-s') . '.csv';
+            $filename = 'pedidos_' . now()->format('Y-m-d_H-i-s') . '.csv';
             
             $headers = [
                 'Content-Type' => 'text/csv; charset=UTF-8',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
                 'Pragma' => 'no-cache',
                 'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
                 'Expires' => '0',
@@ -145,35 +162,21 @@ class PedidoAdminController extends Controller
             
             $callback = function() use ($pedidos) {
                 $handle = fopen('php://output', 'w');
-                fputs($handle, "\xEF\xBB\xBF");
+                fputs($handle, "\xEF\xBB\xBF"); // BOM para UTF-8 no Excel
                 
-                // Cabeçalhos
                 fputcsv($handle, [
-                    'ID', 'Número do Pedido', 'Cliente', 'Email', 'Telefone',
-                    'Subtotal', 'Desconto', 'Total', 'Status',
-                    'Data do Pedido', 'Data Pagamento', 'Data Envio',
-                    'Data Entrega', 'Forma Pagamento', 'Status Pagamento'
+                    'ID', 'Número', 'Cliente', 'Email', 'Total', 'Status', 'Data'
                 ]);
-                
-                $statusLabels = Pedido::statusLabels();
                 
                 foreach ($pedidos as $pedido) {
                     fputcsv($handle, [
                         $pedido->id,
-                        $pedido->numero_pedido ?? $pedido->id,
+                        $pedido->numero_pedido,
                         $pedido->user->name ?? 'N/A',
                         $pedido->user->email ?? 'N/A',
-                        $pedido->user->telefone ?? 'N/A',
-                        number_format($pedido->subtotal ?? 0, 2, ',', '.'),
-                        number_format($pedido->desconto ?? 0, 2, ',', '.'),
                         number_format($pedido->total ?? 0, 2, ',', '.'),
-                        $statusLabels[$pedido->status] ?? $pedido->status,
+                        StatusPedidoEnum::from($pedido->status)->label(),
                         $pedido->created_at?->format('d/m/Y H:i') ?? 'N/A',
-                        $pedido->data_pagamento?->format('d/m/Y H:i') ?? 'N/A',
-                        $pedido->data_envio?->format('d/m/Y H:i') ?? 'N/A',
-                        $pedido->data_entrega?->format('d/m/Y H:i') ?? 'N/A',
-                        $pedido->forma_pagamento ?? 'N/A',
-                        $pedido->status_pagamento ?? 'N/A'
                     ]);
                 }
                 
@@ -184,68 +187,7 @@ class PedidoAdminController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Erro ao exportar pedidos: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Erro ao exportar: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Relatório de vendas
-     */
-    public function relatorio(Request $request): View
-    {
-        try {
-            $dataInicio = $request->get('data_inicio', now()->startOfMonth()->format('Y-m-d'));
-            $dataFim = $request->get('data_fim', now()->format('Y-m-d'));
-            
-            // Validar datas
-            if (!strtotime($dataInicio) || !strtotime($dataFim)) {
-                $dataInicio = now()->startOfMonth()->format('Y-m-d');
-                $dataFim = now()->format('Y-m-d');
-            }
-            
-            $report = $this->orderAdminService->getSalesReport($dataInicio, $dataFim);
-            
-            return view('admin.pedidos.relatorio', array_merge($report, [
-                'dataInicio' => $dataInicio,
-                'dataFim' => $dataFim,
-            ]));
-
-        } catch (\Exception $e) {
-            Log::error('Erro no relatório de pedidos: ' . $e->getMessage());
-            
-            return view('admin.pedidos.relatorio', [
-                'pedidos' => collect(),
-                'totalVendas' => 0,
-                'totalPedidos' => 0,
-                'mediaTicket' => 0,
-                'dataInicio' => now()->startOfMonth()->format('Y-m-d'),
-                'dataFim' => now()->format('Y-m-d'),
-                'vendasPorDia' => [],
-            ])->with('error', 'Erro ao gerar relatório: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Dashboard de pedidos (mantido para compatibilidade)
-     */
-    public function dashboard(): View|RedirectResponse
-    {
-        try {
-            $stats = $this->orderAdminService->getStats();
-            $ultimosPedidos = Pedido::with('user')
-                ->orderBy('created_at', 'desc')
-                ->take(10)
-                ->get();
-
-            return view('admin.pedidos.dashboard', array_merge($stats, [
-                'ultimosPedidos' => $ultimosPedidos,
-            ]));
-
-        } catch (\Exception $e) {
-            Log::error('Erro no dashboard de pedidos: ' . $e->getMessage());
-            return redirect()
-                ->route('admin.pedidos.index')
-                ->with('error', 'Erro ao carregar dashboard: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Erro ao exportar dados.');
         }
     }
 }

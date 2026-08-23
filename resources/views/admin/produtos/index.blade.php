@@ -175,7 +175,7 @@
                                                 {{ $produto->preco_atacado_formatado }}
                                             </span>
                                         @endif
-                                        @if($produto->possui_ipi)
+                                        @if($produto->ipi > 0)
                                             <br>
                                             <small class="text-muted">
                                                 + IPI: {{ $produto->preco_com_ipi_formatado }}

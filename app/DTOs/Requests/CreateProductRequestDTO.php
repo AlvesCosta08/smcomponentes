@@ -2,159 +2,76 @@
 
 namespace App\DTOs\Requests;
 
-use App\DTOs\ProductDTO;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
-class CreateProductRequestDTO extends ProductDTO
+final readonly class CreateProductRequestDTO
 {
-    /**
-     * Converter valor monetário brasileiro para float
-     * Exemplo: "1.719,00" => 1719.00 ou "17,19" => 17.19
-     */
-    private function parseMoney(?string $value): ?float
-    {
-        if (empty($value) || $value === '0,00' || $value === '0.00' || $value === '') {
-            return null;
-        }
-
-        // Remove espaços em branco
-        $value = trim($value);
-        
-        // Se o valor já estiver no formato americano (ex: 17.19)
-        if (preg_match('/^\d+\.\d{1,2}$/', $value)) {
-            return (float) $value;
-        }
-
-        // Formato brasileiro: 1.719,00 ou 17,19
-        // Remove pontos de milhar e troca vírgula por ponto decimal
-        $cleaned = str_replace('.', '', $value);
-        $cleaned = str_replace(',', '.', $cleaned);
-        
-        return (float) $cleaned;
-    }
-
-    /**
-     * Parseia um valor percentual (pode vir com vírgula)
-     */
-    private function parsePercent(?string $value): ?float
-    {
-        if (empty($value) || $value === '') {
-            return null;
-        }
-
-        $value = trim($value);
-        $value = str_replace('%', '', $value);
-        $value = str_replace(',', '.', $value);
-        
-        return (float) $value;
-    }
+    public function __construct(
+        public string $descricao,
+        public ?string $categoria,
+        public ?string $referencia,
+        public string $slug,
+        public ?string $tipo,
+        public int $quantidade,
+        public int $estoque_minimo,
+        public float $valor_compra,
+        public float $margem_lucro,
+        public float $ipi,
+        public ?float $preco_promocional,
+        public bool $ativo,
+        public bool $destaque,
+        public bool $novo,
+        public bool $mais_vendido,
+        public ?string $data_compra,
+        public ?UploadedFile $imagem,
+        public array $galeria_imagens,
+    ) {}
 
     public static function fromRequest(Request $request): self
     {
-        // Criar uma instância temporária para usar os métodos parse
-        $temp = new self();
-        
-        // Obter os valores do request
-        $valorCompra = $temp->parseMoney($request->input('valor_compra'));
-        $precoPromocional = $temp->parseMoney($request->input('preco_promocional'));
-        $ipi = $temp->parsePercent($request->input('ipi')) ?? 9.75;
-        $margemLucro = $temp->parsePercent($request->input('margem_lucro')) ?? 80;
-        
-        $dto = new self(
+        return new self(
             descricao: $request->input('descricao'),
             categoria: $request->input('categoria'),
             referencia: $request->input('referencia'),
-            slug: $request->input('slug') ?? Str::slug($request->input('descricao')),
+            slug: $request->input('slug') ?: Str::slug($request->input('descricao')),
             tipo: $request->input('tipo'),
-            
-            // Estoque
             quantidade: (int) $request->input('quantidade', 0),
             estoque_minimo: (int) $request->input('estoque_minimo', 5),
-            
-            // ✅ PREÇOS - CORRIGIDO
-            valor_compra: $valorCompra,
-            valor_atacado: null,
-            valor_unitario: null,
-            valor_custo: null,
-            preco_promocional: $precoPromocional,
-            
-            // ✅ IPI e Margem
-            ipi: $ipi,
-            margem_lucro: $margemLucro,
-            percentual_custo: null,
-            
-            // Status
-            disponibilidade: $request->input('disponibilidade', 'DISPONIVEL'),
-            ativo: filter_var($request->input('ativo', true), FILTER_VALIDATE_BOOLEAN),
-            destaque: filter_var($request->input('destaque', false), FILTER_VALIDATE_BOOLEAN),
-            novo: filter_var($request->input('novo', false), FILTER_VALIDATE_BOOLEAN),
-            mais_vendido: filter_var($request->input('mais_vendido', false), FILTER_VALIDATE_BOOLEAN),
-            
-            // Datas
+            valor_compra: (float) $request->input('valor_compra', 0),
+            margem_lucro: (float) $request->input('margem_lucro', 80),
+            ipi: (float) $request->input('ipi', 0),
+            preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : null,
+            ativo: (bool) $request->input('ativo', true),
+            destaque: (bool) $request->input('destaque', false),
+            novo: (bool) $request->input('novo', false),
+            mais_vendido: (bool) $request->input('mais_vendido', false),
             data_compra: $request->input('data_compra'),
-            
-            // Imagens
-            imagem_file: $request->file('imagem'),
-            galeria_imagens: $request->file('imagens', []),
-            remover_imagem: filter_var($request->input('remover_imagem', false), FILTER_VALIDATE_BOOLEAN),
-            
-            // Métricas
-            visualizacoes: 0,
+            imagem: $request->file('imagem'),
+            galeria_imagens: $request->file('imagens') ?? [],
         );
-
-        // ✅ CALCULA OS PREÇOS AUTOMATICAMENTE
-        $precos = $dto->calcularPrecos();
-        $dto->valor_custo = $precos['valor_custo'];
-        $dto->valor_atacado = $precos['valor_atacado'];
-        $dto->percentual_custo = $precos['percentual_custo'];
-        
-        // Se valor_unitario não foi informado, usa o valor_atacado
-        if ($dto->valor_unitario === null) {
-            $dto->valor_unitario = $dto->valor_atacado;
-        }
-
-        return $dto;
     }
 
-    /**
-     * Validar os dados do DTO
-     */
-    public function validate(): array
-    {
-        $errors = [];
-
-        if (empty($this->descricao)) {
-            $errors['descricao'] = 'A descrição é obrigatória.';
-        }
-
-        if (empty($this->valor_compra) || $this->valor_compra <= 0) {
-            $errors['valor_compra'] = 'O valor de compra é obrigatório e deve ser maior que zero.';
-        }
-
-        if ($this->quantidade < 0) {
-            $errors['quantidade'] = 'A quantidade não pode ser negativa.';
-        }
-
-        if ($this->margem_lucro < 60 || $this->margem_lucro > 150) {
-            $errors['margem_lucro'] = 'A margem de lucro deve estar entre 60% e 150%.';
-        }
-
-        if ($this->ipi < 0 || $this->ipi > 100) {
-            $errors['ipi'] = 'O IPI deve estar entre 0% e 100%.';
-        }
-
-        return $errors;
-    }
-
-    /**
-     * Converter para array com todos os campos calculados
-     */
     public function toArray(): array
     {
-        return array_merge(parent::toArray(), [
-            'valor_custo' => $this->valor_custo,
-            'percentual_custo' => $this->percentual_custo,
-        ]);
+        return [
+            'descricao' => $this->descricao,
+            'categoria' => $this->categoria,
+            'referencia' => $this->referencia,
+            'slug' => $this->slug,
+            'tipo' => $this->tipo,
+            'quantidade' => $this->quantidade,
+            'estoque_minimo' => $this->estoque_minimo,
+            'valor_compra' => $this->valor_compra,
+            'margem_lucro' => $this->margem_lucro,
+            'ipi' => $this->ipi,
+            'preco_promocional' => $this->preco_promocional,
+            'ativo' => $this->ativo,
+            'destaque' => $this->destaque,
+            'novo' => $this->novo,
+            'mais_vendido' => $this->mais_vendido,
+            'data_compra' => $this->data_compra,
+        ];
     }
 }

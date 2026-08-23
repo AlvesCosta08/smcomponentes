@@ -1,12 +1,11 @@
 {{-- resources/views/produtos/partials/wishlist-button.blade.php --}}
 @auth
     <button type="button" 
-            class="btn wishlist-btn {{ $inWishlist ? 'btn-danger' : 'btn-outline-danger' }}"
+            class="btn wishlist-btn {{ isset($inWishlist) && $inWishlist ? 'btn-danger' : 'btn-outline-danger' }}"
             data-produto-id="{{ $produto->id }}"
-            data-wishlist-id="{{ $wishlistDefault->id ?? '' }}"
             onclick="toggleWishlist(this)">
         <i class="fas fa-heart"></i>
-        <span class="d-none d-sm-inline">{{ $inWishlist ? 'Remover' : 'Favoritar' }}</span>
+        <span class="d-none d-sm-inline">{{ isset($inWishlist) && $inWishlist ? 'Remover' : 'Favoritar' }}</span>
     </button>
 @else
     <a href="{{ route('login') }}" class="btn btn-outline-danger">
@@ -18,7 +17,6 @@
 <script>
 function toggleWishlist(btn) {
     const produtoId = btn.dataset.produtoId;
-    const wishlistId = btn.dataset.wishlistId;
     const isInWishlist = btn.classList.contains('btn-danger');
     
     const url = isInWishlist ? '{{ route("wishlist.remover") }}' : '{{ route("wishlist.adicionar") }}';
@@ -27,12 +25,9 @@ function toggleWishlist(btn) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify({
-            produto_id: produtoId,
-            wishlist_id: wishlistId
-        })
+        body: JSON.stringify({ produto_id: produtoId })
     })
     .then(response => response.json())
     .then(data => {
@@ -46,14 +41,10 @@ function toggleWishlist(btn) {
                 btn.classList.add('btn-outline-danger');
                 btn.querySelector('span').textContent = 'Favoritar';
             }
-            
-            // Mostrar notificação
             showNotification(data.message, 'success');
-        } else {
-            showNotification(data.message, 'error');
         }
     })
-    .catch(error => {
+    .catch(() => {
         showNotification('Erro ao processar', 'error');
     });
 }
@@ -68,10 +59,7 @@ function showNotification(message, type) {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
 }
 </script>
 @endpush

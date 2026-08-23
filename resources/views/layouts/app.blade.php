@@ -134,7 +134,7 @@
         }
 
         /* ============================================
-           NAVBAR - CORRIGIDA PARA LARAVEL 13
+           NAVBAR
            ============================================ */
         .nav-main {
             background: var(--gradient-primary);
@@ -195,7 +195,6 @@
             color: #fca5a5;
         }
 
-        /* Mobile Nav */
         .nav-main .mobile-menu {
             background: rgba(15, 23, 42, 0.98);
             backdrop-filter: blur(20px);
@@ -849,11 +848,16 @@
         (function() {
             'use strict';
 
+            // ✅ FUNÇÃO PARA ATUALIZAR O CONTADOR DO CARRINHO
             function updateCartCount() {
                 const badge = document.getElementById('cart-count');
                 if (!badge) return;
 
-                fetch('{{ route("carrinho.count") }}')
+                fetch('{{ route("carrinho.count") }}', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
                     .then(function(response) {
                         if (!response.ok) throw new Error('Erro na resposta');
                         return response.json();
@@ -868,6 +872,7 @@
                     });
             }
 
+            // ✅ FUNÇÃO PARA BUSCA AO DIGITAR
             function setupSearch() {
                 const searchInput = document.querySelector('.search-form input[type="search"]');
                 if (!searchInput) return;
@@ -879,15 +884,46 @@
                     if (value.length >= 2) {
                         timeout = setTimeout(function() {
                             const form = searchInput.closest('form');
-                            if (form) form.submit();
+                            if (form) {
+                                // ✅ GARANTIR CSRF TOKEN NO FORMULÁRIO DE BUSCA
+                                let csrfField = form.querySelector('input[name="_token"]');
+                                if (!csrfField) {
+                                    csrfField = document.createElement('input');
+                                    csrfField.type = 'hidden';
+                                    csrfField.name = '_token';
+                                    csrfField.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                                    form.appendChild(csrfField);
+                                }
+                                form.submit();
+                            }
                         }, 300);
                     }
                 });
             }
 
+            // ✅ GARANTIR CSRF EM TODOS OS FORMS
+            function ensureCsrfInForms() {
+                const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                document.querySelectorAll('form:not([data-csrf-added])').forEach(function(form) {
+                    if (form.method.toUpperCase() === 'POST') {
+                        let csrfField = form.querySelector('input[name="_token"]');
+                        if (!csrfField) {
+                            csrfField = document.createElement('input');
+                            csrfField.type = 'hidden';
+                            csrfField.name = '_token';
+                            csrfField.value = token;
+                            form.prepend(csrfField);
+                            form.setAttribute('data-csrf-added', 'true');
+                        }
+                    }
+                });
+            }
+
+            // ✅ INICIAR TUDO
             function init() {
                 updateCartCount();
                 setupSearch();
+                ensureCsrfInForms();
                 setInterval(updateCartCount, 30000);
             }
 
@@ -901,6 +937,20 @@
                 if (event.persisted) {
                     updateCartCount();
                 }
+            });
+
+            // ✅ QUANDO A PÁGINA CARREGAR DINAMICAMENTE (AJAX)
+            document.addEventListener('DOMContentLoaded', function() {
+                ensureCsrfInForms();
+            });
+
+            // ✅ PARA FORMS ADICIONADOS DINAMICAMENTE
+            const observer = new MutationObserver(function() {
+                ensureCsrfInForms();
+            });
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
             });
 
         })();

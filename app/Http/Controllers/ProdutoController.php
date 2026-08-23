@@ -36,11 +36,9 @@ class ProdutoController extends Controller
 
         $produtos = $query->paginate($paginacao['per_page']);
         
-        // FORÇAR DISPONIBILIDADE
-        foreach ($produtos as $produto) {
-            $produto->forceDisponivel();
-        }
-        
+        // ✅ REMOVIDO: foreach com forceDisponivel()
+        // A disponibilidade é calculada automaticamente via accessor
+
         // Categorias com cache
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::ativo()->ordenado()->get();
@@ -67,8 +65,8 @@ class ProdutoController extends Controller
             ->where('ativo', true)
             ->firstOrFail();
 
-        // FORÇAR DISPONIBILIDADE
-        $produto->forceDisponivel();
+        // ✅ REMOVIDO: $produto->forceDisponivel();
+        // A disponibilidade é calculada automaticamente via accessor
 
         // Incrementar visualizações
         $produto->incrementarVisualizacoes();
@@ -106,10 +104,8 @@ class ProdutoController extends Controller
             ->buscar($termo)
             ->paginate($porPagina);
 
-        // FORÇAR DISPONIBILIDADE
-        foreach ($produtos as $produto) {
-            $produto->forceDisponivel();
-        }
+        // ✅ REMOVIDO: foreach com forceDisponivel()
+        // A disponibilidade é calculada automaticamente via accessor
 
         return view('produtos.busca', compact('produtos', 'termo'));
     }
@@ -127,10 +123,8 @@ class ProdutoController extends Controller
             ->where('categoria_id', $categoria->id)
             ->paginate(12);
 
-        // FORÇAR DISPONIBILIDADE
-        foreach ($produtos as $produto) {
-            $produto->forceDisponivel();
-        }
+        // ✅ REMOVIDO: foreach com forceDisponivel()
+        // A disponibilidade é calculada automaticamente via accessor
 
         return view('produtos.categoria', compact('produtos', 'categoria'));
     }
@@ -149,10 +143,8 @@ class ProdutoController extends Controller
 
         $produtos = $query->paginate(12);
         
-        // FORÇAR DISPONIBILIDADE
-        foreach ($produtos as $produto) {
-            $produto->forceDisponivel();
-        }
+        // ✅ REMOVIDO: foreach com forceDisponivel()
+        // A disponibilidade é calculada automaticamente via accessor
         
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::ativo()->ordenado()->get();
@@ -310,7 +302,7 @@ class ProdutoController extends Controller
                 return $query->baixoEstoque();
             case 'indisponivel':
                 return $query->where('quantidade', 0)
-                    ->orWhere('disponibilidade', Produto::INDISPONIVEL);
+                    ->orWhere('disponibilidade', 'INDISPONIVEL');
             default:
                 return $query;
         }

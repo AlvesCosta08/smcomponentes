@@ -16,47 +16,36 @@ class ProdutoRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, ValidationRule|array|string>
-     */
     public function rules(): array
     {
-        $id = $this->route('id');
+        $id = $this->route('id') ?? $this->route('produto');
 
         return [
-            // Identificação
             'descricao' => ['required', 'string', 'max:255'],
             'referencia' => ['nullable', 'string', 'max:50', Rule::unique('produtos', 'referencia')->ignore($id)],
             'categoria' => ['nullable', 'string', 'max:255'],
             'categoria_id' => ['nullable', 'exists:categorias,id'],
             'tipo' => ['nullable', new Enum(TipoProdutoEnum::class)],
             
-            // Estoque
             'quantidade' => ['required', 'integer', 'min:0'],
             'estoque_minimo' => ['nullable', 'integer', 'min:0'],
             'disponibilidade' => ['nullable', new Enum(DisponibilidadeEnum::class)],
             
-            // Preços
             'valor_compra' => ['required', 'numeric', 'min:0'],
             'valor_atacado' => ['nullable', 'numeric', 'min:0'],
             'valor_unitario' => ['nullable', 'numeric', 'min:0'],
             'valor_custo' => ['nullable', 'numeric', 'min:0'],
             'preco_promocional' => ['nullable', 'numeric', 'min:0'],
             
-            // IPI e Margem
             'ipi' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'margem_lucro' => ['nullable', 'numeric', 'min:60', 'max:150'],
+            'margem_lucro' => ['required', 'numeric', 'min:60', 'max:150'],
             
-            // Status
             'ativo' => ['boolean'],
             'destaque' => ['boolean'],
             'novo' => ['boolean'],
             'mais_vendido' => ['boolean'],
-            
-            // Datas
             'data_compra' => ['nullable', 'date'],
             
-            // Imagem
             'imagem' => ['nullable', 'image', 'max:2048'],
             'imagens.*' => ['nullable', 'image', 'max:2048'],
         ];
@@ -81,22 +70,18 @@ class ProdutoRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $decimais = [
-            'valor_compra', 
-            'valor_atacado', 
-            'valor_unitario', 
-            'valor_custo',
-            'ipi', 
-            'preco_promocional', 
-            'margem_lucro'
+            'valor_compra', 'valor_atacado', 'valor_unitario', 
+            'valor_custo', 'ipi', 'preco_promocional', 'margem_lucro'
         ];
         
         foreach ($decimais as $campo) {
-            if ($this->has($campo) && $this->$campo !== null) {
-                $valor = str_replace(['R$', ' ', '.'], '', $this->$campo);
+            if ($this->has($campo) && $this->input($campo) !== null) {
+                $valor = (string) $this->input($campo);
+                $valor = str_replace(['R$', ' ', '.'], '', $valor);
                 $valor = str_replace(',', '.', $valor);
                 
                 $this->merge([
-                    $campo => (float) $valor
+                    $campo => is_numeric($valor) ? (float) $valor : 0
                 ]);
             }
         }

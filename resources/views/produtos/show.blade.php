@@ -9,7 +9,9 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
             <li class="breadcrumb-item"><a href="{{ route('produtos.index') }}">Produtos</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('produtos.categoria', $produto->categoria) }}">{{ $produto->categoria }}</a></li>
+            @if($produto->categoria)
+                <li class="breadcrumb-item"><a href="{{ route('produtos.categoria', $produto->categoria) }}">{{ $produto->categoria }}</a></li>
+            @endif
             <li class="breadcrumb-item active" aria-current="page">{{ $produto->descricao }}</li>
         </ol>
     </nav>
@@ -36,7 +38,7 @@
             <h1 class="display-6 fw-bold">{{ $produto->descricao }}</h1>
             
             <p class="text-muted mb-2">
-                <i class="bi bi-tag"></i> {{ $produto->categoria }}
+                <i class="bi bi-tag"></i> {{ $produto->categoria ?? 'Sem categoria' }}
                 @if($produto->tipo)
                     | <i class="bi bi-box"></i> {{ $produto->tipo }}
                 @endif
@@ -48,20 +50,16 @@
                 </p>
             @endif
 
-            @if($produto->possui_ipi)
+            @if($produto->ipi > 0)
                 <p class="text-muted small">
-                    <i class="bi bi-percent"></i> IPI: {{ $produto->ipi_aliquota }}
-                    <span class="text-muted ms-2">(+ {{ $produto->valor_ipi_formatado }})</span>
+                    <i class="bi bi-percent"></i> IPI: {{ $produto->ipi }}%
+                    <span class="text-muted ms-2">(+ {{ $produto->preco_com_ipi_formatado }})</span>
                 </p>
             @endif
             
-            <!-- STATUS - CORRIGIDO -->
+            <!-- STATUS -->
             <div class="mb-3">
-                @php
-                    $disponivel = $produto->quantidade > 0 && $produto->ativo;
-                @endphp
-                
-                @if($disponivel)
+                @if($produto->pode_comprar)
                     <span class="badge bg-success fs-6">
                         <i class="bi bi-check-circle"></i> ✓ Disponível
                     </span>
@@ -73,7 +71,7 @@
                 <span class="badge bg-secondary ms-2">Estoque: {{ $produto->quantidade }} unidades</span>
             </div>
             
-            <!-- PREÇO - USANDO valor_atacado -->
+            <!-- PREÇO -->
             <div class="mb-4">
                 @if($produto->tem_promocao)
                     <h2 class="price text-success">
@@ -89,7 +87,7 @@
                     <h2 class="price">{{ $produto->preco_atacado_formatado }}</h2>
                 @endif
                 
-                @if($produto->possui_ipi)
+                @if($produto->ipi > 0)
                     <p class="text-muted small">
                         <i class="bi bi-info-circle"></i> 
                         Com IPI: <span class="fw-bold text-primary">{{ $produto->preco_com_ipi_formatado }}</span>
@@ -97,9 +95,9 @@
                 @endif
             </div>
 
-            <!-- BOTÃO - CORRIGIDO -->
-            @if($disponivel)
-                <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2">
+            <!-- BOTÃO ADICIONAR AO CARRINHO -->
+            @if($produto->pode_comprar)
+                <form action="{{ route('carrinho.adicionar') }}" method="POST" class="row g-2" id="form-carrinho">
                     @csrf
                     <input type="hidden" name="produto_id" value="{{ $produto->id }}">
                     <div class="col-auto">
@@ -117,13 +115,6 @@
                     <i class="bi bi-cart-x"></i> Indisponível
                 </button>
             @endif
-
-            <!-- Wishlist -->
-            @auth
-                <button class="btn btn-outline-danger mt-3" onclick="toggleWishlist({{ $produto->id }})">
-                    <i class="bi bi-heart"></i> Favoritar
-                </button>
-            @endauth
         </div>
     </div>
 
@@ -135,7 +126,7 @@
     @endif
 
     <!-- Produtos Relacionados -->
-    @if(isset($relacionados) && count($relacionados) > 0)
+    @if(isset($relacionados) && $relacionados->count() > 0)
         <hr class="my-5">
         <h3 class="mb-4">Produtos Relacionados</h3>
         <div class="row g-3">
@@ -197,12 +188,4 @@
         box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
     }
 </style>
-
-@push('scripts')
-<script>
-function toggleWishlist(produtoId) {
-    alert('Funcionalidade em desenvolvimento!');
-}
-</script>
-@endpush
 @endsection
