@@ -1500,3 +1500,269 @@ composer require package-name
 composer install
 composer update
 composer dump-autoload
+
+
+
+
+Você é um arquiteto de software especialista em desenvolvimento de sistemas escaláveis, 
+com mais de 15 anos de experiência em grandes empresas de tecnologia. 
+Sua especialidade é criar projetos com arquitetura hexagonal (ports & adapters), 
+aplicando DDD, SOLID, TDD e as melhores práticas do mercado.
+
+BASEADO NA CONVERSA ANTERIOR SOBRE ARQUITETURA DE SOFTWARE, CRIE:
+
+## 1. ESTRUTURA DE PASTAS COMPLETA
+
+Crie a estrutura de pastas completa para um projeto [NOME DO PROJETO] 
+usando a arquitetura hexagonal, incluindo:
+
+### Domain Layer
+- Entities (entidades de negócio)
+- Value Objects (objetos de valor)
+- Aggregates (agregados)
+- Domain Events (eventos de domínio)
+- Domain Exceptions (exceções de domínio)
+- Repository Interfaces (interfaces de repositório)
+- Domain Services (serviços de domínio)
+
+### Application Layer
+- Commands (CQRS - comandos)
+- Queries (CQRS - consultas)
+- Handlers (manipuladores)
+- DTOs (Data Transfer Objects)
+- Application Services (serviços de aplicação)
+- Interfaces (contratos)
+- Use Cases (casos de uso)
+
+### Infrastructure Layer
+- Database (ORM/ODM)
+- Repositories (implementações)
+- External Services (serviços externos)
+- Cache (cache)
+- Queue (filas)
+- Logging (logs)
+- Providers (injeção de dependência)
+
+### Presentation Layer
+- Controllers (controladores)
+- Middleware (middleware)
+- Requests (validação)
+- Resources (transformação)
+- Routes (rotas)
+- Views (templates)
+
+### Shared Layer
+- Helpers (utilitários)
+- Traits (traits/mixins)
+- Constants (constantes)
+- Config (configurações)
+
+### Tests
+- Unit (testes unitários)
+- Integration (testes de integração)
+- Feature (testes funcionais)
+- E2E (testes end-to-end)
+
+### Docs
+- API (documentação da API)
+- Architecture (ADR - Architecture Decision Records)
+- Guides (guias do desenvolvedor)
+
+### DevOps
+- Docker (Dockerfile, docker-compose)
+- CI/CD (GitHub Actions, GitLab CI)
+- Scripts (scripts de automação)
+
+## 2. CÓDIGO COMPLETO PARA CADA CAMADA
+
+Para CADA CAMADA, forneça código completo e funcional com:
+
+### 2.1 Domain Layer
+- [ ] Entidades com validação de negócio
+- [ ] Value Objects com validação
+- [ ] Agregados com invariantes
+- [ ] Eventos de domínio
+- [ ] Exceções de domínio
+- [ ] Interfaces de repositório
+- [ ] Serviços de domínio
+
+### 2.2 Application Layer
+- [ ] Commands com validação
+- [ ] Queries com filtros
+- [ ] Handlers com lógica de orquestração
+- [ ] DTOs com transformação
+- [ ] Application Services
+- [ ] Casos de uso completos
+
+### 2.3 Infrastructure Layer
+- [ ] Implementações de repositório
+- [ ] Configuração de banco de dados
+- [ ] Serviços externos
+- [ ] Cache
+- [ ] Filas
+- [ ] Logging
+- [ ] Injeção de dependência
+
+### 2.4 Presentation Layer
+- [ ] Controllers com injeção de dependência
+- [ ] Middleware
+- [ ] Requests com validação
+- [ ] Resources com transformação
+- [ ] Rotas
+
+## 3. PADRÕES DE CÓDIGO
+
+Crie um guia de padrões de código incluindo:
+
+### 3.1 Nomenclatura
+- Classes: PascalCase
+- Methods: camelCase
+- Variables: camelCase
+- Constants: UPPER_SNAKE_CASE
+- Interfaces: [Nome]Interface ou I[Nome]
+- Abstract Classes: [Nome]Abstract ou Abstract[Nome]
+
+### 3.2 Estrutura de Arquivos
+- 1 classe por arquivo
+- Organização por domínio/camada
+- Namespace/Module organization
+
+### 3.3 Documentação
+- PHPDoc/JavaDoc/TSDoc
+- README.md
+- CONTRIBUTING.md
+- CHANGELOG.md
+
+## 4. TESTES
+
+Crie uma suíte completa de testes:
+
+### 4.1 Testes Unitários (Cobertura > 80%)
+- Testes de entidades
+- Testes de value objects
+- Testes de serviços
+- Testes de handlers
+- Mock de dependências
+
+### 4.2 Testes de Integração
+- Testes de repositórios
+- Testes de API
+- Testes de banco de dados
+- Testes de serviços externos
+
+### 4.3 Testes Funcionais
+- Testes de endpoints
+- Testes de autenticação
+- Testes de autorização
+- Testes de fluxos completos
+
+## 5. DOCUMENTAÇÃO
+
+Crie documentação completa:
+
+### 5.1 README.md
+- Descrição do projeto
+- Tecnologias
+- Pré-requisitos
+- Instalação
+- Configuração
+- Uso
+- Testes
+- Deploy
+- Contribuição
+- Licença
+
+### 5.2 API Documentation
+- Endpoints
+- Request/Response
+- Authentication
+- Error codes
+- Examples
+
+### 5.3 Architecture Decision Records
+- Contexto
+- Decisão
+- Consequências
+- Alternativas
+
+## 6. CONFIGURAÇÕES DE AMBIENTE
+
+### 6.1 Docker
+- Dockerfile (multistage)
+- docker-compose.yml
+- .dockerignore
+
+### 6.2 CI/CD
+- GitHub Actions workflows
+- Deploy scripts
+- Test automation
+
+### 6.3 Environment Variables
+- .env.example
+- Config files
+
+## 7. EXEMPLOS PRÁTICOS
+
+CRIE UM CRUD COMPLETO DE [ENTIDADE PRINCIPAL] DEMONSTRANDO:
+
+### 7.1 Criar (Create)
+- Request validation
+- Domain entity creation
+- Repository save
+- Response transformation
+
+### 7.2 Ler (Read)
+- Query with filters
+- Repository find
+- Response with pagination
+
+### 7.3 Atualizar (Update)
+- Request validation
+- Domain entity update
+- Repository update
+- Response transformation
+
+### 7.4 Deletar (Delete)
+- Domain validation
+- Repository delete
+- Response
+
+## 8. CHECKLIST DE QUALIDADE
+
+Crie um checklist completo para garantir a qualidade do projeto:
+
+- [ ] Arquitetura definida
+- [ ] SOLID aplicado
+- [ ] Testes implementados
+- [ ] Documentação completa
+- [ ] CI/CD configurado
+- [ ] Docker configurado
+- [ ] Security implementado
+- [ ] Performance otimizada
+- [ ] Code review setup
+- [ ] Monitoring configurado
+- [ ] Logging implementado
+- [ ] Backup strategy
+
+## 9. INSTRUÇÕES FINAIS
+
+O código deve ser:
+- ✅ Funcional e executável
+- ✅ Bem comentado
+- ✅ Seguindo padrões de nomenclatura
+- ✅ Com testes
+- ✅ Documentado
+
+A estrutura deve ser:
+- ✅ Modular
+- ✅ Escalável
+- ✅ Mantenível
+- ✅ Testável
+- ✅ Independente de tecnologia
+
+LINGUAGEM: [PHP, Node.js, Python, Java, etc]
+FRAMEWORK: [Laravel, Express, FastAPI, Spring Boot, etc]
+PROJETO: [E-commerce, API REST, Microsserviço, etc]
+ENTIDADE PRINCIPAL: [Product, User, Order, etc]
+
+FORNEÇA O CÓDIGO COMPLETO, ORGANIZADO E PRONTO PARA USO.
