@@ -1766,3 +1766,366 @@ PROJETO: [E-commerce, API REST, Microsserviço, etc]
 ENTIDADE PRINCIPAL: [Product, User, Order, etc]
 
 FORNEÇA O CÓDIGO COMPLETO, ORGANIZADO E PRONTO PARA USO.
+
+
+🎯 COMO USAR ESTE PROMPT
+1. Substitua os Placeholders
+
+LINGUAGEM: [PHP, Node.js, Python, Java, etc]
+FRAMEWORK: [Laravel, Express, FastAPI, Spring Boot, etc]
+PROJETO: [E-commerce, API REST, Microsserviço, etc]
+ENTIDADE PRINCIPAL: [Product, User, Order, etc]
+
+2. Exemplo de Prompt Preenchido
+
+LINGUAGEM: PHP
+FRAMEWORK: Laravel
+PROJETO: E-commerce
+ENTIDADE PRINCIPAL: Product
+
+3. Exemplo de Prompt para Node.js
+
+LINGUAGEM: Node.js
+FRAMEWORK: Express + TypeScript
+PROJETO: API REST
+ENTIDADE PRINCIPAL: User
+
+4. Exemplo de Prompt para Python
+
+LINGUAGEM: Python
+FRAMEWORK: FastAPI
+PROJETO: Microsserviço
+ENTIDADE PRINCIPAL: Order
+
+📦 VERSÕES DO PROMPT POR LINGUAGEM
+🟢 Versão PHP/Laravel
+
+
+🔵 Versão Node.js/Express
+LINGUAGEM: TypeScript 5.0
+FRAMEWORK: Express.js + TypeORM
+PROJETO: API REST
+ENTIDADE PRINCIPAL: User
+
+Use:
+- TypeScript strict mode
+- TypeORM ou Prisma
+- Jest para testes
+- ESLint + Prettier
+- Winston para logs
+- Bull para filas
+- Redis para cache
+
+ Versão Python/FastAPI
+
+ LINGUAGEM: Python 3.11
+FRAMEWORK: FastAPI + SQLAlchemy
+PROJETO: Microsserviço
+ENTIDADE PRINCIPAL: Order
+
+Use:
+- Python 3.11 com type hints
+- FastAPI com OpenAPI
+- SQLAlchemy 2.0
+- Pytest para testes
+- Black + Ruff para code style
+- Celery para filas
+- Redis para cache
+- Alembic para migrações
+
+🟠 Versão Java/Spring Boot
+
+LINGUAGEM: Java 17
+FRAMEWORK: Spring Boot 3.0 + JPA
+PROJETO: Sistema de Vendas
+ENTIDADE PRINCIPAL: Customer
+
+Use:
+- Java 17 com records
+- Spring Boot 3.0
+- Spring Data JPA
+- JUnit 5 + Mockito
+- Maven/Gradle
+- Lombok
+- Flyway para migrações
+- Spring Cloud para microsserviços
+
+
+🔧 PROMPT PARA GERAÇÃO DE MÓDULOS ESPECÍFICOS
+Módulo de Autenticação
+
+BASEADO NA ARQUITETURA DEFINIDA, CRIE UM MÓDULO COMPLETO DE AUTENTICAÇÃO:
+
+1. Domain Layer
+- Entity: User
+- Value Objects: Email, Password, Token
+- Interfaces: UserRepositoryInterface, AuthServiceInterface
+- Events: UserRegistered, UserLoggedIn
+
+2. Application Layer
+- Commands: RegisterUserCommand, LoginUserCommand
+- Handlers: RegisterUserHandler, LoginUserHandler
+- DTOs: RegisterUserDTO, LoginUserDTO, AuthResponseDTO
+
+3. Infrastructure Layer
+- Repository: UserRepository (JWT/Session)
+- Services: JWTService, PasswordHasher
+- Middleware: AuthMiddleware, RoleMiddleware
+
+4. Presentation Layer
+- Controllers: AuthController
+- Requests: RegisterRequest, LoginRequest
+- Resources: UserResource, TokenResource
+
+5. Tests
+- Unit: AuthServiceTest
+- Integration: AuthControllerTest
+- Feature: AuthenticationFlowTest
+
+FORNEÇA CÓDIGO COMPLETO E FUNCIONAL.
+
+
+Módulo de Pagamentos
+
+BASEADO NA ARQUITETURA DEFINIDA, CRIE UM MÓDULO COMPLETO DE PAGAMENTO:
+
+1. Domain Layer
+- Entities: Payment, Transaction
+- Value Objects: Money, PaymentStatus
+- Interfaces: PaymentGatewayInterface, TransactionRepositoryInterface
+- Events: PaymentProcessed, PaymentFailed
+
+2. Application Layer
+- Commands: ProcessPaymentCommand, RefundPaymentCommand
+- Handlers: ProcessPaymentHandler, RefundPaymentHandler
+- DTOs: PaymentDTO, TransactionDTO, PaymentResponseDTO
+
+3. Infrastructure Layer
+- Gateway: MercadoPagoGateway, PayPalGateway, StripeGateway
+- Repository: TransactionRepository
+- Services: PaymentFactory, WebhookHandler
+
+4. Presentation Layer
+- Controllers: PaymentController, WebhookController
+- Requests: PaymentRequest, WebhookRequest
+- Resources: PaymentResource
+
+5. Tests
+- Unit: PaymentServiceTest
+- Integration: PaymentGatewayTest
+- Feature: PaymentFlowTest
+
+FORNEÇA CÓDIGO COMPLETO E FUNCIONAL.
+
+🚀 PROMPT PARA GERAR PROJETO COMPLETO
+
+CRIE UM PROJETO COMPLETO DE [TIPO DE PROJETO] USANDO:
+
+LINGUAGEM: [PHP/Node.js/Python/Java]
+FRAMEWORK: [Laravel/Express/FastAPI/Spring Boot]
+ARQUITETURA: Hexagonal + DDD + CQRS
+TESTES: TDD (Test-Driven Development)
+DEVOPS: Docker + CI/CD
+
+REQUISITOS FUNCIONAIS:
+1. [REQUISITO 1]
+2. [REQUISITO 2]
+3. [REQUISITO 3]
+
+REQUISITOS TÉCNICOS:
+1. Autenticação JWT
+2. CRUD completo
+3. Cache com Redis
+4. Filas com [RabbitMQ/Redis]
+5. Logs estruturados
+6. Monitoramento
+7. API RESTful
+8. Documentação OpenAPI
+
+ENTREGÁVEIS:
+1. Código fonte completo
+2. Testes (unitários, integração, E2E)
+3. Documentação (API, arquitetura, setup)
+4. Docker files
+5. CI/CD pipelines
+6. README completo
+
+FORNEÇA TUDO PRONTO PARA PRODUÇÃO.
+
+📝 COMO USAR ESTES PROMPTS
+Passo 1: Escolha o Prompt Adequado
+Use o prompt principal para projetos completos
+
+Use prompts específicos para módulos
+
+Use prompts por linguagem para projetos específicos
+
+
+Passo 2: Substitua os Placeholders
+Substitua [NOME DO PROJETO] pelo nome real
+
+Substitua [ENTIDADE PRINCIPAL] pela entidade principal
+
+Substitua [TIPO DE PROJETO] pelo tipo de projeto
+
+Passo 3: Adicione Detalhes Específicos
+Adicione requisitos funcionais específicos
+
+Adicione regras de negócio
+
+Adicione integrações com sistemas externos
+
+Passo 4: Execute o Prompt
+Cole o prompt em qualquer assistente IA (ChatGPT, Claude, etc.)
+
+Revise o código gerado
+
+Adapte conforme necessário
+
+🎯 EXEMPLO DE RESULTADO ESPERADO
+Estrutura de Pastas Gerada
+
+📁 meu-ecommerce/
+├── 📁 src/
+│   ├── 📁 Domain/
+│   │   ├── 📁 Entities/
+│   │   │   └── Product.php
+│   │   ├── 📁 ValueObjects/
+│   │   │   ├── Money.php
+│   │   │   └── Stock.php
+│   │   ├── 📁 Repositories/
+│   │   │   └── ProductRepositoryInterface.php
+│   │   └── 📁 Events/
+│   │       └── ProductCreated.php
+│   ├── 📁 Application/
+│   │   ├── 📁 Commands/
+│   │   │   └── CreateProductCommand.php
+│   │   ├── 📁 Handlers/
+│   │   │   └── CreateProductHandler.php
+│   │   └── 📁 DTOs/
+│   │       └── ProductDTO.php
+│   ├── 📁 Infrastructure/
+│   │   ├── 📁 Repositories/
+│   │   │   └── ProductRepository.php
+│   │   └── 📁 Database/
+│   │       └── Migrations/
+│   └── 📁 Presentation/
+│       ├── 📁 Controllers/
+│       │   └── ProductController.php
+│       ├── 📁 Requests/
+│       │   └── CreateProductRequest.php
+│       └── 📁 Resources/
+│           └── ProductResource.php
+├── 📁 tests/
+│   ├── 📁 Unit/
+│   │   └── ProductTest.php
+│   ├── 📁 Integration/
+│   │   └── ProductRepositoryTest.php
+│   └── 📁 Feature/
+│       └── ProductControllerTest.php
+├── 📁 docs/
+│   ├── 📁 api/
+│   │   └── openapi.yaml
+│   └── 📁 architecture/
+│       └── adr-001.md
+├── 📁 docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── 📁 .github/
+│   └── workflows/
+│       ├── tests.yml
+│       └── deploy.yml
+├── 📄 README.md
+├── 📄 .env.example
+└── 📄 Makefile
+
+
+💡 DICAS PARA MELHORES RESULTADOS
+1. Seja Específico
+Quanto mais detalhes, melhor o resultado
+
+Inclua requisitos de negócio
+
+Descreva integrações externas
+
+2. Use Exemplos
+Forneça exemplos de como deve funcionar
+
+Inclua casos de uso específicos
+
+Descreva fluxos completos
+
+3. Peça Iterações
+Peça para refatorar partes específicas
+
+Peça para adicionar funcionalidades
+
+Peça para otimizar performance
+
+4. Revise e Adapte
+Revise o código gerado
+
+Adapte para seu contexto
+
+Teste e valide
+
+📚 RECURSOS ADICIONAIS
+Templates de Prompt por Caso de Uso
+API REST Completa
+text
+CRIE UMA API REST COMPLETA COM:
+- Autenticação JWT
+- CRUD de [entidade]
+- Paginação e filtros
+- Upload de arquivos
+- Email notifications
+- Rate limiting
+- CORS configurado
+- Logs estruturados
+- Documentação OpenAPI
+- Testes completos
+Microsserviço
+text
+CRIE UM MICROSSERVIÇO COMPLETO PARA [função]:
+- Comunicação síncrona (REST/gRPC)
+- Comunicação assíncrona (RabbitMQ/Kafka)
+- Service Discovery
+- Config Server
+- API Gateway
+- Circuit Breaker
+- Distributed Tracing
+- Health Checks
+- Metrics
+- Docker/Kubernetes
+Sistema de E-commerce
+text
+CRIE UM E-COMMERCE COMPLETO:
+- Catálogo de produtos
+- Carrinho de compras
+- Checkout com múltiplos pagamentos
+- Gestão de pedidos
+- Gestão de usuários
+- Wishlist
+- Avaliações
+- Sistema de frete
+- Notificações
+- Admin panel
+- Relatórios
+- SEO
+- Analytics
+🎉 CONCLUSÃO
+Com estes prompts profissionais, você pode:
+
+✅ Gerar projetos completos em qualquer linguagem
+
+✅ Aplicar arquiteturas modernas (Hexagonal, Clean)
+
+✅ Seguir padrões de mercado (DDD, SOLID, TDD)
+
+✅ Criar código testável e mantenível
+
+✅ Automatizar setup de projetos
+
+✅ Padronizar desenvolvimento em equipe
+
+Use estes prompts como seu assistente pessoal de arquitetura de software! 🚀
