@@ -773,7 +773,7 @@
         @include('layouts.navigation')
 
         {{-- ALERTAS --}}
-        <div class="container mt-3">
+        <div class="container mt-0">
             @if(session('success'))
                 <div class="alert alert-success alert-custom alert-dismissible fade show" role="alert">
                     <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
