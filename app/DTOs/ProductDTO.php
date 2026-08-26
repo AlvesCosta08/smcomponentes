@@ -5,6 +5,8 @@ namespace App\DTOs;
 
 use App\Enums\DisponibilidadeEnum;
 use App\Enums\TipoProdutoEnum;
+use App\Models\Produto; // ✅ Adicionar este import
+use Illuminate\Http\Request; // ✅ Adicionar este import
 use Illuminate\Http\UploadedFile;
 
 readonly class ProductDTO
@@ -52,6 +54,41 @@ readonly class ProductDTO
         // Métricas
         public ?int $visualizacoes = 0,
     ) {}
+
+    // ✅ NOVO MÉTODO: fromRequest
+    public static function fromRequest(Request $request): self
+    {
+        return new self(
+            id: $request->input('id'),
+            descricao: $request->input('descricao'),
+            categoria: $request->input('categoria'),
+            referencia: $request->input('referencia'),
+            slug: $request->input('slug'),
+            tipo: $request->has('tipo') ? TipoProdutoEnum::tryFrom($request->input('tipo')) : null,
+            quantidade: (int) $request->input('quantidade', 0),
+            estoque_minimo: (int) $request->input('estoque_minimo', 5),
+            disponibilidade: $request->has('disponibilidade') 
+                ? DisponibilidadeEnum::tryFrom($request->input('disponibilidade')) 
+                : DisponibilidadeEnum::DISPONIVEL,
+            valor_atacado: $request->has('valor_atacado') ? (float) $request->input('valor_atacado') : null,
+            valor_compra: $request->has('valor_compra') ? (float) $request->input('valor_compra') : null,
+            valor_unitario: $request->has('valor_unitario') ? (float) $request->input('valor_unitario') : null,
+            valor_custo: $request->has('valor_custo') ? (float) $request->input('valor_custo') : null,
+            preco_promocional: $request->has('preco_promocional') ? (float) $request->input('preco_promocional') : null,
+            ipi: $request->has('ipi') ? (float) $request->input('ipi') : 9.75,
+            margem_lucro: $request->has('margem_lucro') ? (float) $request->input('margem_lucro') : 80,
+            percentual_custo: $request->has('percentual_custo') ? (float) $request->input('percentual_custo') : null,
+            ativo: $request->has('ativo') ? filter_var($request->input('ativo'), FILTER_VALIDATE_BOOLEAN) : true,
+            destaque: $request->has('destaque') ? filter_var($request->input('destaque'), FILTER_VALIDATE_BOOLEAN) : false,
+            novo: $request->has('novo') ? filter_var($request->input('novo'), FILTER_VALIDATE_BOOLEAN) : false,
+            mais_vendido: $request->has('mais_vendido') ? filter_var($request->input('mais_vendido'), FILTER_VALIDATE_BOOLEAN) : false,
+            data_compra: $request->input('data_compra'),
+            imagem_file: $request->file('imagem_file'),
+            galeria_imagens: $request->file('galeria_imagens', []),
+            remover_imagem: $request->has('remover_imagem'),
+            visualizacoes: (int) $request->input('visualizacoes', 0),
+        );
+    }
 
     public static function fromArray(array $data): self
     {
@@ -113,6 +150,10 @@ readonly class ProductDTO
             mais_vendido: (bool) ($produto->mais_vendido ?? false),
             data_compra: $produto->data_compra?->toDateString(),
             visualizacoes: $produto->visualizacoes,
+            // ✅ Adicionar imagem_file e galeria_imagens se necessário
+            imagem_file: null,
+            galeria_imagens: [],
+            remover_imagem: false,
         );
     }
 
@@ -143,6 +184,52 @@ readonly class ProductDTO
             'data_compra' => $this->data_compra,
             'visualizacoes' => $this->visualizacoes,
         ], fn($value) => $value !== null);
+    }
+
+    /**
+     * ✅ NOVO MÉTODO: getStatus (para o teste)
+     */
+    public function getStatus(): string
+    {
+        if (!$this->ativo) {
+            return 'Inativo';
+        }
+        
+        return match($this->disponibilidade) {
+            DisponibilidadeEnum::DISPONIVEL => 'Disponível',
+            DisponibilidadeEnum::INDISPONIVEL => 'Indisponível',
+            DisponibilidadeEnum::ESTOQUE_BAIXO => 'Estoque Baixo',
+            default => 'Desconhecido'
+        };
+    }
+
+    /**
+     * ✅ NOVO MÉTODO: getImageUrl (para o teste)
+     */
+    public function getImageUrl(): ?string
+    {
+        if ($this->imagem_file) {
+            return $this->imagem_file->temporaryUrl() ?? null;
+        }
+        
+        // Se tiver um campo de imagem no banco, usar ele
+        return null;
+    }
+
+    /**
+     * ✅ NOVO MÉTODO: isAvailable (para o teste)
+     */
+    public function isAvailable(): bool
+    {
+        return $this->ativo && $this->quantidade > 0;
+    }
+
+    /**
+     * ✅ NOVO MÉTODO: getFormattedPrice (para o teste)
+     */
+    public function getFormattedPrice(): string
+    {
+        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
     }
 
     public function calcularPrecos(): array

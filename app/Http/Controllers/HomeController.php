@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
 use stdClass;
 
@@ -29,7 +30,7 @@ class HomeController extends Controller
         
         $produtosDestaque = $this->getProdutosPaginated(
             'produtos_destaque',
-            fn() => Produto::emDestaque()->get(),
+            fn() => $this->getProdutosComSafe('emDestaque'),
             $request->get('page_destaque', 1),
             8,
             'page_destaque'
@@ -37,7 +38,7 @@ class HomeController extends Controller
         
         $ofertas = $this->getProdutosPaginated(
             'ofertas_ativas',
-            fn() => Produto::ofertas()->get(),
+            fn() => $this->getProdutosComSafe('ofertas'),
             $request->get('page_ofertas', 1),
             8,
             'page_ofertas'
@@ -45,7 +46,7 @@ class HomeController extends Controller
         
         $novosProdutos = $this->getProdutosPaginated(
             'novos_produtos',
-            fn() => Produto::novos()->get(),
+            fn() => $this->getProdutosComSafe('novos'),
             $request->get('page_novos', 1),
             8,
             'page_novos'
@@ -53,7 +54,7 @@ class HomeController extends Controller
         
         $maisVendidos = $this->getProdutosPaginated(
             'mais_vendidos',
-            fn() => Produto::maisVendidos()->get(),
+            fn() => $this->getProdutosComSafe('maisVendidos'),
             $request->get('page_vendidos', 1),
             8,
             'page_vendidos'
@@ -61,7 +62,7 @@ class HomeController extends Controller
         
         $produtosDisponiveis = $this->getProdutosPaginated(
             'produtos_disponiveis',
-            fn() => Produto::disponivel()->get(),
+            fn() => $this->getProdutosComSafe('disponivel'),
             $request->get('page_todos', 1),
             12,
             'page_todos'
@@ -82,18 +83,53 @@ class HomeController extends Controller
     // ================================================================
 
     /**
+     * Obtém produtos com segurança, verificando se a tabela existe
+     */
+    private function getProdutosComSafe(string $scope): Collection
+    {
+        // ✅ Verificar se a tabela produtos existe
+        if (!Schema::hasTable('produtos')) {
+            return collect();
+        }
+
+        try {
+            // Verificar se o método existe no modelo
+            if (method_exists(Produto::class, $scope)) {
+                return Produto::$scope()->get();
+            }
+            
+            // Fallback: buscar todos os produtos ativos
+            return Produto::where('ativo', true)->get();
+        } catch (\Exception $e) {
+            Log::error("Erro ao buscar produtos com scope '{$scope}': " . $e->getMessage());
+            return collect();
+        }
+    }
+
+    /**
      * Obtém os banners ativos com fallback.
      */
     private function getBanners(): Collection
     {
-        return Cache::remember('home_banners', self::CACHE_TTL, function () {
-            $bannersFromDb = Banner::ativo()->ordenado()->get();
+        // ✅ Verificar se a tabela banners existe
+        if (!Schema::hasTable('banners')) {
+            Log::info('Tabela banners não existe, usando banner padrão');
+            return $this->getDefaultBanner();
+        }
 
-            if ($bannersFromDb->isEmpty()) {
+        return Cache::remember('home_banners', self::CACHE_TTL, function () {
+            try {
+                $bannersFromDb = Banner::ativo()->ordenado()->get();
+
+                if ($bannersFromDb->isEmpty()) {
+                    return $this->getDefaultBanner();
+                }
+
+                return $bannersFromDb->map(fn($banner) => $this->formatBanner($banner));
+            } catch (\Exception $e) {
+                Log::error('Erro ao buscar banners: ' . $e->getMessage());
                 return $this->getDefaultBanner();
             }
-
-            return $bannersFromDb->map(fn($banner) => $this->formatBanner($banner));
         });
     }
 
@@ -157,38 +193,56 @@ class HomeController extends Controller
         int $perPage = 12,
         string $pageName = 'page'
     ): LengthAwarePaginator {
+        // ✅ Verificar se a tabela produtos existe
+        if (!Schema::hasTable('produtos')) {
+            return new LengthAwarePaginator([], 0, $perPage, $page, [
+                'path' => request()->url(),
+                'query' => request()->query(),
+                'pageName' => $pageName,
+            ]);
+        }
+
         $fullCacheKey = "{$cacheKey}_{$pageName}_{$page}";
 
         return Cache::remember($fullCacheKey, self::CACHE_TTL, function () use ($queryBuilder, $perPage, $page, $pageName) {
-            $items = $queryBuilder();
-            
-            if ($items instanceof Collection) {
-                $items = $items->all();
-            }
-            
-            if (is_object($items) && method_exists($items, 'get')) {
-                $items = $items->get()->all();
-            }
-            
-            if (!is_array($items)) {
-                $items = [];
-            }
+            try {
+                $items = $queryBuilder();
+                
+                if ($items instanceof Collection) {
+                    $items = $items->all();
+                }
+                
+                if (is_object($items) && method_exists($items, 'get')) {
+                    $items = $items->get()->all();
+                }
+                
+                if (!is_array($items)) {
+                    $items = [];
+                }
 
-            $total = count($items);
-            $offset = ($page - 1) * $perPage;
-            $items = array_slice($items, $offset, $perPage);
-            
-            return new LengthAwarePaginator(
-                $items,
-                $total,
-                $perPage,
-                $page,
-                [
+                $total = count($items);
+                $offset = ($page - 1) * $perPage;
+                $items = array_slice($items, $offset, $perPage);
+                
+                return new LengthAwarePaginator(
+                    $items,
+                    $total,
+                    $perPage,
+                    $page,
+                    [
+                        'path' => request()->url(),
+                        'query' => request()->query(),
+                        'pageName' => $pageName,
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::error("Erro ao obter produtos paginados para '{$cacheKey}': " . $e->getMessage());
+                return new LengthAwarePaginator([], 0, $perPage, $page, [
                     'path' => request()->url(),
                     'query' => request()->query(),
                     'pageName' => $pageName,
-                ]
-            );
+                ]);
+            }
         });
     }
 
@@ -253,6 +307,10 @@ class HomeController extends Controller
             Cache::forget('banners_ativos');
             Cache::forget('banners');
             Cache::forget('banners_active');
+
+            if (!Schema::hasTable('banners')) {
+                return redirect()->back()->with('warning', '⚠️ Tabela banners não existe!');
+            }
 
             $banners = Banner::ativo()->ordenado()->get();
             Cache::put('home_banners', $banners, self::CACHE_TTL);

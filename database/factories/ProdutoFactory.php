@@ -3,6 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Produto;
+use App\Models\Categoria;
+use App\Enums\DisponibilidadeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ProdutoFactory extends Factory
@@ -11,39 +13,43 @@ class ProdutoFactory extends Factory
 
     public function definition(): array
     {
+        $valorCompra = $this->faker->randomFloat(2, 1, 100);
+        $margem = $this->faker->randomElement([60, 65, 70, 75, 80, 85, 90, 95, 98]);
+        $ipi = $this->faker->randomFloat(2, 0, 10);
+        
+        $valorAtacado = $margem < 100 
+            ? round($valorCompra / (1 - ($margem / 100)), 2)
+            : $valorCompra * 10;
+
         return [
-            'categoria' => $this->faker->word(),
-            'referencia' => 'REF-' . str_pad($this->faker->unique()->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
+            'categoria' => $this->faker->word,
+            'categoria_id' => Categoria::factory(), // 🔥 ADICIONADO: criar categoria automaticamente
+            'referencia' => $this->faker->unique()->numerify('REF-#####'),
             'descricao' => $this->faker->sentence(3),
-            'tipo' => $this->faker->randomElement(['Produto', 'Serviço']),
-            'disponibilidade' => $this->faker->randomElement([
-                Produto::DISPONIVEL,
-                Produto::INDISPONIVEL,
-                Produto::ESTOQUE_BAIXO
-            ]),
-            'quantidade' => $this->faker->numberBetween(1, 100),
-            'valor_unitario' => $this->faker->randomFloat(2, 10, 1000),
-            'valor_atacado' => $this->faker->randomFloat(2, 5, 500),
-            'valor_compra' => $this->faker->randomFloat(2, 5, 500),
-            'valor_custo' => $this->faker->randomFloat(2, 5, 500),
+            'tipo' => 'UNI',
+            'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
+            'quantidade' => $this->faker->numberBetween(10, 100),
+            'estoque_minimo' => 5,
+            'valor_compra' => $valorCompra,
+            'margem_lucro' => $margem,
+            'ipi' => $ipi,
+            'valor_atacado' => $valorAtacado,
+            'valor_unitario' => $valorAtacado,
+            'valor_custo' => $valorCompra,
+            'percentual_custo' => $valorAtacado > 0 
+                ? round(($valorCompra / $valorAtacado) * 100, 2) 
+                : 0,
             'preco_promocional' => null,
-            'ipi' => $this->faker->randomFloat(2, 0, 10),
-            'percentual_custo' => $this->faker->randomFloat(2, 10, 50),
-            'margem_lucro' => $this->faker->randomFloat(2, 10, 50),
-            'estoque_minimo' => $this->faker->numberBetween(0, 20),
-            'ativo' => $this->faker->boolean(80),
+            'ativo' => true,
             'destaque' => $this->faker->boolean(20),
             'novo' => $this->faker->boolean(30),
             'mais_vendido' => $this->faker->boolean(10),
             'visualizacoes' => $this->faker->numberBetween(0, 1000),
             'slug' => $this->faker->slug,
             'imagem' => null,
-            'categoria_id' => null,
             'data_compra' => null,
             'ultima_atualizacao_estoque' => null,
             'ultima_visualizacao' => null,
-            'rating' => $this->faker->randomFloat(1, 0, 5),
-            'total_avaliacoes' => $this->faker->numberBetween(0, 100),
         ];
     }
 
@@ -52,7 +58,7 @@ class ProdutoFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'ativo' => true,
-                'disponibilidade' => Produto::DISPONIVEL,
+                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
                 'quantidade' => $this->faker->numberBetween(10, 100),
             ];
         });
@@ -63,7 +69,7 @@ class ProdutoFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'ativo' => false,
-                'disponibilidade' => Produto::INDISPONIVEL,
+                'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
                 'quantidade' => 0,
             ];
         });
@@ -74,7 +80,7 @@ class ProdutoFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'ativo' => true,
-                'disponibilidade' => Produto::ESTOQUE_BAIXO,
+                'disponibilidade' => DisponibilidadeEnum::ESTOQUE_BAIXO->value,
                 'quantidade' => $this->faker->numberBetween(1, 5),
             ];
         });
@@ -83,10 +89,68 @@ class ProdutoFactory extends Factory
     public function comQuantidade(int $quantidade): Factory
     {
         return $this->state(function (array $attributes) use ($quantidade) {
+            $disponibilidade = $quantidade > 0 
+                ? DisponibilidadeEnum::DISPONIVEL->value 
+                : DisponibilidadeEnum::INDISPONIVEL->value;
+            
             return [
                 'quantidade' => $quantidade,
-                'disponibilidade' => $quantidade > 0 ? Produto::DISPONIVEL : Produto::INDISPONIVEL,
+                'disponibilidade' => $disponibilidade,
                 'ativo' => $quantidade > 0,
+            ];
+        });
+    }
+
+    public function comPromocao(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            // Usar o valor_atacado existente ou gerar um novo
+            $preco = $attributes['valor_atacado'] ?? $this->faker->randomFloat(2, 100, 1000);
+            return [
+                'valor_atacado' => $preco,
+                'valor_unitario' => $preco,
+                'preco_promocional' => round($preco * 0.7, 2), // 70% do valor original
+            ];
+        });
+    }
+
+    public function comImagem(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'imagem' => 'produtos/' . $this->faker->imageUrl(640, 480, 'products', true),
+            ];
+        });
+    }
+
+    public function inativo(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'ativo' => false,
+                'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
+            ];
+        });
+    }
+
+    public function destaque(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'destaque' => true,
+                'ativo' => true,
+                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
+            ];
+        });
+    }
+
+    public function novo(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'novo' => true,
+                'ativo' => true,
+                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
             ];
         });
     }

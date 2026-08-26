@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🛑 Parando containers..."
+echo "⏹️  Parando containers..."
 docker-compose down
 
 echo "✅ Containers parados!"

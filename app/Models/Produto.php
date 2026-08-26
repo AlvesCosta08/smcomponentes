@@ -115,7 +115,7 @@ class Produto extends Model
     }
 
     // ==============================================
-    // ACESSORS (GETTERS) - PADRÃO LARAVEL 13
+    // ACESSORS (GETTERS)
     // ==============================================
 
     public function getPrecoFormatadoAttribute(): string
@@ -135,35 +135,20 @@ class Produto extends Model
             : null;
     }
 
-    /**
-     * ✅ ACESSOR DE IMAGEM - PADRÃO LARAVEL 13
-     * 
-     * Busca a imagem em:
-     * 1. storage/app/public/produtos/{filename}
-     * 2. storage/app/public/images/{filename}
-     * 3. Usa placeholder se não encontrar
-     */
     public function getImagemUrlAttribute(): string
     {
-        // 1. Se tiver imagem principal no banco
         if (!empty($this->imagem)) {
-            // Normalizar caminho: extrair apenas o nome do arquivo
             $filename = basename($this->imagem);
-            
-            // Verificar se existe em produtos/
             $path = 'produtos/' . $filename;
             if (Storage::disk('public')->exists($path)) {
                 return asset('storage/' . $path);
             }
-            
-            // Verificar se existe em images/
             $altPath = 'images/' . $filename;
             if (Storage::disk('public')->exists($altPath)) {
                 return asset('storage/' . $altPath);
             }
         }
 
-        // 2. Fallback: Se não tiver principal, pega a primeira da galeria
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
             $primeiraImagem = $this->imagens->first();
             if ($primeiraImagem && !empty($primeiraImagem->imagem)) {
@@ -179,18 +164,13 @@ class Produto extends Model
             }
         }
 
-        // 3. Fallback final: Placeholder
         return asset('images/produto-placeholder.jpg');
     }
 
-    /**
-     * ✅ GETTER DE MÚLTIPLAS IMAGENS - PADRÃO LARAVEL 13
-     */
     public function getImagensUrlsAttribute(): array
     {
         $urls = [];
 
-        // 1. Prioriza a galeria de imagens
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
             foreach ($this->imagens as $imagem) {
                 if (!empty($imagem->imagem)) {
@@ -208,7 +188,6 @@ class Produto extends Model
             }
         }
 
-        // 2. Se a galeria estiver vazia, usa a imagem principal
         if (empty($urls) && !empty($this->imagem)) {
             $filename = basename($this->imagem);
             $path = 'produtos/' . $filename;
@@ -222,52 +201,12 @@ class Produto extends Model
             }
         }
 
-        // 3. Se ainda estiver vazio, placeholder
         if (empty($urls)) {
             $urls[] = asset('images/produto-placeholder.jpg');
         }
 
         return $urls;
     }
-
-    /**
-     * ✅ IMAGEM OTIMIZADA - PADRÃO LARAVEL 13
-     */
-    public function getImageOptimizedUrl(int $width = 400, int $height = 400): string
-    {
-        if (!empty($this->imagem)) {
-            $filename = basename($this->imagem);
-            $path = 'produtos/' . $filename;
-            if (Storage::disk('public')->exists($path)) {
-                return asset('storage/' . $path);
-            }
-            $altPath = 'images/' . $filename;
-            if (Storage::disk('public')->exists($altPath)) {
-                return asset('storage/' . $altPath);
-            }
-        }
-
-        if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
-            $primeiraImagem = $this->imagens->first();
-            if ($primeiraImagem && !empty($primeiraImagem->imagem)) {
-                $filename = basename($primeiraImagem->imagem);
-                $path = 'produtos/' . $filename;
-                if (Storage::disk('public')->exists($path)) {
-                    return asset('storage/' . $path);
-                }
-                $altPath = 'images/' . $filename;
-                if (Storage::disk('public')->exists($altPath)) {
-                    return asset('storage/' . $altPath);
-                }
-            }
-        }
-
-        return asset('images/produto-placeholder.jpg');
-    }
-
-    // ==============================================
-    // OUTROS ACESSORS
-    // ==============================================
 
     public function getStatusLabelAttribute(): string
     {
@@ -432,12 +371,9 @@ class Produto extends Model
     }
 
     // ==============================================
-    // MÉTODOS ESTÁTICOS ✅ ADICIONADO
+    // MÉTODOS ESTÁTICOS
     // ==============================================
 
-    /**
-     * Retorna as margens de lucro disponíveis para seleção
-     */
     public static function getMargensDisponiveis(): array
     {
         return [

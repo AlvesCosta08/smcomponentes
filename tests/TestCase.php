@@ -14,10 +14,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        // Reset cached roles and permissions
+        // ✅ Reset cached roles and permissions
         app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Verificar se a tabela roles existe antes de criar
+        // ✅ Criar as roles para os testes
         try {
             // Garantir que a role Cliente existe
             Role::firstOrCreate([
@@ -39,15 +39,9 @@ abstract class TestCase extends BaseTestCase
         } catch (\Exception $e) {
             // Se a tabela não existe, criar via migração
             $this->createPermissionTables();
-            
-            // Tentar novamente
-            Role::firstOrCreate([
-                'name' => 'Cliente',
-                'guard_name' => 'web'
-            ]);
         }
 
-        // Limpar cache novamente
+        // ✅ Limpar cache novamente
         app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 

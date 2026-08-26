@@ -15,32 +15,23 @@ class RoleSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // ============================================
-        // 1. PERMISSÕES (sem espaços!)
+        // 1. PERMISSÕES
         // ============================================
         
         $permissions = [
-            // Produtos
             'ver_produtos',
             'criar_produtos',
             'editar_produtos',
             'excluir_produtos',
-            
-            // Clientes
             'ver_clientes',
             'criar_clientes',
             'editar_clientes',
             'excluir_clientes',
-            
-            // Pedidos/Vendas
             'ver_pedidos',
             'criar_pedidos',
             'editar_pedidos',
             'cancelar_pedidos',
-            
-            // Relatórios
             'ver_relatorios',
-            
-            // Admin
             'gerenciar_usuarios',
             'gerenciar_permissoes'
         ];
@@ -83,42 +74,39 @@ class RoleSeeder extends Seeder
         ]);
 
         // ============================================
-        // 3. USUÁRIOS DE TESTE
+        // 3. USUÁRIOS DE TESTE (SEM CPF)
         // ============================================
 
-        // Admin
+        // ✅ Admin - sem CPF
         $adminUser = User::firstOrCreate(
             ['email' => 'admin@loja.com'],
             [
                 'name' => 'Administrador',
                 'password' => Hash::make('12345678'),
-                'cpf' => '11111111111',
                 'telefone' => '(11) 99999-9999',
                 'ativo' => true
             ]
         );
         $adminUser->assignRole('Admin');
 
-        // Funcionário
+        // ✅ Funcionário - sem CPF
         $funcUser = User::firstOrCreate(
             ['email' => 'funcionario@loja.com'],
             [
                 'name' => 'Funcionário',
                 'password' => Hash::make('12345678'),
-                'cpf' => '22222222222',
                 'telefone' => '(11) 88888-8888',
                 'ativo' => true
             ]
         );
         $funcUser->assignRole('Funcionario');
 
-        // Cliente
+        // ✅ Cliente - sem CPF
         $clienteUser = User::firstOrCreate(
             ['email' => 'cliente@loja.com'],
             [
                 'name' => 'Cliente',
                 'password' => Hash::make('12345678'),
-                'cpf' => '33333333333',
                 'telefone' => '(11) 77777-7777',
                 'ativo' => true
             ]

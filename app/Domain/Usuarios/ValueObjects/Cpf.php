@@ -4,16 +4,19 @@ namespace App\Domain\Usuarios\ValueObjects;
 
 use InvalidArgumentException;
 
-final readonly class Cpf
+class Cpf
 {
-    public function __construct(
-        private string $number
-    ) {
-        $this->number = preg_replace('/[^0-9]/', '', $this->number);
+    private string $number;
+
+    public function __construct(string $number)
+    {
+        $cleanNumber = preg_replace('/[^0-9]/', '', $number);
         
-        if (!$this->isValid($this->number)) {
-            throw new InvalidArgumentException('O CPF fornecido é inválido.');
+        if (!$this->validate($cleanNumber)) {
+            throw new InvalidArgumentException("CPF inválido: {$number}");
         }
+        
+        $this->number = $cleanNumber;
     }
 
     public function number(): string
@@ -23,20 +26,25 @@ final readonly class Cpf
 
     public function formatado(): string
     {
-        return preg_replace('/(\d{3})(\d{3})(\d{3})(\d{2})/', '$1.$2.$3-$4', $this->number);
+        return substr($this->number, 0, 3) . '.' .
+               substr($this->number, 3, 3) . '.' .
+               substr($this->number, 6, 3) . '-' .
+               substr($this->number, 9, 2);
     }
 
-    public function equals(self $other): bool
+    private function validate(string $cpf): bool
     {
-        return $this->number === $other->number;
-    }
-
-    private function isValid(string $cpf): bool
-    {
-        if (strlen($cpf) !== 11 || preg_match('/(\d)\1{10}/', $cpf)) {
+        // Verifica se tem 11 dígitos
+        if (strlen($cpf) !== 11) {
             return false;
         }
 
+        // Verifica se todos os dígitos são iguais
+        if (preg_match('/(\d)\1{10}/', $cpf)) {
+            return false;
+        }
+
+        // Calcula os dígitos verificadores
         for ($t = 9; $t < 11; $t++) {
             for ($d = 0, $c = 0; $c < $t; $c++) {
                 $d += $cpf[$c] * (($t + 1) - $c);
@@ -46,6 +54,12 @@ final readonly class Cpf
                 return false;
             }
         }
+
         return true;
+    }
+
+    public function __toString(): string
+    {
+        return $this->number;
     }
 }

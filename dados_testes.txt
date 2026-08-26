@@ -49,3 +49,22 @@ admin@teste.com', 'password' => 12345678'
 
 # Verificar status
 ./status.sh
+
+
+# Comando completo
+./vendor/bin/phpunit --testsuite=Unit --testdox --no-output 2>&1 | \
+  grep -v "Warning" | \
+  grep -v "Ambiguous" | \
+  grep -v "Skipping" | \
+  grep -v "Runtime:" | \
+  grep -v "Configuration:" | \
+  grep -v "✅ Coluna" | \
+  grep -v "Deprecations" | \
+  grep -v "PHPUnit" | \
+  grep -v "OK, but there were issues"
+
+# Alias (adicionar ao ~/.bashrc)
+alias test-unit="vendor/bin/phpunit --testsuite=Unit --testdox --no-output 2>&1 | grep -v \"Warning\" | grep -v \"Ambiguous\" | grep -v \"Skipping\" | grep -v \"Runtime:\" | grep -v \"Configuration:\" | grep -v \"✅ Coluna\" | grep -v \"Deprecations\" | grep -v \"PHPUnit\" | grep -v \"OK, but there were issues\""
+
+# Executar
+test-unit
