@@ -39,12 +39,22 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "exclude-from-classmap": [
+            "vendor/league/flysystem/src/Local/",
+            "vendor/laravel/pint/app/Providers/"
+        ],
+        "files": [
+            "app/Helpers/helpers.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        }
+        },
+        "exclude-from-classmap": [
+            "tests/Unit/"
+        ]
     },
     "scripts": {
         "post-autoload-dump": [
@@ -64,6 +74,18 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "test": [
+            "@php artisan test"
+        ],
+        "test:coverage": [
+            "@php artisan test --coverage"
+        ],
+        "lint": [
+            "@php vendor/bin/pint"
+        ],
+        "lint:fix": [
+            "@php vendor/bin/pint --fix"
         ]
     },
     "extra": {
@@ -76,14 +98,18 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "pestphp/pest-plugin": false
         },
-        "audit": {
-            "block-insecure": false
-        }
+        "platform-check": true,
+        "process-timeout": 3600
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://repo.packagist.org"
+        }
+    }
 }
-
