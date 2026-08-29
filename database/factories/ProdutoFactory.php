@@ -22,39 +22,44 @@ class ProdutoFactory extends Factory
             : $valorCompra * 10;
 
         return [
+            // Categorias e Identificação
             'categoria' => $this->faker->word,
             'categoria_id' => Categoria::factory(),
             'referencia' => $this->faker->unique()->numerify('REF-#####'),
             'descricao' => $this->faker->sentence(3),
             'tipo' => 'UNI',
             'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
+            'imagem' => null,
+            
+            // Slug
+            'slug' => $this->faker->unique()->slug,
+            
+            // Estoque
             'quantidade' => $this->faker->numberBetween(10, 100),
             'estoque_minimo' => 5,
-            'valor_compra' => $valorCompra,
-            'margem_lucro' => $margem,
-            'ipi' => $ipi,
+            
+            // Valores Financeiros
             'valor_atacado' => $valorAtacado,
-            'valor_unitario' => $valorAtacado, // ✅ CORRIGIDO: Nome correto da coluna
+            'valor_compra' => $valorCompra,
+            'valor_unitario' => $valorAtacado,
             'valor_custo' => $valorCompra,
+            'preco_promocional' => null,
+            'ipi' => $ipi,
             'percentual_custo' => $valorAtacado > 0 
                 ? round(($valorCompra / $valorAtacado) * 100, 2) 
                 : 0,
-            'preco_promocional' => null,
+            'margem_lucro' => $margem,
+            
+            // Status
             'ativo' => true,
             'destaque' => $this->faker->boolean(20),
-            'novo' => $this->faker->boolean(30),
-            'mais_vendido' => $this->faker->boolean(10),
-            'visualizacoes' => $this->faker->numberBetween(0, 1000),
-            'slug' => $this->faker->slug,
-            'imagem' => null,
+            
+            // Datas
             'data_compra' => null,
             'ultima_atualizacao_estoque' => null,
-            'ultima_visualizacao' => null,
-            'estoque' => $this->faker->numberBetween(0, 100), // ✅ ADICIONADO: coluna estoque
-            'status' => 'ativo', // ✅ ADICIONADO: coluna status
-            'rating' => $this->faker->randomFloat(1, 0, 5), // ✅ ADICIONADO
-            'total_avaliacoes' => $this->faker->numberBetween(0, 50), // ✅ ADICIONADO
-            'galeria' => null, // ✅ ADICIONADO
+            
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 
@@ -65,7 +70,6 @@ class ProdutoFactory extends Factory
                 'ativo' => true,
                 'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
                 'quantidade' => $this->faker->numberBetween(10, 100),
-                'estoque' => $this->faker->numberBetween(10, 100),
             ];
         });
     }
@@ -77,7 +81,6 @@ class ProdutoFactory extends Factory
                 'ativo' => false,
                 'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
                 'quantidade' => 0,
-                'estoque' => 0,
             ];
         });
     }
@@ -89,7 +92,6 @@ class ProdutoFactory extends Factory
                 'ativo' => true,
                 'disponibilidade' => DisponibilidadeEnum::ESTOQUE_BAIXO->value,
                 'quantidade' => $this->faker->numberBetween(1, 5),
-                'estoque' => $this->faker->numberBetween(1, 5),
             ];
         });
     }
@@ -103,7 +105,6 @@ class ProdutoFactory extends Factory
             
             return [
                 'quantidade' => $quantidade,
-                'estoque' => $quantidade,
                 'disponibilidade' => $disponibilidade,
                 'ativo' => $quantidade > 0,
             ];
@@ -137,7 +138,7 @@ class ProdutoFactory extends Factory
             return [
                 'ativo' => false,
                 'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
-                'estoque' => 0,
+                'quantidade' => 0,
             ];
         });
     }

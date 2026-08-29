@@ -6,21 +6,45 @@ use App\Models\Pedido;
 use App\Models\Produto;
 use App\Services\CheckoutService;
 use App\Services\PaymentService;
+use App\Domain\Pedidos\Enums\StatusPedidoEnum;
+use App\Domain\Pedidos\Enums\StatusPagamentoEnum;
 use App\Http\Requests\Checkout\ProcessarRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class CheckoutController extends Controller
 {
+    /**
+     * @var CheckoutService
+     */
+    protected CheckoutService $checkoutService;
+
+    /**
+     * @var PaymentService
+     */
+    protected PaymentService $paymentService;
+
+    /**
+     * Construtor do controller.
+     *
+     * @param CheckoutService $checkoutService
+     * @param PaymentService $paymentService
+     */
     public function __construct(
-        protected CheckoutService $checkoutService,
-        protected PaymentService $paymentService
-    ) {}
+        CheckoutService $checkoutService,
+        PaymentService $paymentService
+    ) {
+        $this->checkoutService = $checkoutService;
+        $this->paymentService = $paymentService;
+    }
 
     /**
      * Mostra a página de checkout.
+     *
+     * @return View|RedirectResponse
      */
     public function index(): View|RedirectResponse
     {
@@ -32,7 +56,6 @@ class CheckoutController extends Controller
                     ->with('error', 'Faça login para finalizar sua compra.');
             }
 
-            // Verificar se o usuário tem endereço
             if (!$this->usuarioTemEndereco($user)) {
                 return redirect()->route('cliente.perfil.edit')
                     ->with('warning', 'Complete seu endereço antes de finalizar a compra.');
@@ -45,7 +68,6 @@ class CheckoutController extends Controller
                     ->with('error', 'Seu carrinho está vazio!');
             }
 
-            // Verificar estoque antes de prosseguir
             $estoqueValido = $this->checkoutService->verificarEstoque($carrinho);
             if (!$estoqueValido['valido']) {
                 return redirect()->route('carrinho.index')
@@ -55,15 +77,16 @@ class CheckoutController extends Controller
             $subtotal = $this->checkoutService->calcularSubtotal($carrinho);
             $total = $subtotal;
 
-            Log::info('📦 Checkout iniciado', [
+            Log::info('Checkout iniciado', [
                 'user_id' => $user->id,
                 'total_items' => $carrinho->count(),
                 'total' => $total
             ]);
 
             return view('checkout.index', compact('carrinho', 'subtotal', 'total'));
+
         } catch (\Exception $e) {
-            Log::error('❌ Erro ao carregar checkout', [
+            Log::error('Erro ao carregar checkout', [
                 'erro' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
@@ -75,9 +98,17 @@ class CheckoutController extends Controller
 
     /**
      * Processa o checkout e finaliza a compra.
+     *
+     * @param Request $request
+     * @return RedirectResponse
      */
-    public function processar(ProcessarRequest $request): RedirectResponse
+    public function processar(Request $request): RedirectResponse
     {
+        $request->validate([
+            'endereco_entrega' => 'required|string|max:500',
+            'forma_pagamento' => 'required|in:pix,boleto,cartao,cartao_credito,cartao_debito,credito,debito',
+        ]);
+
         try {
             $user = auth()->user();
 
@@ -93,21 +124,26 @@ class CheckoutController extends Controller
                     ->with('error', 'Seu carrinho está vazio!');
             }
 
-            // Verificar estoque novamente (pode ter mudado)
             $estoqueValido = $this->checkoutService->verificarEstoque($carrinho);
             if (!$estoqueValido['valido']) {
                 return redirect()->route('carrinho.index')
                     ->with('error', $estoqueValido['mensagem']);
             }
 
-            // Criar pedido
             $pedido = $this->checkoutService->criarPedido($user, $carrinho, $request->forma_pagamento);
 
-            // Processar pagamento
+            // ✅ VERIFICAÇÃO DE SEGURANÇA
+            if (!$pedido || !$pedido->id) {
+                Log::error('❌ Pedido não foi criado corretamente', [
+                    'user_id' => $user->id
+                ]);
+                return back()->with('error', 'Erro ao criar pedido. Tente novamente.');
+            }
+
             $result = $this->paymentService->processPayment($pedido, $request->forma_pagamento);
 
             if ($result->success) {
-                Log::info('✅ Pedido criado e pago com sucesso', [
+                Log::info('Pedido criado e pago com sucesso', [
                     'pedido_id' => $pedido->id,
                     'numero_pedido' => $pedido->numero_pedido,
                     'user_id' => $user->id,
@@ -115,23 +151,24 @@ class CheckoutController extends Controller
                     'payment_id' => $result->payment_id ?? null
                 ]);
 
-                // Limpar carrinho
                 session()->forget('carrinho');
 
-                return redirect()->route('checkout.sucesso', $pedido)
+                // ✅ REDIRECIONAMENTO FUNCIONA LOCAL E PRODUÇÃO
+                return redirect()->route('checkout.sucesso', ['pedido' => $pedido->id])
                     ->with('success', 'Pedido realizado com sucesso!');
             }
 
-            Log::warning('⚠️ Pagamento falhou', [
+            Log::warning('Pagamento falhou', [
                 'pedido_id' => $pedido->id,
                 'user_id' => $user->id,
                 'error' => $result->message
             ]);
 
-            return redirect()->route('checkout.falha', $pedido)
+            return redirect()->route('checkout.falha', ['pedido' => $pedido->id])
                 ->with('error', 'Erro ao processar pagamento: ' . $result->message);
+
         } catch (\Exception $e) {
-            Log::error('❌ Erro ao processar pedido', [
+            Log::error('Erro ao processar pedido', [
                 'erro' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'user_id' => auth()->id()
@@ -142,26 +179,81 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Método unificado para pagamento.
+     * Página de sucesso do pagamento.
+     *
+     * @param Pedido $pedido
+     * @return View|RedirectResponse
+     */
+    public function sucesso(Pedido $pedido): View
+    {
+        $this->authorizePedido($pedido);
+
+        if ($pedido->status !== StatusPedidoEnum::PAGO->value) {
+            $pedido->update([
+                'status' => StatusPedidoEnum::PAGO->value,
+                'status_pagamento' => StatusPagamentoEnum::APROVADO->value,
+                'data_pagamento' => now(),
+            ]);
+        }
+
+        $pedido->load(['itens.produto', 'user']);
+
+        return view('checkout.pagamento.sucesso', compact('pedido'));
+    }
+
+    /**
+     * Página de falha do pagamento.
+     *
+     * @param Pedido $pedido
+     * @return View
+     */
+    public function falha(Pedido $pedido): View
+    {
+        $this->authorizePedido($pedido);
+        $pedido->load(['itens.produto']);
+
+        return view('checkout.pagamento.falha', compact('pedido'));
+    }
+
+    /**
+     * Página de pagamento pendente.
+     *
+     * @param Pedido $pedido
+     * @return View
+     */
+    public function pendente(Pedido $pedido): View
+    {
+        $this->authorizePedido($pedido);
+        $pedido->load(['itens.produto']);
+
+        return view('checkout.pagamento.pendente', compact('pedido'));
+    }
+
+    /**
+     * Página de pagamento.
+     *
+     * @param Pedido $pedido
+     * @param string $metodo
+     * @return View|RedirectResponse
      */
     public function pagamento(Pedido $pedido, string $metodo): View|RedirectResponse
     {
         $this->authorizePedido($pedido);
 
-        switch ($metodo) {
-            case 'pix':
-                return $this->pix($pedido);
-            case 'boleto':
-                return $this->boleto($pedido);
-            case 'cartao':
-                return $this->cartao($pedido);
-            default:
-                abort(404, 'Método de pagamento inválido.');
-        }
+        return match ($metodo) {
+            'pix'    => $this->pix($pedido),
+            'boleto' => $this->boleto($pedido),
+            'cartao' => $this->cartao($pedido),
+            default  => abort(404, 'Método de pagamento inválido.'),
+        };
     }
 
     /**
-     * Método unificado para status.
+     * Status do pagamento.
+     *
+     * @param Pedido $pedido
+     * @param string $status
+     * @return View|RedirectResponse
      */
     public function status(Pedido $pedido, string $status): View|RedirectResponse
     {
@@ -169,63 +261,21 @@ class CheckoutController extends Controller
 
         return match ($status) {
             'sucesso' => $this->sucesso($pedido),
-            'falha' => $this->falha($pedido),
+            'falha'   => $this->falha($pedido),
             'pendente' => $this->pendente($pedido),
-            default => abort(404, 'Status inválido.'),
+            default   => abort(404, 'Status inválido.'),
         };
     }
 
     /**
-     * Página de sucesso.
-     */
-    public function sucesso(Pedido $pedido): View
-    {
-        $this->authorizePedido($pedido);
-
-        // Garantir que o pedido está como pago
-        if ($pedido->status !== 'pago') {
-            $pedido->update([
-                'status' => 'pago',
-                'status_pagamento' => 'approved',
-                'data_pagamento' => now(),
-            ]);
-        }
-
-        $pedido->load('itens', 'itens.produto');
-
-        return view('checkout.pagamento.sucesso', compact('pedido'));
-    }
-
-    /**
-     * Página de falha.
-     */
-    public function falha(Pedido $pedido): View
-    {
-        $this->authorizePedido($pedido);
-        $pedido->load('itens');
-
-        return view('checkout.pagamento.falha', compact('pedido'));
-    }
-
-    /**
-     * Página de pendente.
-     */
-    public function pendente(Pedido $pedido): View
-    {
-        $this->authorizePedido($pedido);
-        $pedido->load('itens');
-
-        return view('checkout.pagamento.pendente', compact('pedido'));
-    }
-
-    /**
      * Página de PIX.
+     *
+     * @param Pedido $pedido
+     * @return View
      */
     public function pix(Pedido $pedido): View
     {
         $this->authorizePedido($pedido);
-
-        // Buscar dados do PIX do serviço
         $pixData = $this->paymentService->getPixData($pedido);
 
         return view('checkout.pagamento.pix', compact('pedido', 'pixData'));
@@ -233,11 +283,13 @@ class CheckoutController extends Controller
 
     /**
      * Página de Boleto.
+     *
+     * @param Pedido $pedido
+     * @return View
      */
     public function boleto(Pedido $pedido): View
     {
         $this->authorizePedido($pedido);
-
         $boletoData = $this->paymentService->getBoletoData($pedido);
 
         return view('checkout.pagamento.boleto', compact('pedido', 'boletoData'));
@@ -245,18 +297,23 @@ class CheckoutController extends Controller
 
     /**
      * Página de Cartão.
+     *
+     * @param Pedido $pedido
+     * @return View
      */
     public function cartao(Pedido $pedido): View
     {
         $this->authorizePedido($pedido);
-
         $preference = $this->paymentService->getPreference($pedido);
 
         return view('checkout.pagamento.cartao', compact('pedido', 'preference'));
     }
 
     /**
-     * Meus pedidos.
+     * Lista os pedidos do usuário.
+     *
+     * @param Request $request
+     * @return View|RedirectResponse
      */
     public function meusPedidos(Request $request): View|RedirectResponse
     {
@@ -268,8 +325,8 @@ class CheckoutController extends Controller
         }
 
         $pedidos = Pedido::where('user_id', $user->id)
-            ->with(['itens', 'itens.produto'])
-            ->orderBy('created_at', 'desc')
+            ->with(['itens.produto'])
+            ->orderByDesc('created_at')
             ->paginate($request->get('per_page', 10));
 
         return view('checkout.pedidos', compact('pedidos'));
@@ -277,18 +334,23 @@ class CheckoutController extends Controller
 
     /**
      * Detalhes do pedido.
+     *
+     * @param Pedido $pedido
+     * @return View
      */
     public function detalhes(Pedido $pedido): View
     {
         $this->authorizePedido($pedido);
-
-        $pedido->load(['itens', 'itens.produto', 'user']);
+        $pedido->load(['itens.produto', 'user']);
 
         return view('checkout.detalhes', compact('pedido'));
     }
 
     /**
-     * Cancelar pedido.
+     * Cancela um pedido.
+     *
+     * @param Pedido $pedido
+     * @return RedirectResponse
      */
     public function cancelar(Pedido $pedido): RedirectResponse
     {
@@ -299,38 +361,38 @@ class CheckoutController extends Controller
         }
 
         $pedido->update([
-            'status' => 'cancelado',
-            'status_pagamento' => 'cancelled',
+            'status' => StatusPedidoEnum::CANCELADO->value,
+            'status_pagamento' => StatusPagamentoEnum::CANCELADO->value,
         ]);
 
-        // Restaurar estoque
         foreach ($pedido->itens as $item) {
             $produto = Produto::find($item->produto_id);
             if ($produto) {
-                $produto->aumentarEstoque($item->quantidade);
+                $produto->quantidade = ($produto->quantidade ?? 0) + $item->quantidade;
+                $produto->save();
             }
         }
 
-        Log::info('🗑️ Pedido cancelado', [
+        Log::info('Pedido cancelado', [
             'pedido_id' => $pedido->id,
             'numero_pedido' => $pedido->numero_pedido,
             'user_id' => auth()->id()
         ]);
 
-        return back()->with('success', 'Pedido cancelado com sucesso!');
+        return redirect()->route('cliente.pedidos.index')
+            ->with('success', 'Pedido cancelado com sucesso!');
     }
-
-    // ================================================================
-    // MÉTODOS PRIVADOS
-    // ================================================================
 
     /**
      * Verifica se o usuário tem endereço completo.
+     *
+     * @param mixed $user
+     * @return bool
      */
     private function usuarioTemEndereco($user): bool
     {
-        return !empty($user->cep) 
-            && !empty($user->logradouro) 
+        return !empty($user->cep)
+            && !empty($user->logradouro)
             && !empty($user->numero)
             && !empty($user->cidade)
             && !empty($user->estado);
@@ -339,7 +401,8 @@ class CheckoutController extends Controller
     /**
      * Autoriza o usuário a acessar o pedido.
      *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @param Pedido $pedido
+     * @throws AuthorizationException
      */
     private function authorizePedido(Pedido $pedido): void
     {

@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Support\Facades\Auth;
 
 class ProfileUpdateRequest extends FormRequest
 {
@@ -14,7 +13,7 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -24,8 +23,7 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        $user = auth()->user();
 
         return [
             // Dados pessoais
@@ -100,17 +98,31 @@ class ProfileUpdateRequest extends FormRequest
     }
 
     /**
+     * Get the validated data from the request.
+     * ✅ CORRIGIDO: Garantir que retorna um array
+     */
+    public function validated($key = null, $default = null): array
+    {
+        $validated = parent::validated();
+        
+        // Limpar documentos
+        $campos = ['cpf', 'cnpj', 'telefone', 'celular', 'cep'];
+        foreach ($campos as $campo) {
+            if (isset($validated[$campo])) {
+                $validated[$campo] = $this->limparDocumento($validated[$campo]);
+            }
+        }
+        
+        return $validated;
+    }
+
+    /**
      * Prepare the data for validation.
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
             'email' => strtolower(trim($this->string('email'))),
-            'cpf' => $this->limparDocumento($this->input('cpf')),
-            'cnpj' => $this->limparDocumento($this->input('cnpj')),
-            'telefone' => $this->limparDocumento($this->input('telefone')),
-            'celular' => $this->limparDocumento($this->input('celular')),
-            'cep' => $this->limparDocumento($this->input('cep')),
         ]);
     }
 

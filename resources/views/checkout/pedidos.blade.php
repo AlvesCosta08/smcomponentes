@@ -32,7 +32,7 @@
                                 <div class="col-md-3">
                                     <h6 class="fw-bold mb-1">Pedido #{{ $pedido->numero_pedido ?? $pedido->id }}</h6>
                                     <small class="text-muted">
-                                        <i class="bi bi-calendar3"></i> {{ $pedido->created_at->format('d/m/Y H:i') }}
+                                        <i class="bi bi-calendar3"></i> {{ $pedido->data_criacao_formatada }}
                                     </small>
                                 </div>
                                 <div class="col-md-3">
@@ -40,22 +40,32 @@
                                         <i class="bi {{ $pedido->status_icon }} me-1"></i>
                                         {{ $pedido->status_label }}
                                     </span>
+                                    <br>
+                                    <small class="text-muted">
+                                        Pagamento: 
+                                        <span class="badge bg-{{ $pedido->pagamento_color }} mt-1">
+                                            {{ $pedido->pagamento_label }}
+                                        </span>
+                                    </small>
                                 </div>
                                 <div class="col-md-3 text-md-end">
                                     <span class="fw-bold text-primary h5">
-                                        R$ {{ number_format($pedido->total, 2, ',', '.') }}
+                                        {{ $pedido->total_formatado }}
                                     </span>
                                 </div>
                                 <div class="col-md-3 text-md-end">
-                                    <a href="{{ route('checkout.detalhes', $pedido) }}" class="btn btn-outline-primary btn-sm">
+                                    {{-- Botão Detalhes - CORRIGIDO --}}
+                                    <a href="{{ route('cliente.pedidos.detalhes', $pedido) }}" class="btn btn-outline-primary btn-sm">
                                         <i class="bi bi-eye"></i> Detalhes
                                     </a>
+                                    
+                                    {{-- Botão Cancelar - CORRIGIDO: chamando o método com parênteses --}}
                                     @if($pedido->podeCancelar())
-                                        <form action="{{ route('checkout.cancelar', $pedido) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('cliente.pedidos.cancelar', $pedido) }}" method="POST" class="d-inline">
                                             @csrf
                                             <button type="submit" class="btn btn-outline-danger btn-sm" 
                                                     onclick="return confirm('Tem certeza que deseja cancelar este pedido?')">
-                                                <i class="bi bi-x-circle"></i>
+                                                <i class="bi bi-x-circle"></i> Cancelar
                                             </button>
                                         </form>
                                     @endif

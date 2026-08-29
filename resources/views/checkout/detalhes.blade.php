@@ -9,7 +9,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('checkout.pedidos') }}">Meus Pedidos</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('cliente.pedidos.index') }}">Meus Pedidos</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Pedido #{{ $pedido->numero_pedido ?? $pedido->id }}</li>
                 </ol>
             </nav>
@@ -22,8 +22,19 @@
                     </p>
                 </div>
                 <div>
-                    <span class="badge bg-{{ $pedido->status === 'entregue' ? 'success' : ($pedido->status === 'pendente' ? 'warning' : ($pedido->status === 'cancelado' ? 'danger' : 'info')) }} fs-6 p-3">
-                        {{ ucfirst($pedido->status) }}
+                    {{-- ✅ CORRIGIDO: Usar $pedido->status->label() em vez de ucfirst($pedido->status) --}}
+                    @php
+                        $statusValue = $pedido->status->value ?? 'pendente';
+                        $statusLabel = $pedido->status->label() ?? ucfirst($statusValue);
+                        $statusColor = match($statusValue) {
+                            'entregue' => 'success',
+                            'pendente' => 'warning',
+                            'cancelado' => 'danger',
+                            default => 'info'
+                        };
+                    @endphp
+                    <span class="badge bg-{{ $statusColor }} fs-6 p-3">
+                        {{ $statusLabel }}
                     </span>
                 </div>
             </div>
@@ -48,16 +59,43 @@
                         
                         <dt class="col-sm-5">Status</dt>
                         <dd class="col-sm-7">
-                            <span class="badge bg-{{ $pedido->status === 'entregue' ? 'success' : ($pedido->status === 'pendente' ? 'warning' : ($pedido->status === 'cancelado' ? 'danger' : 'info')) }}">
-                                {{ ucfirst($pedido->status) }}
+                            {{-- ✅ CORRIGIDO: Usar $pedido->status->label() --}}
+                            @php
+                                $statusValue = $pedido->status->value ?? 'pendente';
+                                $statusLabel = $pedido->status->label() ?? ucfirst($statusValue);
+                                $statusColor = match($statusValue) {
+                                    'entregue' => 'success',
+                                    'pendente' => 'warning',
+                                    'cancelado' => 'danger',
+                                    'pago' => 'success',
+                                    'processando' => 'info',
+                                    'enviado' => 'primary',
+                                    default => 'secondary'
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $statusColor }}">
+                                {{ $statusLabel }}
                             </span>
                         </dd>
                         
                         @if($pedido->status_pagamento)
                         <dt class="col-sm-5">Pagamento</dt>
                         <dd class="col-sm-7">
-                            <span class="badge bg-{{ $pedido->status_pagamento === 'pago' ? 'success' : 'warning' }}">
-                                {{ ucfirst($pedido->status_pagamento) }}
+                            {{-- ✅ CORRIGIDO: Usar $pedido->status_pagamento->label() --}}
+                            @php
+                                $pagamentoValue = $pedido->status_pagamento->value ?? 'aguardando';
+                                $pagamentoLabel = $pedido->status_pagamento->label() ?? ucfirst($pagamentoValue);
+                                $pagamentoColor = match($pagamentoValue) {
+                                    'aprovado' => 'success',
+                                    'aguardando' => 'warning',
+                                    'recusado' => 'danger',
+                                    'cancelado' => 'danger',
+                                    'estornado' => 'secondary',
+                                    default => 'info'
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $pagamentoColor }}">
+                                {{ $pagamentoLabel }}
                             </span>
                         </dd>
                         @endif
@@ -138,7 +176,7 @@
                                     @foreach($pedido->itens as $item)
                                         <tr>
                                             <td>
-                                                <strong>{{ $item->produto->nome ?? 'Produto #' . $item->produto_id }}</strong>
+                                                <strong>{{ $item->produto->descricao ?? 'Produto #' . $item->produto_id }}</strong>
                                                 @if($item->variacao)
                                                     <br>
                                                     <small class="text-muted">{{ $item->variacao }}</small>
@@ -175,12 +213,12 @@
     <div class="row g-4 mt-2">
         <div class="col-12">
             <div class="d-flex gap-2">
-                <a href="{{ route('checkout.pedidos') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('cliente.pedidos.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar
                 </a>
                 
-                @if($pedido->status === 'pendente')
-                    <form action="{{ route('checkout.cancelar', $pedido->id) }}" method="POST" class="d-inline">
+                @if($pedido->status && $pedido->status->value === 'pendente')
+                    <form action="{{ route('cliente.pedidos.cancelar', $pedido->id) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja cancelar este pedido?')">
                             <i class="bi bi-x-circle"></i> Cancelar Pedido
@@ -188,7 +226,7 @@
                     </form>
                 @endif
 
-                @if($pedido->status === 'entregue')
+                @if($pedido->status && $pedido->status->value === 'entregue')
                     <button type="button" class="btn btn-success" disabled>
                         <i class="bi bi-check-circle"></i> Pedido Entregue
                     </button>

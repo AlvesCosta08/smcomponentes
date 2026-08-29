@@ -41,23 +41,15 @@ class ProfileController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
+        
+        // ✅ OBTÉM OS DADOS VALIDADOS COMO ARRAY
         $validated = $request->validated();
 
         // Remover campos de senha (já são tratados separadamente)
         unset($validated['current_password'], $validated['password'], $validated['password_confirmation']);
 
-        // Limpar documentos
-        $validated = $this->limparDocumentos($validated);
-
-        // Validar documentos
-        $this->validarDocumentos($validated);
-
-        // Atualizar apenas campos preenchidos
-        foreach ($validated as $field => $value) {
-            if ($value !== null && $value !== '') {
-                $user->$field = $value;
-            }
-        }
+        // ✅ ATUALIZAR DIRETAMENTE OS CAMPOS
+        $user->fill($validated);
 
         // Se o email foi alterado, marcar como não verificado
         if ($user->isDirty('email')) {
@@ -79,11 +71,11 @@ class ProfileController extends Controller
                 'campos' => array_keys($user->getDirty())
             ]);
 
-            return Redirect::route('profile.edit')
+            return redirect()->route('cliente.perfil.edit')
                 ->with('success', 'Perfil atualizado com sucesso!');
         }
 
-        return Redirect::route('profile.edit')
+        return redirect()->route('cliente.perfil.edit')
             ->with('info', 'Nenhuma alteração foi feita.');
     }
 
@@ -110,7 +102,8 @@ class ProfileController extends Controller
             'ip' => $request->ip()
         ]);
 
-        return back()->with('success', 'Senha atualizada com sucesso!');
+        return redirect()->route('cliente.perfil.edit')
+            ->with('success', 'Senha atualizada com sucesso!');
     }
 
     /**
@@ -125,7 +118,6 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        // Log antes de desativar
         Log::info('👤 Conta desativada', [
             'user_id' => $user->id,
             'email' => $user->email,
@@ -134,14 +126,13 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        // Desativar em vez de deletar (soft delete)
         $user->ativo = false;
         $user->save();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/')
+        return redirect()->route('home')
             ->with('success', 'Sua conta foi desativada com sucesso.');
     }
 
@@ -159,7 +150,7 @@ class ProfileController extends Controller
         }
 
         if ($user->ativo) {
-            return redirect()->route('dashboard')
+            return redirect()->route('cliente.dashboard')
                 ->with('info', 'Sua conta já está ativa.');
         }
 
@@ -172,79 +163,8 @@ class ProfileController extends Controller
             'ip' => $request->ip()
         ]);
 
-        return redirect()->route('dashboard')
+        return redirect()->route('cliente.dashboard')
             ->with('success', 'Sua conta foi reativada com sucesso!');
-    }
-
-    // ================================================================
-    // MÉTODOS PRIVADOS
-    // ================================================================
-
-    /**
-     * Limpa caracteres especiais de documentos.
-     */
-    private function limparDocumentos(array $data): array
-    {
-        $campos = ['cpf', 'cnpj', 'telefone', 'celular', 'cep'];
-
-        foreach ($campos as $campo) {
-            if (isset($data[$campo]) && !empty($data[$campo])) {
-                $data[$campo] = preg_replace('/[^0-9]/', '', $data[$campo]);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Valida documentos do usuário.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    private function validarDocumentos(array $data): void
-    {
-        $errors = [];
-
-        // Validar CPF
-        if (!empty($data['cpf'])) {
-            if (!User::validarCpf($data['cpf'])) {
-                $errors['cpf'] = 'CPF inválido.';
-            }
-        }
-
-        // Validar CNPJ
-        if (!empty($data['cnpj'])) {
-            if (!User::validarCnpj($data['cnpj'])) {
-                $errors['cnpj'] = 'CNPJ inválido.';
-            }
-        }
-
-        // Validar CELULAR
-        if (!empty($data['celular'])) {
-            $length = strlen($data['celular']);
-            if ($length < 10 || $length > 11) {
-                $errors['celular'] = 'Celular inválido. Use o formato (11) 99999-9999';
-            }
-        }
-
-        // Validar TELEFONE
-        if (!empty($data['telefone'])) {
-            $length = strlen($data['telefone']);
-            if ($length < 8 || $length > 10) {
-                $errors['telefone'] = 'Telefone inválido. Use o formato (11) 9999-9999';
-            }
-        }
-
-        // Validar CEP
-        if (!empty($data['cep'])) {
-            if (strlen($data['cep']) !== 8) {
-                $errors['cep'] = 'CEP inválido. Use o formato 00000-000';
-            }
-        }
-
-        if (!empty($errors)) {
-            throw \Illuminate\Validation\ValidationException::withMessages($errors);
-        }
     }
 
     /**
@@ -255,16 +175,8 @@ class ProfileController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        // Buscar logs do usuário (se tiver tabela de logs)
-        // $logs = ActivityLog::where('causer_id', $user->id)
-        //     ->where('log_name', 'user')
-        //     ->orderBy('created_at', 'desc')
-        //     ->paginate(20);
-
-        // Por enquanto, retorna view vazia
         return view('profile.historico', [
             'user' => $user,
-            // 'logs' => $logs ?? collect(),
         ]);
     }
 }

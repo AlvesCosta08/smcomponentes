@@ -12,9 +12,11 @@ use App\Http\Controllers\Admin\PedidoAdminController;
 use App\Http\Controllers\Admin\ProdutoAdminController;
 use App\Http\Controllers\Admin\UsuarioAdminController;
 use App\Http\Controllers\Admin\BannerController;
+use App\Http\Controllers\Admin\CategoriaAdminController;
 use App\Http\Controllers\ImageController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 // ============================================================
 // LÓGICA 1: ROTAS PÚBLICAS (ACESSO LIVRE)
@@ -79,11 +81,11 @@ Route::middleware(['auth'])->prefix('cliente')->name('cliente.')->group(function
     // --- 3.3 Pedidos ---
     Route::prefix('pedidos')->name('pedidos.')->group(function () {
         Route::get('/', [CheckoutController::class, 'meusPedidos'])->name('index');
-        Route::get('/{pedido}', [CheckoutController::class, 'detalhes'])->name('show');
+        Route::get('/{pedido}', [CheckoutController::class, 'detalhes'])->name('detalhes');
         Route::post('/{pedido}/cancelar', [CheckoutController::class, 'cancelar'])->name('cancelar');
     });
     
-    // --- 3.4 Lista de Desejos ---
+    // --- 3.4 Wishlist ---
     Route::prefix('wishlist')->name('wishlist.')->group(function () {
         Route::get('/', [WishlistController::class, 'index'])->name('index');
         Route::get('/{id}', [WishlistController::class, 'show'])->name('show');
@@ -104,12 +106,18 @@ Route::middleware(['auth'])->prefix('cliente')->name('cliente.')->group(function
 Route::middleware(['auth'])->prefix('checkout')->name('checkout.')->group(function () {
     Route::get('/', [CheckoutController::class, 'index'])->name('index');
     Route::post('/processar', [CheckoutController::class, 'processar'])->name('processar');
+    
+    // ✅ ADICIONADO: Rotas de sucesso e falha
+    Route::get('/sucesso/{pedido}', [CheckoutController::class, 'sucesso'])->name('sucesso');
+    Route::get('/falha/{pedido}', [CheckoutController::class, 'falha'])->name('falha');
+    
     Route::get('/pagamento/{pedido}/{metodo}', [CheckoutController::class, 'pagamento'])
         ->where('metodo', 'pix|boleto|cartao')
         ->name('pagamento');
     Route::get('/status/{pedido}/{status}', [CheckoutController::class, 'status'])
         ->where('status', 'sucesso|falha|pendente')
         ->name('status');
+    Route::get('/pedidos', [CheckoutController::class, 'meusPedidos'])->name('pedidos');
 });
 
 // ============================================================
@@ -192,6 +200,18 @@ Route::middleware(['auth', 'role:Admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/reload-banners', [HomeController::class, 'reloadBanners'])->name('reload-banners');
         Route::get('/clear-all', [HomeController::class, 'clearAllCache'])->name('clear-all');
     });
+
+    // --- 6.7 Categorias ---
+    Route::prefix('categorias')->name('categorias.')->group(function () {
+        Route::get('/', [CategoriaAdminController::class, 'index'])->name('index');
+        Route::get('/create', [CategoriaAdminController::class, 'create'])->name('create');
+        Route::post('/', [CategoriaAdminController::class, 'store'])->name('store');
+        Route::get('/{categoria}/edit', [CategoriaAdminController::class, 'edit'])->name('edit');
+        Route::put('/{categoria}', [CategoriaAdminController::class, 'update'])->name('update');
+        Route::delete('/{categoria}', [CategoriaAdminController::class, 'destroy'])->name('destroy');
+        Route::post('/{categoria}/toggle', [CategoriaAdminController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/reorder', [CategoriaAdminController::class, 'reorder'])->name('reorder');
+    });
 });
 
 // ============================================================
@@ -217,13 +237,11 @@ if (app()->environment('local')) {
  */
 
 // Rota principal para servir imagens
-// Uso: /images/nome-da-imagem.jpg
 Route::get('/images/{filename}', [ImageController::class, 'show'])
     ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$')
     ->name('image.show');
 
 // Rota para imagens otimizadas (redimensionadas)
-// Uso: /images/400x400/nome-da-imagem.jpg
 Route::get('/images/{width}x{height}/{filename}', [ImageController::class, 'showOptimized'])
     ->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$')
     ->where('width', '[1-9][0-9]*')
@@ -231,7 +249,6 @@ Route::get('/images/{width}x{height}/{filename}', [ImageController::class, 'show
     ->name('image.optimized');
 
 // Rota legada para compatibilidade com URLs antigas
-// Uso: /storage/produtos/nome-da-imagem.jpg (redireciona para /images/nome-da-imagem.jpg)
 Route::get('/storage/produtos/{filename}', function ($filename) {
     return redirect()->route('image.show', ['filename' => $filename], 301);
 })->where('filename', '.*\.(png|jpg|jpeg|gif|webp|svg|bmp)$');
@@ -252,16 +269,9 @@ Route::get('/storage/produtos/{width}x{height}/{filename}', function ($width, $h
 // ============================================================
 
 Route::middleware(['auth'])->prefix('api/images')->name('api.images.')->group(function () {
-    // Upload de imagem única
     Route::post('/upload', [ImageController::class, 'upload'])->name('upload');
-    
-    // Upload de imagem otimizada
     Route::post('/upload-optimized', [ImageController::class, 'uploadOptimized'])->name('upload.optimized');
-    
-    // Deletar imagem
     Route::delete('/delete', [ImageController::class, 'delete'])->name('delete');
-    
-    // Upload de múltiplas imagens
     Route::post('/upload-multiple', [ImageController::class, 'uploadMultiple'])->name('upload.multiple');
 });
 

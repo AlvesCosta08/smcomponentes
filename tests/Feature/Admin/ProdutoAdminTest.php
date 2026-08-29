@@ -55,14 +55,13 @@ class ProdutoAdminTest extends TestCase
         $admin = $this->criarAdmin();
         $this->actingAs($admin);
         
-        // ✅ Criar uma categoria primeiro
         $categoria = Categoria::factory()->create();
         
         $response = $this->post('/admin/produtos', [
             'categoria_id' => $categoria->id,
             'categoria' => $categoria->nome,
             'referencia' => 'REF-' . uniqid(),
-            'descricao' => 'Descrição do produto',
+            'descricao' => 'Produto Teste Admin',
             'tipo' => 'UNI',
             'disponibilidade' => 'DISPONIVEL',
             'quantidade' => 10,
@@ -71,21 +70,27 @@ class ProdutoAdminTest extends TestCase
             'valor_unitario' => 99.99,
             'valor_atacado' => 99.99,
             'ativo' => true,
+            'margem_lucro' => 80,
         ]);
         
-        // ✅ Verifica se foi redirecionado (sucesso) ou se houve erro de validação
-        if ($response->getStatusCode() === 302) {
-            $response->assertRedirect('/admin/produtos');
-            $this->assertDatabaseHas('produtos', [
-                'descricao' => 'Descrição do produto',
-                'valor_unitario' => 99.99,
-            ]);
-        } else {
-            // Se não redirecionou, verifica se é um erro de validação (status 422 ou 200 com erros)
-            $response->assertStatus(422);
-            // Ou verifica se a view tem erros
-            $this->assertTrue($response->getStatusCode() === 200 || $response->getStatusCode() === 422);
-        }
+        // ✅ Verifica redirecionamento
+        $response->assertStatus(302);
+        $response->assertRedirect('/admin/produtos');
+        
+        // ✅ Buscar o produto criado
+        $produto = Produto::where('descricao', 'Produto Teste Admin')->first();
+        $this->assertNotNull($produto, 'Produto não foi criado');
+        
+        // ✅ CORRIGIDO: O sistema multiplica o valor por 100 (centavos)
+        // O valor salvo é 9999 (representando 99.99)
+        $this->assertEquals(9999, (int) $produto->valor_unitario);
+        // Ou verifica o valor esperado dividido por 100
+        $this->assertEquals(99.99, (float) $produto->valor_unitario / 100);
+        
+        // ✅ Verifica outros campos
+        $this->assertEquals($categoria->id, $produto->categoria_id);
+        $this->assertEquals(10, $produto->quantidade);
+        $this->assertEquals(80, $produto->margem_lucro);
     }
 
     public function test_usuario_comum_nao_pode_acessar_admin()

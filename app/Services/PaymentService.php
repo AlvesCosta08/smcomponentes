@@ -71,9 +71,9 @@ class PaymentService implements PaymentServiceInterface
                     'name' => $pedido->user->name ?? 'Cliente',
                 ],
                 'back_urls' => [
-                    'success' => route('checkout.sucesso', $pedido),
-                    'failure' => route('checkout.falha', $pedido),
-                    'pending' => route('checkout.pendente', $pedido),
+                    'success' => route('checkout.sucesso', ['pedido' => $pedido->id]),
+                    'failure' => route('checkout.falha', ['pedido' => $pedido->id]),
+                    'pending' => route('checkout.pendente', ['pedido' => $pedido->id]),
                 ],
                 'notification_url' => config('services.mercadopago.webhook_url'),
                 'external_reference' => (string) $pedido->id,
@@ -227,7 +227,7 @@ class PaymentService implements PaymentServiceInterface
                 
                 if ($pedido) {
                     $pedido->status = 'pago';
-                    $pedido->status_pagamento = 'approved';
+                    $pedido->status_pagamento = 'aprovado';
                     $pedido->payment_id = $paymentId;
                     $pedido->data_pagamento = now();
                     $pedido->save();
@@ -248,7 +248,7 @@ class PaymentService implements PaymentServiceInterface
 
             if ($this->useMock) {
                 $pedido->status = 'pago';
-                $pedido->status_pagamento = 'approved';
+                $pedido->status_pagamento = 'aprovado';
                 $pedido->payment_id = $paymentId;
                 $pedido->data_pagamento = now();
                 $pedido->save();
@@ -276,7 +276,7 @@ class PaymentService implements PaymentServiceInterface
                 $pedido = Pedido::where('status', 'pendente')->latest()->first();
                 if ($pedido) {
                     $pedido->status = 'pago';
-                    $pedido->status_pagamento = 'approved';
+                    $pedido->status_pagamento = 'aprovado';
                     $pedido->payment_id = 'mock_' . time();
                     $pedido->data_pagamento = now();
                     $pedido->save();
@@ -293,23 +293,33 @@ class PaymentService implements PaymentServiceInterface
     {
         if ($this->useMock || !$pedido->payment_id) {
             if ($pedido->status === 'pago') {
-                return 'approved';
+                return 'aprovado';
             }
             
             if ($pedido->status === 'cancelado') {
-                return 'cancelled';
+                return 'cancelado';
             }
             
-            return 'pending';
+            return 'aguardando';
         }
 
         try {
             $client = new \MercadoPago\Client\Payment\PaymentClient();
             $payment = $client->get($pedido->payment_id);
-            return $payment->status;
+            
+            $statusMap = [
+                'approved' => 'aprovado',
+                'pending' => 'aguardando',
+                'rejected' => 'recusado',
+                'refunded' => 'estornado',
+                'cancelled' => 'cancelado',
+                'in_process' => 'processando',
+            ];
+            
+            return $statusMap[$payment->status] ?? $payment->status;
         } catch (Exception $e) {
             Log::error('❌ Erro ao verificar status do pagamento: ' . $e->getMessage());
-            return $pedido->status_pagamento ?? 'pending';
+            return $pedido->status_pagamento ?? 'aguardando';
         }
     }
 
@@ -325,8 +335,20 @@ class PaymentService implements PaymentServiceInterface
         ];
 
         $novoStatus = $statusMap[$payment->status] ?? 'pendente';
+        
+        $pagamentoMap = [
+            'approved' => 'aprovado',
+            'pending' => 'aguardando',
+            'rejected' => 'recusado',
+            'refunded' => 'estornado',
+            'cancelled' => 'cancelado',
+            'in_process' => 'processando',
+        ];
+        
+        $statusPagamento = $pagamentoMap[$payment->status] ?? $payment->status;
+
         $pedido->status = $novoStatus;
-        $pedido->status_pagamento = $payment->status;
+        $pedido->status_pagamento = $statusPagamento;
         $pedido->payment_id = $payment->id;
 
         if ($payment->status === 'approved') {
@@ -338,7 +360,7 @@ class PaymentService implements PaymentServiceInterface
         Log::info('📊 Status do pedido atualizado', [
             'pedido_id' => $pedido->id,
             'novo_status' => $novoStatus,
-            'status_pagamento' => $payment->status
+            'status_pagamento' => $statusPagamento
         ]);
     }
 
@@ -352,7 +374,7 @@ class PaymentService implements PaymentServiceInterface
         
         if ($this->useMock) {
             $pedido->status = 'cancelado';
-            $pedido->status_pagamento = 'refunded';
+            $pedido->status_pagamento = 'estornado';
             $pedido->save();
             
             Log::info('✅ Reembolso mock processado', ['pedido_id' => $pedido->id]);
@@ -361,7 +383,7 @@ class PaymentService implements PaymentServiceInterface
         
         try {
             $pedido->status = 'cancelado';
-            $pedido->status_pagamento = 'refunded';
+            $pedido->status_pagamento = 'estornado';
             $pedido->save();
             return true;
         } catch (Exception $e) {
@@ -379,7 +401,7 @@ class PaymentService implements PaymentServiceInterface
         
         if ($this->useMock) {
             $pedido->status = 'cancelado';
-            $pedido->status_pagamento = 'cancelled';
+            $pedido->status_pagamento = 'cancelado';
             $pedido->save();
             
             Log::info('✅ Pagamento mock cancelado', ['pedido_id' => $pedido->id]);
@@ -388,7 +410,7 @@ class PaymentService implements PaymentServiceInterface
         
         try {
             $pedido->status = 'cancelado';
-            $pedido->status_pagamento = 'cancelled';
+            $pedido->status_pagamento = 'cancelado';
             $pedido->save();
             return true;
         } catch (Exception $e) {
@@ -399,7 +421,7 @@ class PaymentService implements PaymentServiceInterface
 
     public function isValidPaymentMethod(string $method): bool
     {
-        return in_array($method, ['pix', 'boleto', 'cartao']);
+        return in_array($method, ['pix', 'boleto', 'cartao', 'cartao_credito', 'cartao_debito', 'credito', 'debito']);
     }
 
     public function getAvailablePaymentMethods(): array
@@ -433,16 +455,33 @@ class PaymentService implements PaymentServiceInterface
         ]);
 
         if ($this->useMock) {
+            // ✅ CORRIGIDO: Verificar se o pedido existe antes de salvar
+            if (!$pedido || !$pedido->id) {
+                Log::error('❌ Pedido inválido no processamento MOCK');
+                return new PaymentResponseDTO(
+                    false,
+                    null,
+                    'erro',
+                    null,
+                    'Pedido inválido.',
+                    ['method' => $method]
+                );
+            }
+
             $pedido->status = 'pago';
-            $pedido->status_pagamento = 'approved';
+            $pedido->status_pagamento = 'aprovado';
             $pedido->data_pagamento = now();
             $pedido->payment_id = 'mock_' . $pedido->id . '_' . time();
             $pedido->save();
 
+            Log::info('✅ Pagamento MOCK aprovado', [
+                'pedido_id' => $pedido->id
+            ]);
+
             return new PaymentResponseDTO(
                 true,
                 $pedido->payment_id,
-                'approved',
+                'aprovado',
                 $pedido,
                 'Pagamento aprovado com sucesso! (MODO MOCK)',
                 [
@@ -458,7 +497,7 @@ class PaymentService implements PaymentServiceInterface
             return new PaymentResponseDTO(
                 true,
                 'real_' . $pedido->id . '_' . time(),
-                'pending',
+                'aguardando',
                 $pedido,
                 'Pagamento processado. Aguardando confirmação.',
                 ['method' => $method]
@@ -468,7 +507,7 @@ class PaymentService implements PaymentServiceInterface
             return new PaymentResponseDTO(
                 false,
                 null,
-                'failed',
+                'recusado',
                 $pedido,
                 'Erro ao processar pagamento: ' . $e->getMessage(),
                 ['method' => $method]
@@ -489,8 +528,8 @@ class PaymentService implements PaymentServiceInterface
         return [
             'success' => true,
             'preference_id' => 'mock_pref_' . $pedido->id . '_' . time(),
-            'init_point' => route('checkout.sucesso', $pedido),
-            'sandbox_init_point' => route('checkout.sucesso', $pedido),
+            'init_point' => route('checkout.sucesso', ['pedido' => $pedido->id]),
+            'sandbox_init_point' => route('checkout.sucesso', ['pedido' => $pedido->id]),
             'is_mock' => true,
         ];
     }
@@ -508,7 +547,7 @@ class PaymentService implements PaymentServiceInterface
             'payment_id' => 'mock_pix_' . $pedido->id . '_' . time(),
             'qr_code' => $qrCodeMock,
             'qr_code_base64' => base64_encode('QR Code PIX Mock para pedido #' . $pedido->id),
-            'ticket_url' => route('checkout.sucesso', $pedido),
+            'ticket_url' => route('checkout.sucesso', ['pedido' => $pedido->id]),
             'is_mock' => true,
             'expires_at' => now()->addMinutes(30)->format('Y-m-d H:i:s'),
             'copy_paste' => $qrCodeMock,
@@ -524,7 +563,7 @@ class PaymentService implements PaymentServiceInterface
         return [
             'success' => true,
             'payment_id' => 'mock_boleto_' . $pedido->id . '_' . time(),
-            'boleto_url' => route('checkout.sucesso', $pedido),
+            'boleto_url' => route('checkout.sucesso', ['pedido' => $pedido->id]),
             'due_date' => now()->addDays(3)->format('Y-m-d'),
             'barcode' => '12345678901234567890123456789012345678901234',
             'linha_digitavel' => '12345.67890 12345.678901 23456.789012 3 78901234567890',

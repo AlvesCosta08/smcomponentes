@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Pedido;
 use App\Models\Produto;
 use App\Models\User;
+use App\Domain\Pedidos\Enums\StatusPedidoEnum;
+use App\Domain\Pedidos\Enums\StatusPagamentoEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,18 +31,30 @@ class CheckoutService
                 continue;
             }
 
+            // ✅ CORRIGIDO DEFINITIVO: USAR SOMENTE valor_atacado
+            $preco = $produto->valor_atacado ?? 0;
+            $quantidade = $item['quantidade'] ?? 1;
+
+            Log::info('🔍 Preço do produto', [
+                'produto_id' => $produto->id,
+                'valor_atacado' => $produto->valor_atacado,
+                'valor_unitario' => $produto->valor_unitario,
+                'preco_usado' => $preco,
+                'quantidade' => $quantidade
+            ]);
+
             $resultado->push([
                 'produto_id' => $produto->id,
-                'nome' => $produto->descricao,
-                'slug' => $produto->slug,
-                'quantidade' => $item['quantidade'],
-                'preco' => $produto->valor_unitario,
-                'preco_formatado' => $this->formatarMoeda($produto->valor_unitario),
-                'subtotal' => $produto->valor_unitario * $item['quantidade'],
-                'subtotal_formatado' => $this->formatarMoeda($produto->valor_unitario * $item['quantidade']),
-                'estoque' => $produto->quantidade,
-                'imagem' => $produto->imagem_url,
-                'disponivel' => $produto->isDisponivel(),
+                'nome' => $produto->descricao ?? 'Produto',
+                'slug' => $produto->slug ?? 'produto-' . $produto->id,
+                'quantidade' => $quantidade,
+                'preco' => $preco,
+                'preco_formatado' => $this->formatarMoeda($preco),
+                'subtotal' => $preco * $quantidade,
+                'subtotal_formatado' => $this->formatarMoeda($preco * $quantidade),
+                'estoque' => $produto->quantidade ?? 0,
+                'imagem' => $produto->imagem ?? null,
+                'disponivel' => ($produto->quantidade ?? 0) > 0,
             ]);
         }
 
@@ -62,17 +76,13 @@ class CheckoutService
                 ];
             }
 
-            if (!$produto->isDisponivel()) {
-                return [
-                    'valido' => false,
-                    'mensagem' => "Produto '{$produto->descricao}' está indisponível."
-                ];
-            }
+            $quantidade = $produto->quantidade ?? 0;
+            $solicitada = $item['quantidade'] ?? 0;
 
-            if (!$produto->temEstoque($item['quantidade'])) {
+            if ($quantidade < $solicitada) {
                 return [
                     'valido' => false,
-                    'mensagem' => "Produto '{$produto->descricao}' não tem estoque suficiente. Disponível: {$produto->quantidade}"
+                    'mensagem' => "Produto '{$produto->descricao}' não tem estoque suficiente. Disponível: {$quantidade}"
                 ];
             }
         }
@@ -96,29 +106,52 @@ class CheckoutService
         return DB::transaction(function () use ($user, $carrinho, $formaPagamento) {
             $subtotal = $this->calcularSubtotal($carrinho);
 
+            Log::info('📊 Criando pedido', [
+                'user_id' => $user->id,
+                'subtotal' => $subtotal,
+                'quantidade_itens' => $carrinho->count()
+            ]);
+
             $pedido = Pedido::create([
                 'user_id' => $user->id,
                 'numero_pedido' => Pedido::gerarNumeroPedido(),
+                'subtotal' => $subtotal,
                 'total' => $subtotal,
-                'status' => 'pendente',
-                'status_pagamento' => 'aguardando',
+                'status' => StatusPedidoEnum::PENDENTE->value,
+                'status_pagamento' => StatusPagamentoEnum::AGUARDANDO->value,
                 'forma_pagamento' => $formaPagamento,
             ]);
 
             foreach ($carrinho as $item) {
                 $produto = Produto::find($item['produto_id']);
+                // ✅ CORRIGIDO DEFINITIVO: USAR SOMENTE valor_atacado
+                $preco = $produto->valor_atacado ?? 0;
+                $quantidade = $item['quantidade'] ?? 1;
+
+                Log::info('📦 Item do pedido', [
+                    'produto_id' => $produto->id,
+                    'valor_atacado' => $produto->valor_atacado,
+                    'preco_usado' => $preco,
+                    'quantidade' => $quantidade,
+                    'subtotal_item' => $preco * $quantidade
+                ]);
 
                 $pedido->itens()->create([
                     'produto_id' => $item['produto_id'],
-                    'quantidade' => $item['quantidade'],
-                    'preco_unitario' => $produto->valor_unitario,
-                    'subtotal' => $produto->valor_unitario * $item['quantidade'],
-                    'nome_produto' => $produto->descricao,
-                    'imagem_produto' => $produto->imagem,
+                    'quantidade' => $quantidade,
+                    'preco_unitario' => $preco,
+                    'subtotal' => $preco * $quantidade,
+                    'nome_produto' => $produto->descricao ?? 'Produto',
+                    'imagem_produto' => $produto->imagem ?? null,
                 ]);
 
                 // Reduzir estoque
-                $produto->reduzirEstoque($item['quantidade']);
+                if (method_exists($produto, 'reduzirEstoque')) {
+                    $produto->reduzirEstoque($quantidade);
+                } else {
+                    $produto->quantidade = ($produto->quantidade ?? 0) - $quantidade;
+                    $produto->save();
+                }
             }
 
             Log::info('✅ Pedido criado pelo CheckoutService', [

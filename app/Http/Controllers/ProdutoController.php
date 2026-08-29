@@ -35,9 +35,6 @@ class ProdutoController extends Controller
         $query = $this->applyOrdenacao($query, $ordenacao);
 
         $produtos = $query->paginate($paginacao['per_page']);
-        
-        // ✅ REMOVIDO: foreach com forceDisponivel()
-        // A disponibilidade é calculada automaticamente via accessor
 
         // Categorias com cache
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
@@ -64,9 +61,6 @@ class ProdutoController extends Controller
             ->where('slug', $slug)
             ->where('ativo', true)
             ->firstOrFail();
-
-        // ✅ REMOVIDO: $produto->forceDisponivel();
-        // A disponibilidade é calculada automaticamente via accessor
 
         // Incrementar visualizações
         $produto->incrementarVisualizacoes();
@@ -104,14 +98,12 @@ class ProdutoController extends Controller
             ->buscar($termo)
             ->paginate($porPagina);
 
-        // ✅ REMOVIDO: foreach com forceDisponivel()
-        // A disponibilidade é calculada automaticamente via accessor
-
         return view('produtos.busca', compact('produtos', 'termo'));
     }
 
     /**
      * Produtos por categoria.
+     * ✅ CORRIGIDO: Usar view existente (produtos.index) em vez de produtos.categoria
      */
     public function porCategoria(string $slug): View
     {
@@ -123,10 +115,16 @@ class ProdutoController extends Controller
             ->where('categoria_id', $categoria->id)
             ->paginate(12);
 
-        // ✅ REMOVIDO: foreach com forceDisponivel()
-        // A disponibilidade é calculada automaticamente via accessor
+        // ✅ CORRIGIDO: Usar view 'produtos.index' que já existe
+        // Passar 'titulo' para exibir o nome da categoria
+        $titulo = "Categoria: {$categoria->nome}";
+        
+        // Buscar categorias para o filtro lateral
+        $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
+            return Categoria::ativo()->ordenado()->get();
+        });
 
-        return view('produtos.categoria', compact('produtos', 'categoria'));
+        return view('produtos.index', compact('produtos', 'categorias', 'titulo'));
     }
 
     /**
@@ -142,9 +140,6 @@ class ProdutoController extends Controller
         $titulo = $this->getStatusTitle($status);
 
         $produtos = $query->paginate(12);
-        
-        // ✅ REMOVIDO: foreach com forceDisponivel()
-        // A disponibilidade é calculada automaticamente via accessor
         
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::ativo()->ordenado()->get();
