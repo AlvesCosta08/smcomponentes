@@ -117,11 +117,27 @@
                                 <td class="fw-bold">R$ {{ number_format($pedido->total, 2, ',', '.') }}</td>
                                 <td>
                                     @php
-                                        $colors = ['pendente' => 'warning', 'pago' => 'info', 'processando' => 'primary', 'enviado' => 'success', 'entregue' => 'success', 'cancelado' => 'danger'];
-                                        $labels = ['pendente' => 'Pendente', 'pago' => 'Pago', 'processando' => 'Processando', 'enviado' => 'Enviado', 'entregue' => 'Entregue', 'cancelado' => 'Cancelado'];
+                                        // ✅ CORRIGIDO: Usar $pedido->status->value para obter o valor do Enum
+                                        $statusValue = $pedido->status->value ?? 'pendente';
+                                        $colors = [
+                                            'pendente' => 'warning',
+                                            'pago' => 'info',
+                                            'processando' => 'primary',
+                                            'enviado' => 'success',
+                                            'entregue' => 'success',
+                                            'cancelado' => 'danger'
+                                        ];
+                                        $labels = [
+                                            'pendente' => 'Pendente',
+                                            'pago' => 'Pago',
+                                            'processando' => 'Processando',
+                                            'enviado' => 'Enviado',
+                                            'entregue' => 'Entregue',
+                                            'cancelado' => 'Cancelado'
+                                        ];
                                     @endphp
-                                    <span class="badge-status bg-{{ $colors[$pedido->status] ?? 'secondary' }} text-white">
-                                        {{ $labels[$pedido->status] ?? $pedido->status }}
+                                    <span class="badge-status bg-{{ $colors[$statusValue] ?? 'secondary' }} text-white">
+                                        {{ $labels[$statusValue] ?? $statusValue }}
                                     </span>
                                 </td>
                                 <td>{{ $pedido->created_at->format('d/m/Y H:i') }}</td>

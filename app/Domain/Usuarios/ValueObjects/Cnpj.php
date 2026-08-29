@@ -4,16 +4,19 @@ namespace App\Domain\Usuarios\ValueObjects;
 
 use InvalidArgumentException;
 
-final readonly class Cnpj
+final class Cnpj  // Removido "readonly"
 {
-    public function __construct(
-        private string $number
-    ) {
-        $this->number = preg_replace('/[^0-9]/', '', $this->number);
+    private string $number;  // Removido "private" do construtor
+
+    public function __construct(string $number)
+    {
+        $cleanNumber = preg_replace('/[^0-9]/', '', $number);
         
-        if (!$this->isValid($this->number)) {
+        if (!$this->isValid($cleanNumber)) {
             throw new InvalidArgumentException('O CNPJ fornecido é inválido.');
         }
+        
+        $this->number = $cleanNumber;
     }
 
     public function number(): string
@@ -52,5 +55,10 @@ final readonly class Cnpj
         $digito2 = ($soma2 % 11) < 2 ? 0 : 11 - ($soma2 % 11);
 
         return $cnpj[12] == $digito1 && $cnpj[13] == $digito2;
+    }
+
+    public function __toString(): string
+    {
+        return $this->number;
     }
 }

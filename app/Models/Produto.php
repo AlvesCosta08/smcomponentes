@@ -313,6 +313,39 @@ class Produto extends Model
     }
 
     // ==============================================
+    // MÉTODOS DE CÁLCULO  ✅ ADICIONADO
+    // ==============================================
+
+    /**
+     * Calcula todos os preços do produto baseado no valor de compra e margem
+     * Este método é chamado pelo ProdutoAdminController
+     */
+    public function calcularTodosPrecos(): void
+    {
+        if (!empty($this->valor_compra) && !empty($this->margem_lucro)) {
+            $calculator = new PricingCalculator();
+            $resultados = $calculator->calculate(
+                (float) $this->valor_compra,
+                (float) ($this->margem_lucro ?? 80),
+                (float) ($this->ipi ?? 0)
+            );
+            
+            $this->valor_custo = $resultados['valor_custo'];
+            $this->valor_atacado = $resultados['valor_atacado'];
+            $this->percentual_custo = $resultados['percentual_custo'];
+            $this->save();
+        }
+    }
+
+    /**
+     * Recalcula os preços (alias para calcularTodosPrecos)
+     */
+    public function recalcularPrecos(): void
+    {
+        $this->calcularTodosPrecos();
+    }
+
+    // ==============================================
     // SCOPES
     // ==============================================
 

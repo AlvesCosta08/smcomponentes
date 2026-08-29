@@ -15,11 +15,13 @@ class CategoriaControllerTest extends TestCase
     {
         parent::setUp();
         
-        // Criar um usuário admin para testes
+        // ✅ CORRIGIDO: Removido 'is_admin' pois a coluna não existe
+        // Criar um usuário admin para testes (usando 'ativo' como diferenciador)
         $this->admin = User::factory()->create([
             'email' => 'admin@teste.com',
             'password' => bcrypt('password123'),
-            'is_admin' => true,
+            'ativo' => true, // Usando 'ativo' em vez de 'is_admin'
+            'name' => 'Admin Teste',
         ]);
     }
 

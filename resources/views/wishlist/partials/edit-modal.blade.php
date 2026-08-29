@@ -2,7 +2,8 @@
 <div class="modal fade" id="editWishlistModal{{ $wishlist->id }}" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('wishlist.update', $wishlist->id) }}" method="POST">
+            {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.update') --}}
+            <form action="{{ route('cliente.wishlist.update', $wishlist->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="modal-header">

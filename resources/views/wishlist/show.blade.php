@@ -4,7 +4,8 @@
         <!-- Cabeçalho -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <a href="{{ route('wishlist.index') }}" class="text-muted text-decoration-none mb-2 d-inline-block">
+                {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.index') --}}
+                <a href="{{ route('cliente.wishlist.index') }}" class="text-muted text-decoration-none mb-2 d-inline-block">
                     <i class="fas fa-arrow-left me-1"></i> Voltar
                 </a>
                 <h1 class="h3 mb-0">
@@ -40,14 +41,12 @@
                                      alt="{{ $item->produto->descricao }}"
                                      style="height: 200px; object-fit: cover;">
                                 
-                                <!-- Badge Status -->
                                 @if(!$item->produto->isDisponivel())
                                     <span class="badge bg-danger position-absolute top-0 end-0 m-2">
                                         Indisponível
                                     </span>
                                 @endif
 
-                                <!-- Botão Remover -->
                                 <button type="button" 
                                         class="btn btn-sm btn-danger position-absolute top-0 start-0 m-2 remove-wishlist-btn"
                                         data-produto-id="{{ $item->produto->id }}"
@@ -65,7 +64,6 @@
                                 </h6>
                                 <p class="card-text text-muted small">{{ $item->produto->categoria }}</p>
                                 
-                                <!-- Preço -->
                                 <div class="mt-2">
                                     @if($item->produto->tem_promocao)
                                         <span class="text-decoration-line-through text-muted small">
@@ -81,14 +79,12 @@
                                     @endif
                                 </div>
 
-                                <!-- Observação -->
                                 @if($item->observacao)
                                     <p class="text-muted small mt-2">
                                         <i class="fas fa-pencil-alt me-1"></i> {{ $item->observacao }}
                                     </p>
                                 @endif
 
-                                <!-- Ações -->
                                 <div class="d-flex gap-2 mt-3">
                                     <a href="{{ route('produtos.show', $item->produto->slug) }}" 
                                        class="btn btn-sm btn-outline-primary flex-grow-1">
@@ -105,7 +101,6 @@
                                     </form>
                                 </div>
 
-                                <!-- Mover para outra lista -->
                                 <div class="mt-2">
                                     <select class="form-select form-select-sm move-wishlist-select" 
                                             data-produto-id="{{ $item->produto->id }}"
@@ -156,7 +151,6 @@
 
     @push('scripts')
     <script>
-        // Remover produto da wishlist
         document.querySelectorAll('.remove-wishlist-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const produtoId = this.dataset.produtoId;
@@ -189,7 +183,6 @@
             });
         });
 
-        // Mover produto para outra lista
         document.querySelectorAll('.move-wishlist-select').forEach(select => {
             select.addEventListener('change', function() {
                 const destinoId = this.value;

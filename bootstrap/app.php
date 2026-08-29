@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php', // ✅ ADICIONAR ESTA LINHA
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -26,8 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\RedirectBasedOnRole::class,
         ]);
 
+        // ✅ ADICIONAR: Grupo de middleware para API com Sanctum
+        $middleware->api([
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+
         // 🔒 MANTER CSRF ATIVO PARA SEGURANÇA
-        // NÃO desabilitar CSRF para login!
         $middleware->validateCsrfTokens(except: [
             // 'carrinho/*', // DESCOMENTE APENAS EM ÚLTIMO CASO
         ]);

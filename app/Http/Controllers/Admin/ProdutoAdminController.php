@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Storage;
 
 class ProdutoAdminController extends Controller
 {
+    // Constantes de disponibilidade
+    const DISPONIVEL = 'DISPONIVEL';
+    const INDISPONIVEL = 'INDISPONIVEL';
+    const ESTOQUE_BAIXO = 'ESTOQUE_BAIXO';
+
     public function index(Request $request)
     {
         $query = Produto::query()->with(['categoria']);
@@ -27,7 +32,7 @@ class ProdutoAdminController extends Controller
                     $query->disponivel();
                     break;
                 case 'indisponivel':
-                    $query->where('disponibilidade', Produto::INDISPONIVEL);
+                    $query->where('disponibilidade', self::INDISPONIVEL);
                     break;
                 case 'estoque_baixo':
                     $query->baixoEstoque();
@@ -62,26 +67,25 @@ class ProdutoAdminController extends Controller
         // Gerar slug
         $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
         
-        // Criar instância para calcular preços
-        $produto = new Produto();
-        $precosCalculados = $produto->calcularTodosPrecos($data);
+        // ✅ CORRIGIDO: Criar produto e depois calcular preços
+        $produto = new Produto($data);
         
-        // Merge dos preços calculados
-        $data = array_merge($data, $precosCalculados);
+        // Calcular preços usando o método do model
+        $produto->calcularTodosPrecos();
         
         // Processar imagem principal
         if ($request->hasFile('imagem')) {
-            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
+            $produto->imagem = $this->uploadImagem($request->file('imagem'));
         }
         
         // Calcular disponibilidade
-        $data['disponibilidade'] = $this->calcularDisponibilidade(
-            $data['quantidade'] ?? 0,
-            $data['ativo'] ?? true
+        $produto->disponibilidade = $this->calcularDisponibilidade(
+            $produto->quantidade ?? 0,
+            $produto->ativo ?? true
         );
         
-        // Criar produto
-        $produto = Produto::create($data);
+        // Salvar produto
+        $produto->save();
         
         // Processar imagens adicionais
         if ($request->hasFile('imagens')) {
@@ -126,16 +130,18 @@ class ProdutoAdminController extends Controller
             $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
         }
         
+        // ✅ CORRIGIDO: Atualizar dados primeiro
+        $produto->fill($data);
+        
         // Recalcular preços
-        $precosCalculados = $produto->calcularTodosPrecos($data);
-        $data = array_merge($data, $precosCalculados);
+        $produto->calcularTodosPrecos();
         
         // Processar nova imagem principal
         if ($request->hasFile('imagem')) {
             if ($produto->imagem) {
                 Storage::disk('public')->delete($produto->imagem);
             }
-            $data['imagem'] = $this->uploadImagem($request->file('imagem'));
+            $produto->imagem = $this->uploadImagem($request->file('imagem'));
         }
         
         // Processar imagens adicionais
@@ -151,12 +157,12 @@ class ProdutoAdminController extends Controller
         }
         
         // Atualizar disponibilidade
-        $data['disponibilidade'] = $this->calcularDisponibilidade(
-            $data['quantidade'] ?? $produto->quantidade,
-            $data['ativo'] ?? $produto->ativo
+        $produto->disponibilidade = $this->calcularDisponibilidade(
+            $produto->quantidade ?? 0,
+            $produto->ativo ?? true
         );
         
-        $produto->update($data);
+        $produto->save();
         
         return redirect()
             ->route('admin.produtos.index')
@@ -195,23 +201,25 @@ class ProdutoAdminController extends Controller
         
         switch ($request->operacao) {
             case 'adicionar':
-                $produto->aumentarEstoque($request->quantidade);
+                $produto->quantidade += $request->quantidade;
                 $mensagem = "Adicionados {$request->quantidade} itens ao estoque.";
                 break;
             case 'remover':
-                if (!$produto->reduzirEstoque($request->quantidade)) {
+                if ($produto->quantidade < $request->quantidade) {
                     return back()->with('error', 'Estoque insuficiente!');
                 }
+                $produto->quantidade -= $request->quantidade;
                 $mensagem = "Removidos {$request->quantidade} itens do estoque.";
                 break;
             case 'definir':
                 $produto->quantidade = $request->quantidade;
-                $produto->atualizarDisponibilidade();
-                $produto->ultima_atualizacao_estoque = now();
-                $produto->save();
                 $mensagem = "Estoque definido para {$request->quantidade} itens.";
                 break;
         }
+        
+        $produto->atualizarDisponibilidade();
+        $produto->ultima_atualizacao_estoque = now();
+        $produto->save();
         
         return back()->with('success', $mensagem);
     }
@@ -247,17 +255,17 @@ class ProdutoAdminController extends Controller
     private function calcularDisponibilidade(int $quantidade, bool $ativo): string
     {
         if (!$ativo) {
-            return Produto::INDISPONIVEL;
+            return self::INDISPONIVEL;
         }
         
         if ($quantidade <= 0) {
-            return Produto::INDISPONIVEL;
+            return self::INDISPONIVEL;
         }
         
         if ($quantidade <= 5) {
-            return Produto::ESTOQUE_BAIXO;
+            return self::ESTOQUE_BAIXO;
         }
         
-        return Produto::DISPONIVEL;
+        return self::DISPONIVEL;
     }
 }

@@ -2,7 +2,8 @@
 <div class="modal fade" id="createWishlistModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('wishlist.store') }}" method="POST">
+            {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.store') --}}
+            <form action="{{ route('cliente.wishlist.store') }}" method="POST">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">

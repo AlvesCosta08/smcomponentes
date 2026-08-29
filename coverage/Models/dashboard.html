@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <title>Dashboard for /home/codigoquatro/Projetos/smcomponentes/app/Models</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="../_css/bootstrap.min.css?v=10.1.16" rel="stylesheet" type="text/css">
+  <link href="../_css/nv.d3.min.css?v=10.1.16" rel="stylesheet" type="text/css">
+  <link href="../_css/style.css?v=10.1.16" rel="stylesheet" type="text/css">
+  <link href="../_css/custom.css" rel="stylesheet" type="text/css">
+ </head>
+ <body>
+  <header>
+   <div class="container-fluid">
+    <div class="row">
+     <div class="col-md-12">
+      <nav aria-label="breadcrumb">
+       <ol class="breadcrumb">
+         <li class="breadcrumb-item"><a href="../index.html">/home/codigoquatro/Projetos/smcomponentes/app</a></li>
+         <li class="breadcrumb-item"><a href="index.html">Models</a></li>
+         <li class="breadcrumb-item active">(Dashboard)</li>
+
+       </ol>
+      </nav>
+     </div>
+    </div>
+   </div>
+  </header>
+  <div class="container-fluid">
+   <div class="row">
+    <div class="col-md-12">
+     <h2>Classes</h2>
+    </div>
+   </div>
+   <div class="row">
+    <div class="col-md-6">
+     <h3>Coverage Distribution</h3>
+     <div id="classCoverageDistribution" style="height: 300px;">
+       <svg></svg>
+     </div>
+    </div>
+    <div class="col-md-6">
+     <h3>Complexity</h3>
+     <div id="classComplexity" style="height: 300px;">
+       <svg></svg>
+     </div>
+    </div>
+   </div>
+   <div class="row">
+    <div class="col-md-6">
+     <h3>Insufficient Coverage</h3>
+     <div class="scrollbox">
+      <table class="table">
+       <thead>
+        <tr>
+         <th>Class</th>
+         <th class="text-right">Coverage</th>
+        </tr>
+       </thead>
+       <tbody>
+       <tr><td><a href="Banner.php.html#9">App\Models\Banner</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#9">App\Models\Categoria</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#12">App\Models\Pedido</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#9">App\Models\PedidoItem</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#14">App\Models\Produto</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="ProdutoImagem.php.html#8">App\Models\ProdutoImagem</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#15">App\Models\User</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#12">App\Models\Wishlist</a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="WishlistItem.php.html#9">App\Models\WishlistItem</a></td><td class="text-right">0%</td></tr>
+
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="col-md-6">
+     <h3>Project Risks</h3>
+     <div class="scrollbox">
+      <table class="table">
+       <thead>
+        <tr>
+         <th>Class</th>
+         <th class="text-right"><abbr title="Change Risk Anti-Patterns (CRAP) Index">CRAP</abbr></th>
+        </tr>
+       </thead>
+       <tbody>
+       <tr><td><a href="Produto.php.html#14">App\Models\Produto</a></td><td class="text-right">5256</td></tr>
+       <tr><td><a href="User.php.html#15">App\Models\User</a></td><td class="text-right">1122</td></tr>
+       <tr><td><a href="Categoria.php.html#9">App\Models\Categoria</a></td><td class="text-right">420</td></tr>
+       <tr><td><a href="Wishlist.php.html#12">App\Models\Wishlist</a></td><td class="text-right">210</td></tr>
+       <tr><td><a href="Banner.php.html#9">App\Models\Banner</a></td><td class="text-right">182</td></tr>
+       <tr><td><a href="Pedido.php.html#12">App\Models\Pedido</a></td><td class="text-right">132</td></tr>
+
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </div>
+   <div class="row">
+    <div class="col-md-12">
+     <h2>Methods</h2>
+    </div>
+   </div>
+   <div class="row">
+    <div class="col-md-6">
+     <h3>Coverage Distribution</h3>
+     <div id="methodCoverageDistribution" style="height: 300px;">
+       <svg></svg>
+     </div>
+    </div>
+    <div class="col-md-6">
+     <h3>Complexity</h3>
+     <div id="methodComplexity" style="height: 300px;">
+       <svg></svg>
+     </div>
+    </div>
+   </div>
+   <div class="row">
+    <div class="col-md-6">
+     <h3>Insufficient Coverage</h3>
+     <div class="scrollbox">
+      <table class="table">
+       <thead>
+        <tr>
+         <th>Method</th>
+         <th class="text-right">Coverage</th>
+        </tr>
+       </thead>
+       <tbody>
+       <tr><td><a href="Banner.php.html#40"><abbr title="App\Models\Banner::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Banner.php.html#85"><abbr title="App\Models\Banner::getEstiloFundoAttribute">getEstiloFundoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Banner.php.html#107"><abbr title="App\Models\Banner::scopeAtivo">scopeAtivo</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Banner.php.html#123"><abbr title="App\Models\Banner::scopeOrdenado">scopeOrdenado</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#24"><abbr title="App\Models\Categoria::produtos">produtos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#29"><abbr title="App\Models\Categoria::produtosDisponiveis">produtosDisponiveis</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#34"><abbr title="App\Models\Categoria::subcategorias">subcategorias</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#39"><abbr title="App\Models\Categoria::categoriaPai">categoriaPai</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#44"><abbr title="App\Models\Categoria::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#54"><abbr title="App\Models\Categoria::getNomeCompletoAttribute">getNomeCompletoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#59"><abbr title="App\Models\Categoria::scopeAtivo">scopeAtivo</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#64"><abbr title="App\Models\Categoria::scopeOrdenado">scopeOrdenado</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#69"><abbr title="App\Models\Categoria::scopePai">scopePai</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#74"><abbr title="App\Models\Categoria::scopeFilhas">scopeFilhas</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#79"><abbr title="App\Models\Categoria::isAtivo">isAtivo</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#84"><abbr title="App\Models\Categoria::getContagemProdutos">getContagemProdutos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Categoria.php.html#89"><abbr title="App\Models\Categoria::booted">booted</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#37"><abbr title="App\Models\Pedido::user">user</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#38"><abbr title="App\Models\Pedido::itens">itens</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#41"><abbr title="App\Models\Pedido::podeCancelar">podeCancelar</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#47"><abbr title="App\Models\Pedido::getTotalFormatadoAttribute">getTotalFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#52"><abbr title="App\Models\Pedido::getSubtotalFormatadoAttribute">getSubtotalFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#57"><abbr title="App\Models\Pedido::getDescontoFormatadoAttribute">getDescontoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#62"><abbr title="App\Models\Pedido::getDataCriacaoFormatadaAttribute">getDataCriacaoFormatadaAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#68"><abbr title="App\Models\Pedido::scopePendentes">scopePendentes</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#69"><abbr title="App\Models\Pedido::scopePagos">scopePagos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Pedido.php.html#70"><abbr title="App\Models\Pedido::scopeDoUsuario">scopeDoUsuario</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#27"><abbr title="App\Models\PedidoItem::pedido">pedido</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#28"><abbr title="App\Models\PedidoItem::produto">produto</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#30"><abbr title="App\Models\PedidoItem::getPrecoExibicaoAttribute">getPrecoExibicaoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#35"><abbr title="App\Models\PedidoItem::getPrecoFormatadoAttribute">getPrecoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#40"><abbr title="App\Models\PedidoItem::getSubtotalFormatadoAttribute">getSubtotalFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PedidoItem.php.html#45"><abbr title="App\Models\PedidoItem::scopeDoPedido">scopeDoPedido</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#92"><abbr title="App\Models\Produto::categoria">categoria</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#97"><abbr title="App\Models\Produto::imagens">imagens</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#102"><abbr title="App\Models\Produto::imagemPrincipal">imagemPrincipal</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#107"><abbr title="App\Models\Produto::itensPedido">itensPedido</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#112"><abbr title="App\Models\Produto::wishlistItems">wishlistItems</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#121"><abbr title="App\Models\Produto::getPrecoFormatadoAttribute">getPrecoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#126"><abbr title="App\Models\Produto::getPrecoAtacadoFormatadoAttribute">getPrecoAtacadoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#131"><abbr title="App\Models\Produto::getPrecoPromocionalFormatadoAttribute">getPrecoPromocionalFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#138"><abbr title="App\Models\Produto::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#170"><abbr title="App\Models\Produto::getImagensUrlsAttribute">getImagensUrlsAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#211"><abbr title="App\Models\Produto::getStatusLabelAttribute">getStatusLabelAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#219"><abbr title="App\Models\Produto::getDisponivelAttribute">getDisponivelAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#224"><abbr title="App\Models\Produto::getTemPromocaoAttribute">getTemPromocaoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#229"><abbr title="App\Models\Produto::getDescontoPercentualAttribute">getDescontoPercentualAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#234"><abbr title="App\Models\Produto::getLucroBrutoFormatadoAttribute">getLucroBrutoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#239"><abbr title="App\Models\Produto::getPodeComprarAttribute">getPodeComprarAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#248"><abbr title="App\Models\Produto::isDisponivel">isDisponivel</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#255"><abbr title="App\Models\Produto::hasPromocao">hasPromocao</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#262"><abbr title="App\Models\Produto::getDescontoPercentual">getDescontoPercentual</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#270"><abbr title="App\Models\Produto::getPrecoComIpi">getPrecoComIpi</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#277"><abbr title="App\Models\Produto::getPrecoComIpiFormatado">getPrecoComIpiFormatado</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#282"><abbr title="App\Models\Produto::getLucroBruto">getLucroBruto</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#289"><abbr title="App\Models\Produto::getLucroBrutoFormatado">getLucroBrutoFormatado</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#294"><abbr title="App\Models\Produto::atualizarDisponibilidade">atualizarDisponibilidade</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#308"><abbr title="App\Models\Produto::incrementarVisualizacoes">incrementarVisualizacoes</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#319"><abbr title="App\Models\Produto::scopeDisponivel">scopeDisponivel</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#326"><abbr title="App\Models\Produto::scopeEmDestaque">scopeEmDestaque</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#331"><abbr title="App\Models\Produto::scopeOfertas">scopeOfertas</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#339"><abbr title="App\Models\Produto::scopeNovos">scopeNovos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#346"><abbr title="App\Models\Produto::scopeMaisVendidos">scopeMaisVendidos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#353"><abbr title="App\Models\Produto::scopeBaixoEstoque">scopeBaixoEstoque</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#361"><abbr title="App\Models\Produto::scopeBuscar">scopeBuscar</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#377"><abbr title="App\Models\Produto::getMargensDisponiveis">getMargensDisponiveis</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Produto.php.html#394"><abbr title="App\Models\Produto::booted">booted</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="ProdutoImagem.php.html#21"><abbr title="App\Models\ProdutoImagem::produto">produto</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#38"><abbr title="App\Models\User::pedidos">pedidos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#39"><abbr title="App\Models\User::wishlist">wishlist</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#40"><abbr title="App\Models\User::wishlists">wishlists</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#46"><abbr title="App\Models\User::setCpfAttribute">setCpfAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#60"><abbr title="App\Models\User::getCpfFormatadoAttribute">getCpfFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#66"><abbr title="App\Models\User::setCnpjAttribute">setCnpjAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#79"><abbr title="App\Models\User::getCnpjFormatadoAttribute">getCnpjFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#85"><abbr title="App\Models\User::getTipoDocumentoAttribute">getTipoDocumentoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#92"><abbr title="App\Models\User::getDocumentoFormatadoAttribute">getDocumentoFormatadoAttribute</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#103"><abbr title="App\Models\User::getOrCreateWishlist">getOrCreateWishlist</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#114"><abbr title="App\Models\User::isAdmin">isAdmin</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#115"><abbr title="App\Models\User::isFuncionario">isFuncionario</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#116"><abbr title="App\Models\User::isCliente">isCliente</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#117"><abbr title="App\Models\User::isActive">isActive</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#119"><abbr title="App\Models\User::scopeActive">scopeActive</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#120"><abbr title="App\Models\User::scopeClientes">scopeClientes</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#121"><abbr title="App\Models\User::scopeAdmins">scopeAdmins</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#123"><abbr title="App\Models\User::scopeBuscar">scopeBuscar</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="User.php.html#134"><abbr title="App\Models\User::booted">booted</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#34"><abbr title="App\Models\Wishlist::user">user</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#42"><abbr title="App\Models\Wishlist::items">items</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#50"><abbr title="App\Models\Wishlist::produtos">produtos</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#60"><abbr title="App\Models\Wishlist::scopeDefault">scopeDefault</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#68"><abbr title="App\Models\Wishlist::scopePublic">scopePublic</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#76"><abbr title="App\Models\Wishlist::hasProduct">hasProduct</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#84"><abbr title="App\Models\Wishlist::addProduct">addProduct</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#100"><abbr title="App\Models\Wishlist::removeProduct">removeProduct</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#108"><abbr title="App\Models\Wishlist::countItems">countItems</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#116"><abbr title="App\Models\Wishlist::clearItems">clearItems</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#124"><abbr title="App\Models\Wishlist::getProductsWithDetails">getProductsWithDetails</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#135"><abbr title="App\Models\Wishlist::isDefault">isDefault</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="Wishlist.php.html#143"><abbr title="App\Models\Wishlist::setAsDefault">setAsDefault</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="WishlistItem.php.html#21"><abbr title="App\Models\WishlistItem::wishlist">wishlist</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="WishlistItem.php.html#22"><abbr title="App\Models\WishlistItem::produto">produto</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="WishlistItem.php.html#24"><abbr title="App\Models\WishlistItem::scopeRecent">scopeRecent</abbr></a></td><td class="text-right">0%</td></tr>
+
+       </tbody>
+      </table>
+     </div>
+    </div>
+    <div class="col-md-6">
+     <h3>Project Risks</h3>
+     <div class="scrollbox">
+      <table class="table">
+       <thead>
+        <tr>
+         <th>Method</th>
+         <th class="text-right"><abbr title="Change Risk Anti-Patterns (CRAP) Index">CRAP</abbr></th>
+        </tr>
+       </thead>
+       <tbody>
+       <tr><td><a href="Produto.php.html#170"><abbr title="App\Models\Produto::getImagensUrlsAttribute">getImagensUrlsAttribute</abbr></a></td><td class="text-right">156</td></tr>
+       <tr><td><a href="Produto.php.html#138"><abbr title="App\Models\Produto::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">110</td></tr>
+       <tr><td><a href="Produto.php.html#394"><abbr title="App\Models\Produto::booted">booted</abbr></a></td><td class="text-right">110</td></tr>
+       <tr><td><a href="Banner.php.html#40"><abbr title="App\Models\Banner::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">56</td></tr>
+       <tr><td><a href="Banner.php.html#85"><abbr title="App\Models\Banner::getEstiloFundoAttribute">getEstiloFundoAttribute</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="Categoria.php.html#44"><abbr title="App\Models\Categoria::getImagemUrlAttribute">getImagemUrlAttribute</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="Categoria.php.html#89"><abbr title="App\Models\Categoria::booted">booted</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="User.php.html#134"><abbr title="App\Models\User::booted">booted</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="Produto.php.html#248"><abbr title="App\Models\Produto::isDisponivel">isDisponivel</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="Produto.php.html#255"><abbr title="App\Models\Produto::hasPromocao">hasPromocao</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="Produto.php.html#262"><abbr title="App\Models\Produto::getDescontoPercentual">getDescontoPercentual</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="User.php.html#46"><abbr title="App\Models\User::setCpfAttribute">setCpfAttribute</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="User.php.html#66"><abbr title="App\Models\User::setCnpjAttribute">setCnpjAttribute</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="User.php.html#85"><abbr title="App\Models\User::getTipoDocumentoAttribute">getTipoDocumentoAttribute</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="User.php.html#92"><abbr title="App\Models\User::getDocumentoFormatadoAttribute">getDocumentoFormatadoAttribute</abbr></a></td><td class="text-right">12</td></tr>
+       <tr><td><a href="Categoria.php.html#54"><abbr title="App\Models\Categoria::getNomeCompletoAttribute">getNomeCompletoAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="Pedido.php.html#62"><abbr title="App\Models\Pedido::getDataCriacaoFormatadaAttribute">getDataCriacaoFormatadaAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="Produto.php.html#131"><abbr title="App\Models\Produto::getPrecoPromocionalFormatadoAttribute">getPrecoPromocionalFormatadoAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="Produto.php.html#211"><abbr title="App\Models\Produto::getStatusLabelAttribute">getStatusLabelAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="Produto.php.html#294"><abbr title="App\Models\Produto::atualizarDisponibilidade">atualizarDisponibilidade</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="User.php.html#60"><abbr title="App\Models\User::getCpfFormatadoAttribute">getCpfFormatadoAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="User.php.html#79"><abbr title="App\Models\User::getCnpjFormatadoAttribute">getCnpjFormatadoAttribute</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="User.php.html#117"><abbr title="App\Models\User::isActive">isActive</abbr></a></td><td class="text-right">6</td></tr>
+       <tr><td><a href="Wishlist.php.html#84"><abbr title="App\Models\Wishlist::addProduct">addProduct</abbr></a></td><td class="text-right">6</td></tr>
+
+       </tbody>
+      </table>
+     </div>
+    </div>
+   </div>
+   <footer>
+    <hr/>
+    <p>
+     <small>Generated by <a href="https://github.com/sebastianbergmann/php-code-coverage" target="_top">php-code-coverage 10.1.16</a> using <a href="https://www.php.net/" target="_top">PHP 8.5.4</a> and <a href="https://phpunit.de/">PHPUnit 10.5.64</a> at Sat Aug 29 6:37:12 -03 2026.</small>
+    </p>
+   </footer>
+  </div>
+  <script src="../_js/jquery.min.js?v=10.1.16" type="text/javascript"></script>
+  <script src="../_js/d3.min.js?v=10.1.16" type="text/javascript"></script>
+  <script src="../_js/nv.d3.min.js?v=10.1.16" type="text/javascript"></script>
+  <script type="text/javascript">
+$(document).ready(function() {
+  nv.addGraph(function() {
+    var chart = nv.models.multiBarChart();
+    chart.tooltips(false)
+      .showControls(false)
+      .showLegend(false)
+      .reduceXTicks(false)
+      .staggerLabels(true)
+      .yAxis.tickFormat(d3.format('d'));
+
+    d3.select('#classCoverageDistribution svg')
+      .datum(getCoverageDistributionData([9,0,0,0,0,0,0,0,0,0,0,0], "Class Coverage"))
+      .transition().duration(500).call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
+  });
+
+  nv.addGraph(function() {
+    var chart = nv.models.multiBarChart();
+    chart.tooltips(false)
+      .showControls(false)
+      .showLegend(false)
+      .reduceXTicks(false)
+      .staggerLabels(true)
+      .yAxis.tickFormat(d3.format('d'));
+
+    d3.select('#methodCoverageDistribution svg')
+      .datum(getCoverageDistributionData([103,0,0,0,0,0,0,0,0,0,0,0], "Method Coverage"))
+      .transition().duration(500).call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
+  });
+
+  function getCoverageDistributionData(data, label) {
+    var labels = [
+      '0%',
+      '0-10%',
+      '10-20%',
+      '20-30%',
+      '30-40%',
+      '40-50%',
+      '50-60%',
+      '60-70%',
+      '70-80%',
+      '80-90%',
+      '90-100%',
+      '100%'
+    ];
+    var values = [];
+    $.each(labels, function(key) {
+      values.push({x: labels[key], y: data[key]});
+    });
+
+    return [
+      {
+        key: label,
+        values: values,
+        color: "#4572A7"
+      }
+    ];
+  }
+  nv.addGraph(function() {
+    var chart = nv.models.scatterChart()
+      .showDistX(true)
+      .showDistY(true)
+      .showLegend(false)
+      .forceX([0, 100]);
+    chart.tooltipContent(function(graph) {
+      return '<p>' + graph.point.class + '</p>';
+    });
+
+    chart.xAxis.axisLabel('Code Coverage (in percent)');
+    chart.yAxis.axisLabel('Cyclomatic Complexity');
+
+    d3.select('#classComplexity svg')
+      .datum(getComplexityData([[0,13,"<a href=\"Banner.php.html#9\">App\\Models\\Banner<\/a>"],[0,20,"<a href=\"Categoria.php.html#9\">App\\Models\\Categoria<\/a>"],[0,11,"<a href=\"Pedido.php.html#12\">App\\Models\\Pedido<\/a>"],[0,6,"<a href=\"PedidoItem.php.html#9\">App\\Models\\PedidoItem<\/a>"],[0,72,"<a href=\"Produto.php.html#14\">App\\Models\\Produto<\/a>"],[0,1,"<a href=\"ProdutoImagem.php.html#8\">App\\Models\\ProdutoImagem<\/a>"],[0,33,"<a href=\"User.php.html#15\">App\\Models\\User<\/a>"],[0,14,"<a href=\"Wishlist.php.html#12\">App\\Models\\Wishlist<\/a>"],[0,3,"<a href=\"WishlistItem.php.html#9\">App\\Models\\WishlistItem<\/a>"]], 'Class Complexity'))
+      .transition()
+      .duration(500)
+      .call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
+  });
+
+  nv.addGraph(function() {
+    var chart = nv.models.scatterChart()
+      .showDistX(true)
+      .showDistY(true)
+      .showLegend(false)
+      .forceX([0, 100]);
+    chart.tooltipContent(function(graph) {
+      return '<p>' + graph.point.class + '</p>';
+    });
+
+    chart.xAxis.axisLabel('Code Coverage (in percent)');
+    chart.yAxis.axisLabel('Method Complexity');
+
+    d3.select('#methodComplexity svg')
+      .datum(getComplexityData([[0,7,"<a href=\"Banner.php.html#40\">App\\Models\\Banner::getImagemUrlAttribute<\/a>"],[0,4,"<a href=\"Banner.php.html#85\">App\\Models\\Banner::getEstiloFundoAttribute<\/a>"],[0,1,"<a href=\"Banner.php.html#107\">App\\Models\\Banner::scopeAtivo<\/a>"],[0,1,"<a href=\"Banner.php.html#123\">App\\Models\\Banner::scopeOrdenado<\/a>"],[0,1,"<a href=\"Categoria.php.html#24\">App\\Models\\Categoria::produtos<\/a>"],[0,1,"<a href=\"Categoria.php.html#29\">App\\Models\\Categoria::produtosDisponiveis<\/a>"],[0,1,"<a href=\"Categoria.php.html#34\">App\\Models\\Categoria::subcategorias<\/a>"],[0,1,"<a href=\"Categoria.php.html#39\">App\\Models\\Categoria::categoriaPai<\/a>"],[0,4,"<a href=\"Categoria.php.html#44\">App\\Models\\Categoria::getImagemUrlAttribute<\/a>"],[0,2,"<a href=\"Categoria.php.html#54\">App\\Models\\Categoria::getNomeCompletoAttribute<\/a>"],[0,1,"<a href=\"Categoria.php.html#59\">App\\Models\\Categoria::scopeAtivo<\/a>"],[0,1,"<a href=\"Categoria.php.html#64\">App\\Models\\Categoria::scopeOrdenado<\/a>"],[0,1,"<a href=\"Categoria.php.html#69\">App\\Models\\Categoria::scopePai<\/a>"],[0,1,"<a href=\"Categoria.php.html#74\">App\\Models\\Categoria::scopeFilhas<\/a>"],[0,1,"<a href=\"Categoria.php.html#79\">App\\Models\\Categoria::isAtivo<\/a>"],[0,1,"<a href=\"Categoria.php.html#84\">App\\Models\\Categoria::getContagemProdutos<\/a>"],[0,4,"<a href=\"Categoria.php.html#89\">App\\Models\\Categoria::booted<\/a>"],[0,1,"<a href=\"Pedido.php.html#37\">App\\Models\\Pedido::user<\/a>"],[0,1,"<a href=\"Pedido.php.html#38\">App\\Models\\Pedido::itens<\/a>"],[0,1,"<a href=\"Pedido.php.html#41\">App\\Models\\Pedido::podeCancelar<\/a>"],[0,1,"<a href=\"Pedido.php.html#47\">App\\Models\\Pedido::getTotalFormatadoAttribute<\/a>"],[0,1,"<a href=\"Pedido.php.html#52\">App\\Models\\Pedido::getSubtotalFormatadoAttribute<\/a>"],[0,1,"<a href=\"Pedido.php.html#57\">App\\Models\\Pedido::getDescontoFormatadoAttribute<\/a>"],[0,2,"<a href=\"Pedido.php.html#62\">App\\Models\\Pedido::getDataCriacaoFormatadaAttribute<\/a>"],[0,1,"<a href=\"Pedido.php.html#68\">App\\Models\\Pedido::scopePendentes<\/a>"],[0,1,"<a href=\"Pedido.php.html#69\">App\\Models\\Pedido::scopePagos<\/a>"],[0,1,"<a href=\"Pedido.php.html#70\">App\\Models\\Pedido::scopeDoUsuario<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#27\">App\\Models\\PedidoItem::pedido<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#28\">App\\Models\\PedidoItem::produto<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#30\">App\\Models\\PedidoItem::getPrecoExibicaoAttribute<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#35\">App\\Models\\PedidoItem::getPrecoFormatadoAttribute<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#40\">App\\Models\\PedidoItem::getSubtotalFormatadoAttribute<\/a>"],[0,1,"<a href=\"PedidoItem.php.html#45\">App\\Models\\PedidoItem::scopeDoPedido<\/a>"],[0,1,"<a href=\"Produto.php.html#92\">App\\Models\\Produto::categoria<\/a>"],[0,1,"<a href=\"Produto.php.html#97\">App\\Models\\Produto::imagens<\/a>"],[0,1,"<a href=\"Produto.php.html#102\">App\\Models\\Produto::imagemPrincipal<\/a>"],[0,1,"<a href=\"Produto.php.html#107\">App\\Models\\Produto::itensPedido<\/a>"],[0,1,"<a href=\"Produto.php.html#112\">App\\Models\\Produto::wishlistItems<\/a>"],[0,1,"<a href=\"Produto.php.html#121\">App\\Models\\Produto::getPrecoFormatadoAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#126\">App\\Models\\Produto::getPrecoAtacadoFormatadoAttribute<\/a>"],[0,2,"<a href=\"Produto.php.html#131\">App\\Models\\Produto::getPrecoPromocionalFormatadoAttribute<\/a>"],[0,10,"<a href=\"Produto.php.html#138\">App\\Models\\Produto::getImagemUrlAttribute<\/a>"],[0,12,"<a href=\"Produto.php.html#170\">App\\Models\\Produto::getImagensUrlsAttribute<\/a>"],[0,2,"<a href=\"Produto.php.html#211\">App\\Models\\Produto::getStatusLabelAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#219\">App\\Models\\Produto::getDisponivelAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#224\">App\\Models\\Produto::getTemPromocaoAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#229\">App\\Models\\Produto::getDescontoPercentualAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#234\">App\\Models\\Produto::getLucroBrutoFormatadoAttribute<\/a>"],[0,1,"<a href=\"Produto.php.html#239\">App\\Models\\Produto::getPodeComprarAttribute<\/a>"],[0,3,"<a href=\"Produto.php.html#248\">App\\Models\\Produto::isDisponivel<\/a>"],[0,3,"<a href=\"Produto.php.html#255\">App\\Models\\Produto::hasPromocao<\/a>"],[0,3,"<a href=\"Produto.php.html#262\">App\\Models\\Produto::getDescontoPercentual<\/a>"],[0,1,"<a href=\"Produto.php.html#270\">App\\Models\\Produto::getPrecoComIpi<\/a>"],[0,1,"<a href=\"Produto.php.html#277\">App\\Models\\Produto::getPrecoComIpiFormatado<\/a>"],[0,1,"<a href=\"Produto.php.html#282\">App\\Models\\Produto::getLucroBruto<\/a>"],[0,1,"<a href=\"Produto.php.html#289\">App\\Models\\Produto::getLucroBrutoFormatado<\/a>"],[0,2,"<a href=\"Produto.php.html#294\">App\\Models\\Produto::atualizarDisponibilidade<\/a>"],[0,1,"<a href=\"Produto.php.html#308\">App\\Models\\Produto::incrementarVisualizacoes<\/a>"],[0,1,"<a href=\"Produto.php.html#319\">App\\Models\\Produto::scopeDisponivel<\/a>"],[0,1,"<a href=\"Produto.php.html#326\">App\\Models\\Produto::scopeEmDestaque<\/a>"],[0,1,"<a href=\"Produto.php.html#331\">App\\Models\\Produto::scopeOfertas<\/a>"],[0,1,"<a href=\"Produto.php.html#339\">App\\Models\\Produto::scopeNovos<\/a>"],[0,1,"<a href=\"Produto.php.html#346\">App\\Models\\Produto::scopeMaisVendidos<\/a>"],[0,1,"<a href=\"Produto.php.html#353\">App\\Models\\Produto::scopeBaixoEstoque<\/a>"],[0,1,"<a href=\"Produto.php.html#361\">App\\Models\\Produto::scopeBuscar<\/a>"],[0,1,"<a href=\"Produto.php.html#377\">App\\Models\\Produto::getMargensDisponiveis<\/a>"],[0,10,"<a href=\"Produto.php.html#394\">App\\Models\\Produto::booted<\/a>"],[0,1,"<a href=\"ProdutoImagem.php.html#21\">App\\Models\\ProdutoImagem::produto<\/a>"],[0,1,"<a href=\"User.php.html#38\">App\\Models\\User::pedidos<\/a>"],[0,1,"<a href=\"User.php.html#39\">App\\Models\\User::wishlist<\/a>"],[0,1,"<a href=\"User.php.html#40\">App\\Models\\User::wishlists<\/a>"],[0,3,"<a href=\"User.php.html#46\">App\\Models\\User::setCpfAttribute<\/a>"],[0,2,"<a href=\"User.php.html#60\">App\\Models\\User::getCpfFormatadoAttribute<\/a>"],[0,3,"<a href=\"User.php.html#66\">App\\Models\\User::setCnpjAttribute<\/a>"],[0,2,"<a href=\"User.php.html#79\">App\\Models\\User::getCnpjFormatadoAttribute<\/a>"],[0,3,"<a href=\"User.php.html#85\">App\\Models\\User::getTipoDocumentoAttribute<\/a>"],[0,3,"<a href=\"User.php.html#92\">App\\Models\\User::getDocumentoFormatadoAttribute<\/a>"],[0,1,"<a href=\"User.php.html#103\">App\\Models\\User::getOrCreateWishlist<\/a>"],[0,1,"<a href=\"User.php.html#114\">App\\Models\\User::isAdmin<\/a>"],[0,1,"<a href=\"User.php.html#115\">App\\Models\\User::isFuncionario<\/a>"],[0,1,"<a href=\"User.php.html#116\">App\\Models\\User::isCliente<\/a>"],[0,2,"<a href=\"User.php.html#117\">App\\Models\\User::isActive<\/a>"],[0,1,"<a href=\"User.php.html#119\">App\\Models\\User::scopeActive<\/a>"],[0,1,"<a href=\"User.php.html#120\">App\\Models\\User::scopeClientes<\/a>"],[0,1,"<a href=\"User.php.html#121\">App\\Models\\User::scopeAdmins<\/a>"],[0,1,"<a href=\"User.php.html#123\">App\\Models\\User::scopeBuscar<\/a>"],[0,4,"<a href=\"User.php.html#134\">App\\Models\\User::booted<\/a>"],[0,1,"<a href=\"Wishlist.php.html#34\">App\\Models\\Wishlist::user<\/a>"],[0,1,"<a href=\"Wishlist.php.html#42\">App\\Models\\Wishlist::items<\/a>"],[0,1,"<a href=\"Wishlist.php.html#50\">App\\Models\\Wishlist::produtos<\/a>"],[0,1,"<a href=\"Wishlist.php.html#60\">App\\Models\\Wishlist::scopeDefault<\/a>"],[0,1,"<a href=\"Wishlist.php.html#68\">App\\Models\\Wishlist::scopePublic<\/a>"],[0,1,"<a href=\"Wishlist.php.html#76\">App\\Models\\Wishlist::hasProduct<\/a>"],[0,2,"<a href=\"Wishlist.php.html#84\">App\\Models\\Wishlist::addProduct<\/a>"],[0,1,"<a href=\"Wishlist.php.html#100\">App\\Models\\Wishlist::removeProduct<\/a>"],[0,1,"<a href=\"Wishlist.php.html#108\">App\\Models\\Wishlist::countItems<\/a>"],[0,1,"<a href=\"Wishlist.php.html#116\">App\\Models\\Wishlist::clearItems<\/a>"],[0,1,"<a href=\"Wishlist.php.html#124\">App\\Models\\Wishlist::getProductsWithDetails<\/a>"],[0,1,"<a href=\"Wishlist.php.html#135\">App\\Models\\Wishlist::isDefault<\/a>"],[0,1,"<a href=\"Wishlist.php.html#143\">App\\Models\\Wishlist::setAsDefault<\/a>"],[0,1,"<a href=\"WishlistItem.php.html#21\">App\\Models\\WishlistItem::wishlist<\/a>"],[0,1,"<a href=\"WishlistItem.php.html#22\">App\\Models\\WishlistItem::produto<\/a>"],[0,1,"<a href=\"WishlistItem.php.html#24\">App\\Models\\WishlistItem::scopeRecent<\/a>"]], 'Method Complexity'))
+      .transition()
+      .duration(500)
+      .call(chart);
+
+    nv.utils.windowResize(chart.update);
+
+    return chart;
+  });
+
+  function getComplexityData(data, label) {
+    var values = [];
+    $.each(data, function(key) {
+      var value = Math.round(data[key][0]*100) / 100;
+      values.push({
+        x: value,
+        y: data[key][1],
+        class: data[key][2],
+        size: 0.05,
+        shape: 'diamond'
+      });
+    });
+
+    return [
+      {
+        key: label,
+        values: values,
+        color: "#4572A7"
+      }
+    ];
+  }
+});
+  </script>
+ </body>
+</html>

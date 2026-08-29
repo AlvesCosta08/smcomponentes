@@ -17,32 +17,81 @@ class WishlistController extends Controller
     /**
      * Exibe todas as listas de desejos do usuário.
      */
-    public function index(): View
+    public function index(Request $request): View|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para ver suas listas de desejos.'
+                ], 401);
+            }
             abort(403, 'Faça login para ver suas listas de desejos.');
         }
 
         // Buscar todas as wishlists do usuário
         $wishlists = $user->wishlists()
             ->withCount('items')
+            ->with(['items.produto'])
             ->orderBy('is_default', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // ✅ Se for requisição API, retorna JSON
+        if ($request->expectsJson() || $request->is('api/*')) {
+            $data = $wishlists->map(function($wishlist) {
+                return [
+                    'id' => $wishlist->id,
+                    'nome' => $wishlist->nome,
+                    'descricao' => $wishlist->descricao,
+                    'is_default' => $wishlist->is_default,
+                    'is_public' => $wishlist->is_public,
+                    'total_items' => $wishlist->items_count,
+                    'items' => $wishlist->items->map(function($item) {
+                        return [
+                            'id' => $item->id,
+                            'produto_id' => $item->produto_id,
+                            'observacao' => $item->observacao,
+                            'produto' => $item->produto ? [
+                                'id' => $item->produto->id,
+                                'descricao' => $item->produto->descricao,
+                                'slug' => $item->produto->slug,
+                                'valor_unitario' => $item->produto->valor_unitario,
+                                'preco_promocional' => $item->produto->preco_promocional,
+                                'imagem_url' => $item->produto->imagem_url,
+                                'disponivel' => $item->produto->isDisponivel(),
+                            ] : null
+                        ];
+                    })
+                ];
+            });
+            
+            return response()->json([
+                'data' => $data,
+                'total' => $wishlists->count()
+            ]);
+        }
+
+        // ✅ Caso contrário, retorna a view
         return view('wishlist.index', compact('wishlists'));
     }
 
     /**
      * Exibe uma wishlist específica com seus produtos.
      */
-    public function show(int $id): View
+    public function show(Request $request, int $id): View|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para ver esta lista.'
+                ], 401);
+            }
             abort(403, 'Faça login para ver esta lista.');
         }
 
@@ -58,6 +107,36 @@ class WishlistController extends Controller
 
         $totalItems = $wishlist->countItems();
 
+        // ✅ Se for requisição API, retorna JSON
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'data' => [
+                    'id' => $wishlist->id,
+                    'nome' => $wishlist->nome,
+                    'descricao' => $wishlist->descricao,
+                    'is_default' => $wishlist->is_default,
+                    'is_public' => $wishlist->is_public,
+                    'total_items' => $totalItems,
+                    'items' => $items->map(function($item) {
+                        return [
+                            'id' => $item->id,
+                            'produto_id' => $item->produto_id,
+                            'observacao' => $item->observacao,
+                            'produto' => $item->produto ? [
+                                'id' => $item->produto->id,
+                                'descricao' => $item->produto->descricao,
+                                'slug' => $item->produto->slug,
+                                'valor_unitario' => $item->produto->valor_unitario,
+                                'preco_promocional' => $item->produto->preco_promocional,
+                                'imagem_url' => $item->produto->imagem_url,
+                                'disponivel' => $item->produto->isDisponivel(),
+                            ] : null
+                        ];
+                    })
+                ]
+            ]);
+        }
+
         // Buscar todas as listas do usuário para o menu lateral
         $wishlists = $user->wishlists()
             ->withCount('items')
@@ -71,11 +150,17 @@ class WishlistController extends Controller
     /**
      * Cria uma nova wishlist.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para criar uma lista de desejos.'
+                ], 401);
+            }
             return redirect()->route('login')
                 ->with('error', 'Faça login para criar uma lista de desejos.');
         }
@@ -89,7 +174,7 @@ class WishlistController extends Controller
         $wishlist = $user->wishlists()->create([
             'nome' => $request->nome,
             'descricao' => $request->descricao,
-            'is_default' => $user->wishlists()->count() === 0, // Primeira lista é padrão
+            'is_default' => $user->wishlists()->count() === 0,
             'is_public' => $request->boolean('is_public', false),
         ]);
 
@@ -99,18 +184,39 @@ class WishlistController extends Controller
             'nome' => $wishlist->nome
         ]);
 
-        return redirect()->route('wishlist.show', $wishlist->id)
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de desejos criada com sucesso!',
+                'data' => [
+                    'id' => $wishlist->id,
+                    'nome' => $wishlist->nome,
+                    'descricao' => $wishlist->descricao,
+                    'is_default' => $wishlist->is_default,
+                    'is_public' => $wishlist->is_public,
+                ]
+            ]);
+        }
+
+        // ✅ CORRIGIDO: Usar cliente.wishlist.show
+        return redirect()->route('cliente.wishlist.show', $wishlist->id)
             ->with('success', 'Lista de desejos criada com sucesso!');
     }
 
     /**
      * Atualiza uma wishlist.
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para editar esta lista.'
+                ], 401);
+            }
             return redirect()->route('login')
                 ->with('error', 'Faça login para editar esta lista.');
         }
@@ -137,18 +243,39 @@ class WishlistController extends Controller
             'nome' => $wishlist->nome
         ]);
 
-        return redirect()->route('wishlist.show', $wishlist->id)
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de desejos atualizada com sucesso!',
+                'data' => [
+                    'id' => $wishlist->id,
+                    'nome' => $wishlist->nome,
+                    'descricao' => $wishlist->descricao,
+                    'is_default' => $wishlist->is_default,
+                    'is_public' => $wishlist->is_public,
+                ]
+            ]);
+        }
+
+        // ✅ CORRIGIDO: Usar cliente.wishlist.show
+        return redirect()->route('cliente.wishlist.show', $wishlist->id)
             ->with('success', 'Lista de desejos atualizada com sucesso!');
     }
 
     /**
      * Exclui uma wishlist.
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para excluir esta lista.'
+                ], 401);
+            }
             return redirect()->route('login')
                 ->with('error', 'Faça login para excluir esta lista.');
         }
@@ -159,7 +286,14 @@ class WishlistController extends Controller
 
         // Não permitir excluir a lista padrão
         if ($wishlist->is_default) {
-            return back()->with('error', 'Não é possível excluir a lista de desejos padrão.');
+            $message = 'Não é possível excluir a lista de desejos padrão.';
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 400);
+            }
+            return back()->with('error', $message);
         }
 
         $wishlist->delete();
@@ -169,7 +303,15 @@ class WishlistController extends Controller
             'wishlist_id' => $wishlist->id
         ]);
 
-        return redirect()->route('wishlist.index')
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de desejos excluída com sucesso!'
+            ]);
+        }
+
+        // ✅ CORRIGIDO: Usar cliente.wishlist.index
+        return redirect()->route('cliente.wishlist.index')
             ->with('success', 'Lista de desejos excluída com sucesso!');
     }
 
@@ -438,11 +580,17 @@ class WishlistController extends Controller
     /**
      * Limpa todos os itens de uma wishlist.
      */
-    public function limpar(Request $request, int $id): RedirectResponse
+    public function limpar(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para limpar esta lista.'
+                ], 401);
+            }
             return redirect()->route('login')
                 ->with('error', 'Faça login para limpar esta lista.');
         }
@@ -458,18 +606,32 @@ class WishlistController extends Controller
             'wishlist_id' => $wishlist->id
         ]);
 
-        return redirect()->route('wishlist.show', $wishlist->id)
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de desejos limpa com sucesso!'
+            ]);
+        }
+
+        // ✅ CORRIGIDO: Usar cliente.wishlist.show
+        return redirect()->route('cliente.wishlist.show', $wishlist->id)
             ->with('success', 'Lista de desejos limpa com sucesso!');
     }
 
     /**
      * Torna uma wishlist a padrão.
      */
-    public function setDefault(int $id): RedirectResponse
+    public function setDefault(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
         
         if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => 'Faça login para definir a lista padrão.'
+                ], 401);
+            }
             return redirect()->route('login')
                 ->with('error', 'Faça login para definir a lista padrão.');
         }
@@ -486,7 +648,15 @@ class WishlistController extends Controller
             'nome' => $wishlist->nome
         ]);
 
-        return redirect()->route('wishlist.index')
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lista de desejos definida como padrão!'
+            ]);
+        }
+
+        // ✅ CORRIGIDO: Usar cliente.wishlist.index
+        return redirect()->route('cliente.wishlist.index')
             ->with('success', 'Lista de desejos definida como padrão!');
     }
 }

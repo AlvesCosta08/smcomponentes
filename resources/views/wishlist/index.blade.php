@@ -45,7 +45,8 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('wishlist.show', $wishlist->id) }}">
+                                            {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.show') --}}
+                                            <a class="dropdown-item" href="{{ route('cliente.wishlist.show', $wishlist->id) }}">
                                                 <i class="fas fa-eye me-2"></i> Ver
                                             </a>
                                         </li>
@@ -60,7 +61,8 @@
                                                 <hr class="dropdown-divider">
                                             </li>
                                             <li>
-                                                <form action="{{ route('wishlist.destroy', $wishlist->id) }}" method="POST" 
+                                                {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.destroy') --}}
+                                                <form action="{{ route('cliente.wishlist.destroy', $wishlist->id) }}" method="POST" 
                                                       onsubmit="return confirm('Tem certeza que deseja excluir esta lista?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -82,7 +84,8 @@
                                 <span class="badge bg-secondary">
                                     <i class="fas fa-box me-1"></i> {{ $wishlist->countItems() }} produtos
                                 </span>
-                                <a href="{{ route('wishlist.show', $wishlist->id) }}" class="btn btn-sm btn-outline-primary">
+                                {{-- ✅ CORRIGIDO: Usar route('cliente.wishlist.show') --}}
+                                <a href="{{ route('cliente.wishlist.show', $wishlist->id) }}" class="btn btn-sm btn-outline-primary">
                                     Ver <i class="fas fa-arrow-right ms-1"></i>
                                 </a>
                             </div>
