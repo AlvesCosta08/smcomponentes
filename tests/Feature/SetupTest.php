@@ -1,7 +1,8 @@
 <?php
 
-namespace Tests;
+namespace Tests\Feature;
 
+use App\Models\Produto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,7 +11,7 @@ class SetupTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function ambiente_de_teste_esta_configurado()
+    public function ambiente_de_teste_esta_configurado(): void
     {
         $this->assertEquals('testing', config('app.env'));
         $this->assertEquals('sqlite', config('database.default'));
@@ -19,10 +20,14 @@ class SetupTest extends TestCase
     }
 
     /** @test */
-    public function factory_produto_esta_configurada()
+    public function factory_produto_esta_configurada(): void
     {
-        $produto = \App\Models\Produto::factory()->create();
-        $this->assertInstanceOf(\App\Models\Produto::class, $produto);
-        $this->assertDatabaseHas('produtos', ['id' => $produto->id]);
+        $produto = Produto::factory()->create();
+
+        $this->assertInstanceOf(Produto::class, $produto);
+        $this->assertDatabaseHas('produtos', [
+            'id' => $produto->id,
+        ]);
     }
 }
+

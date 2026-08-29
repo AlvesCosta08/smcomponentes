@@ -2,20 +2,14 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
-    "description": "Sistema de gerenciamento de produtos e componentes.",
-    "keywords": [
-        "laravel",
-        "framework",
-        "ecommerce",
-        "produtos",
-        "estoque"
-    ],
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "intervention/image": "^4.2",
+        "intervention/image": "*",
         "intervention/image-laravel": "^4.1",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "livewire/flux": "^2.16",
@@ -86,4 +80,3 @@
     "minimum-stability": "stable",
     "prefer-stable": true
 }
-
