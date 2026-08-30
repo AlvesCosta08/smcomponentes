@@ -4,14 +4,14 @@ set -e
 echo "[ENTRYPOINT] Iniciando configuração do Laravel..."
 
 # ============================================================
-# 1. Cria pastas de cache com permissões totais
+# 1. Pastas de cache
 # ============================================================
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p bootstrap/cache
 chmod -R 777 storage bootstrap/cache
 
 # ============================================================
-# 2. Cria .env a partir do .env.example
+# 2. Criar .env a partir do .env.example
 # ============================================================
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
@@ -24,7 +24,7 @@ if [ ! -f .env ]; then
 fi
 
 # ============================================================
-# 3. Aplica variáveis de ambiente ao .env
+# 3. Aplicar variáveis de ambiente ao .env
 # ============================================================
 echo "[ENTRYPOINT] Aplicando variáveis de ambiente ao .env..."
 
@@ -47,32 +47,39 @@ echo "APP_STORAGE=/var/www/html/storage" >> .env
 echo "VIEW_COMPILED_PATH=/var/www/html/storage/framework/views" >> .env
 
 # ============================================================
-# 4. CORREÇÃO AUTOMÁTICA DO HOSTNAME (fallback)
+# 4. CORREÇÃO AUTOMÁTICA DO HOSTNAME (várias combinações)
 # ============================================================
 if [ -n "$DB_HOST" ]; then
     ORIGINAL_HOST="$DB_HOST"
     echo "[ENTRYPOINT] Hostname original: $ORIGINAL_HOST"
 
-    # Se não contém ".render.com", tenta adicionar
-    if ! echo "$ORIGINAL_HOST" | grep -q '\.render\.com$'; then
-        # Tenta primeiro com .render.com (padrão)
-        TEST_HOST="${ORIGINAL_HOST}.render.com"
-        echo "[ENTRYPOINT] Tentando hostname com domínio: $TEST_HOST"
+    # Lista de combinações para testar
+    VARIANTS="
+        $ORIGINAL_HOST
+        $ORIGINAL_HOST.render.com
+        $ORIGINAL_HOST.oregon-postgres.render.com
+        $ORIGINAL_HOST.us-east-1.postgres.render.com
+        $ORIGINAL_HOST.postgres.render.com
+    "
 
-        if nslookup "$TEST_HOST" >/dev/null 2>&1; then
-            echo "[ENTRYPOINT] ✅ Hostname corrigido para: $TEST_HOST"
-            export DB_HOST="$TEST_HOST"
-            sed -i "s/^DB_HOST=.*/DB_HOST=$TEST_HOST/" .env
+    RESOLVED_HOST=""
+    for HOST in $VARIANTS; do
+        if nslookup "$HOST" >/dev/null 2>&1; then
+            echo "[ENTRYPOINT] ✅ Hostname resolvido: $HOST"
+            RESOLVED_HOST="$HOST"
+            break
         else
-            # Se não resolver, mantém o original e avisa
-            echo "[ENTRYPOINT] ⚠️  $TEST_HOST não resolve. Verifique o hostname no painel do Render."
-            echo "[ENTRYPOINT] O domínio pode ser diferente (ex: .oregon-postgres.render.com)."
+            echo "[ENTRYPOINT] Tentativa falhou: $HOST"
         fi
+    done
+
+    if [ -n "$RESOLVED_HOST" ]; then
+        export DB_HOST="$RESOLVED_HOST"
+        sed -i "s/^DB_HOST=.*/DB_HOST=$RESOLVED_HOST/" .env
+        echo "[ENTRYPOINT] Hostname atualizado para: $DB_HOST"
     else
-        # Já tem .render.com, testa se resolve
-        if ! nslookup "$DB_HOST" >/dev/null 2>&1; then
-            echo "[ENTRYPOINT] ⚠️  Hostname $DB_HOST não resolve. Verifique o valor."
-        fi
+        echo "[ENTRYPOINT] ⚠️  Nenhuma combinação resolveu. Usando original: $ORIGINAL_HOST"
+        export DB_HOST="$ORIGINAL_HOST"
     fi
 fi
 
