@@ -19,12 +19,33 @@ export SESSION_DRIVER=${SESSION_DRIVER:-file}
 export CACHE_DRIVER=${CACHE_DRIVER:-file}
 
 # ============================================================
-# 3. Criar .env a partir do .env.example (com envsubst)
+# 3. Criar .env a partir do .env.example (substituindo variáveis)
 # ============================================================
 if [ -f .env.example ]; then
-    echo "[ENTRYPOINT] Gerando .env a partir do .env.example com envsubst..."
-    # Substitui variáveis no formato ${VAR} ou $VAR pelos valores do ambiente
-    envsubst < .env.example > .env
+    echo "[ENTRYPOINT] Gerando .env a partir do .env.example..."
+    # Copia .env.example para .env
+    cp .env.example .env
+
+    # Substitui todas as variáveis no formato ${VAR} ou $VAR pelos valores do ambiente
+    # Usa sed para encontrar padrões e substituir
+    # Lista de variáveis que podem estar no .env.example
+    ENV_VARS="APP_ENV APP_DEBUG APP_KEY APP_URL ASSET_URL VITE_APP_URL \
+              DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSLMODE \
+              CACHE_DRIVER SESSION_DRIVER SESSION_SECURE_COOKIE FORCE_HTTPS \
+              BROADCAST_DRIVER QUEUE_CONNECTION LOG_CHANNEL LOG_LEVEL \
+              APP_STORAGE VIEW_COMPILED_PATH"
+
+    for VAR in $ENV_VARS; do
+        eval VALUE=\$$VAR
+        if [ -n "$VALUE" ]; then
+            # Escapa caracteres especiais para o sed
+            ESCAPED_VALUE=$(echo "$VALUE" | sed -e 's/[\/&]/\\&/g')
+            # Substitui ${VAR} e $VAR pelo valor
+            sed -i "s/\${$VAR}/$ESCAPED_VALUE/g" .env
+            sed -i "s/$$VAR/$ESCAPED_VALUE/g" .env
+        fi
+    done
+
     echo "[ENTRYPOINT] .env gerado com sucesso."
 else
     echo "[ENTRYPOINT] ERRO: .env.example não encontrado!"
@@ -47,13 +68,11 @@ echo "VIEW_COMPILED_PATH=$VIEW_COMPILED_PATH" >> .env
 echo "CACHE_DRIVER=$CACHE_DRIVER" >> .env
 echo "SESSION_DRIVER=$SESSION_DRIVER" >> .env
 
-# Aplica as demais variáveis do ambiente (Render)
-ENV_VARS="APP_ENV APP_DEBUG APP_KEY APP_URL ASSET_URL VITE_APP_URL \
-          DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSLMODE \
-          SESSION_SECURE_COOKIE FORCE_HTTPS BROADCAST_DRIVER QUEUE_CONNECTION \
-          LOG_CHANNEL LOG_LEVEL"
-
-for VAR in $ENV_VARS; do
+# Aplica as demais variáveis do ambiente (Render) - sobrescreve
+for VAR in APP_ENV APP_DEBUG APP_KEY APP_URL ASSET_URL VITE_APP_URL \
+           DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSLMODE \
+           SESSION_SECURE_COOKIE FORCE_HTTPS BROADCAST_DRIVER QUEUE_CONNECTION \
+           LOG_CHANNEL LOG_LEVEL; do
     eval VALUE=\$$VAR
     if [ -n "$VALUE" ]; then
         ESCAPED_VALUE=$(echo "$VALUE" | sed -e 's/[\/&]/\\&/g')
