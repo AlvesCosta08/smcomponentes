@@ -14,8 +14,8 @@ chmod -R 777 storage bootstrap/cache
 # 2. Definir variáveis de ambiente essenciais
 # ============================================
 export APP_STORAGE=/var/www/html/storage
-export CACHE_DRIVER=file
-export SESSION_DRIVER=file
+export CACHE_DRIVER=${CACHE_DRIVER:-file}
+export SESSION_DRIVER=${SESSION_DRIVER:-file}
 export VIEW_COMPILED_PATH=/var/www/html/storage/framework/views
 
 # ============================================
@@ -27,24 +27,45 @@ if [ ! -f .env ]; then
         echo "[ENTRYPOINT] .env criado a partir do .env.example"
     else
         touch .env
-        echo "[ENTRYPOINT] .env criado vazio (sem .env.example)"
+        echo "[ENTRYPOINT] .env criado vazio"
     fi
 fi
 
-# Remove linhas antigas das variáveis que vamos forçar
+# Adiciona/atualiza as variáveis no .env (sobrescreve)
 sed -i '/^APP_STORAGE=/d' .env
 sed -i '/^CACHE_DRIVER=/d' .env
 sed -i '/^SESSION_DRIVER=/d' .env
 sed -i '/^VIEW_COMPILED_PATH=/d' .env
 
-# Adiciona as variáveis no .env
 echo "APP_STORAGE=$APP_STORAGE" >> .env
 echo "CACHE_DRIVER=$CACHE_DRIVER" >> .env
 echo "SESSION_DRIVER=$SESSION_DRIVER" >> .env
 echo "VIEW_COMPILED_PATH=$VIEW_COMPILED_PATH" >> .env
 
 # ============================================
-# 4. Limpar qualquer cache existente
+# 4. Verificar conexão com o banco de dados (se configurado)
+# ============================================
+if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
+    echo "[ENTRYPOINT] Aguardando banco de dados ficar disponível em $DB_HOST:$DB_PORT..."
+    timeout=60
+    while [ $timeout -gt 0 ]; do
+        if php -r "try { new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD'); echo 'ok'; } catch (PDOException \$e) { exit(1); }" 2>/dev/null | grep -q ok; then
+            echo "[ENTRYPOINT] Conexão com o banco bem-sucedida!"
+            break
+        fi
+        timeout=$((timeout - 1))
+        sleep 1
+        echo "[ENTRYPOINT] Aguardando banco... ($timeout segundos restantes)"
+    done
+    if [ $timeout -eq 0 ]; then
+        echo "[ENTRYPOINT] AVISO: Não foi possível conectar ao banco em $DB_HOST. Continuando mesmo assim..."
+    fi
+else
+    echo "[ENTRYPOINT] Variáveis de banco não definidas. Pulando verificação."
+fi
+
+# ============================================
+# 5. Limpar qualquer cache existente
 # ============================================
 php artisan config:clear || true
 php artisan cache:clear || true
@@ -52,25 +73,21 @@ php artisan view:clear || true
 php artisan route:clear || true
 
 # ============================================
-# 5. Gerar APP_KEY se não definida
+# 6. Gerar APP_KEY se necessário
 # ============================================
 if grep -q "^APP_KEY=$" .env; then
-    echo "[ENTRYPOINT] Gerando APP_KEY..."
     php artisan key:generate
 fi
 
 # ============================================
-# 6. Recriar autoload otimizado
+# 7. Recriar autoload otimizado e rodar package discovery
 # ============================================
 echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize
 
-# ============================================
-# 7. Descobrir pacotes (package:discover)
-# ============================================
 echo "[ENTRYPOINT] Executando package:discover..."
 php artisan package:discover --no-ansi || {
-    echo "[ENTRYPOINT] AVISO: package:discover falhou, mas continuando..."
+    echo "[ENTRYPOINT] AVISO: package:discover falhou, mas a aplicação pode funcionar normalmente."
 }
 
 # ============================================
@@ -84,11 +101,11 @@ if [ "$APP_ENV" = "production" ]; then
 fi
 
 # ============================================
-# 9. Rodar migrações se solicitado via variável de ambiente
+# 9. Migrações (se FORCE_MIGRATION=true)
 # ============================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
     echo "[ENTRYPOINT] Executando migrações..."
-    php artisan migrate --force
+    php artisan migrate --force || true
 fi
 
 # ============================================

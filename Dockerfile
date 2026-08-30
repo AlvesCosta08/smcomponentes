@@ -45,10 +45,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 1. Copia apenas os arquivos de dependência do PHP (melhor cache)
+# 1. Copia apenas os arquivos de dependência do PHP
 COPY composer.json composer.lock ./
 
-# 2. Instala as dependências em modo produção (sem scripts)
+# 2. Instala dependências sem executar scripts (evita erros de arquivos faltando)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
 # 3. Copia o restante do código-fonte
@@ -63,15 +63,13 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Copia o script de entrada e dá permissão de execução
+# 6. Script de entrada (entrypoint)
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expõe a porta 8000 (para o servidor embutido)
+# Expõe a porta 8000 (o Render injeta a variável PORT)
 EXPOSE 8000
 
-# Define o entrypoint
+# Define o entrypoint e o comando padrão
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-
-# Comando padrão: inicia o servidor embutido do PHP (usa a porta definida pelo Render)
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

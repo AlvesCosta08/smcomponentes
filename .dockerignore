@@ -14,3 +14,4 @@ Dockerfile
 .phpunit.cache
 tests/
 .github/
+README.md
