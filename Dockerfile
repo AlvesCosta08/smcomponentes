@@ -1,13 +1,15 @@
 # ====================
-# ESTÁGIO 1: Build do Vite
+# ESTÁGIO 1: Build do Vite (assets)
 # ====================
 FROM node:22-alpine AS vite-builder
 
 WORKDIR /app
 
+# Copia apenas os arquivos de dependência para melhor cache
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
+# Copia o restante do código e compila
 COPY . .
 RUN npm run build
 
@@ -38,21 +40,21 @@ RUN apk add --no-cache \
         zip \
         opcache
 
-# Instala o Composer
+# Instala o Composer (global)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 1. Copia apenas os arquivos de dependência (melhor cache)
+# 1. Copia apenas os arquivos de dependência do PHP (melhor cache)
 COPY composer.json composer.lock ./
 
-# 2. Instala dependências (sem scripts para evitar erros de arquivos faltando)
+# 2. Instala as dependências em modo produção (sem scripts)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
-# 3. Copia o restante do código
+# 3. Copia o restante do código-fonte
 COPY . .
 
-# 4. Copia os assets compilados
+# 4. Copia os assets compilados (do estágio Node)
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
 # 5. Cria pastas de cache e ajusta permissões (durante o build)
@@ -61,10 +63,15 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Script de entrada (entrypoint)
+# 6. Copia o script de entrada e dá permissão de execução
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# Expõe a porta 8000 (para o servidor embutido)
 EXPOSE 8000
+
+# Define o entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Comando padrão: inicia o servidor embutido do PHP (usa a porta definida pelo Render)
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

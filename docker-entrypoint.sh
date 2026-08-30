@@ -1,77 +1,98 @@
 #!/bin/sh
 set -e
 
+echo "[ENTRYPOINT] Iniciando configuração do Laravel..."
+
 # ============================================
-# 1. Garantir que as pastas de cache existam
+# 1. Garantir pastas de cache com permissões amplas
 # ============================================
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
+chmod -R 777 storage bootstrap/cache
 
 # ============================================
-# 2. Configurar variáveis de ambiente
+# 2. Definir variáveis de ambiente essenciais
 # ============================================
 export APP_STORAGE=/var/www/html/storage
 export CACHE_DRIVER=file
 export SESSION_DRIVER=file
+export VIEW_COMPILED_PATH=/var/www/html/storage/framework/views
 
 # ============================================
-# 3. Criar .env se não existir
+# 3. Criar/atualizar .env com as variáveis forçadas
 # ============================================
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         cp .env.example .env
+        echo "[ENTRYPOINT] .env criado a partir do .env.example"
     else
-        echo "AVISO: .env.example não encontrado. Criando .env vazio."
-        > .env
+        touch .env
+        echo "[ENTRYPOINT] .env criado vazio (sem .env.example)"
     fi
-    # Força variáveis essenciais (serão sobrescritas por variáveis de ambiente se definidas)
-    echo "APP_STORAGE=$APP_STORAGE" >> .env
-    echo "CACHE_DRIVER=$CACHE_DRIVER" >> .env
-    echo "SESSION_DRIVER=$SESSION_DRIVER" >> .env
 fi
 
+# Remove linhas antigas das variáveis que vamos forçar
+sed -i '/^APP_STORAGE=/d' .env
+sed -i '/^CACHE_DRIVER=/d' .env
+sed -i '/^SESSION_DRIVER=/d' .env
+sed -i '/^VIEW_COMPILED_PATH=/d' .env
+
+# Adiciona as variáveis no .env
+echo "APP_STORAGE=$APP_STORAGE" >> .env
+echo "CACHE_DRIVER=$CACHE_DRIVER" >> .env
+echo "SESSION_DRIVER=$SESSION_DRIVER" >> .env
+echo "VIEW_COMPILED_PATH=$VIEW_COMPILED_PATH" >> .env
+
 # ============================================
-# 4. Limpar cache de configuração (evita conflitos)
+# 4. Limpar qualquer cache existente
 # ============================================
 php artisan config:clear || true
+php artisan cache:clear || true
+php artisan view:clear || true
+php artisan route:clear || true
 
 # ============================================
 # 5. Gerar APP_KEY se não definida
 # ============================================
 if grep -q "^APP_KEY=$" .env; then
+    echo "[ENTRYPOINT] Gerando APP_KEY..."
     php artisan key:generate
 fi
 
 # ============================================
-# 6. Executar tarefas pós-instalação (dump-autoload e package discovery)
+# 6. Recriar autoload otimizado
 # ============================================
-echo "Executando composer dump-autoload --optimize..."
+echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize
 
-echo "Executando php artisan package:discover..."
-php artisan package:discover --ansi || {
-    echo "Falha no package:discover, mas continuando..."
+# ============================================
+# 7. Descobrir pacotes (package:discover)
+# ============================================
+echo "[ENTRYPOINT] Executando package:discover..."
+php artisan package:discover --no-ansi || {
+    echo "[ENTRYPOINT] AVISO: package:discover falhou, mas continuando..."
 }
 
 # ============================================
-# 7. Otimizações para produção (se APP_ENV=production)
+# 8. Otimizações para produção (se APP_ENV=production)
 # ============================================
 if [ "$APP_ENV" = "production" ]; then
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
+    echo "[ENTRYPOINT] Otimizando cache para produção..."
+    php artisan config:cache || true
+    php artisan route:cache || true
+    php artisan view:cache || true
 fi
 
 # ============================================
-# 8. Migrações (se FORCE_MIGRATION=true)
+# 9. Rodar migrações se solicitado via variável de ambiente
 # ============================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
+    echo "[ENTRYPOINT] Executando migrações..."
     php artisan migrate --force
 fi
 
 # ============================================
-# 9. Executa o comando principal (CMD)
+# 10. Executa o comando principal (CMD)
 # ============================================
+echo "[ENTRYPOINT] Inicialização concluída. Iniciando servidor..."
 exec "$@"
