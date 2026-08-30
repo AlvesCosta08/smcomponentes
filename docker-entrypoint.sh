@@ -4,90 +4,90 @@ set -eu
 echo "[ENTRYPOINT] Iniciando configuração do Laravel..."
 
 # ============================================================
-# 1. Ir para o diretório correto da aplicação
+
+# 1. Diretório da aplicação
+
 # ============================================================
+
 cd /var/www/html
 
 # ============================================================
-# 2. Garantir diretórios necessários do Laravel
+
+# 2. Criar diretórios obrigatórios do Laravel
+
 # ============================================================
+
 echo "[ENTRYPOINT] Criando diretórios de storage e cache..."
 
-mkdir -p \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/framework/cache/data \
-    storage/logs \
-    bootstrap/cache
+mkdir -p 
+storage/framework/sessions 
+storage/framework/views 
+storage/framework/cache/data 
+storage/logs 
+bootstrap/cache
 
-# Criar arquivos para garantir que os diretórios existam
 touch storage/logs/laravel.log
 
 # ============================================================
+
 # 3. Permissões
+
 # ============================================================
+
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 chmod -R ug+rwx storage bootstrap/cache
 
 # ============================================================
-# 4. Criar .env somente se ainda não existir
+
+# 4. Criar .env caso não exista
+
 # ============================================================
+
 if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        echo "[ENTRYPOINT] .env criado a partir do .env.example"
-    else
-        echo "[ENTRYPOINT] ERRO: .env.example não encontrado!"
-        exit 1
-    fi
+if [ -f .env.example ]; then
+cp .env.example .env
+echo "[ENTRYPOINT] .env criado a partir do .env.example"
 else
-    echo "[ENTRYPOINT] .env já existe. Mantendo arquivo atual."
+echo "[ENTRYPOINT] ERRO: .env.example não encontrado!"
+exit 1
+fi
 fi
 
 # ============================================================
-# 5. DATABASE_URL
-# ============================================================
-if [ -z "${DATABASE_URL:-}" ]; then
-    echo "[ENTRYPOINT] AVISO: DATABASE_URL não definida no ambiente."
-    echo "[ENTRYPOINT] Configure DATABASE_URL nas variáveis do Render."
-    exit 1
-fi
 
-echo "[ENTRYPOINT] Usando DATABASE_URL do ambiente."
+# 5. Validar configurações do banco
 
 # ============================================================
-# 6. Extrair parâmetros da DATABASE_URL
-# ============================================================
-echo "[ENTRYPOINT] Extraindo parâmetros da DATABASE_URL..."
 
-DB_VALUES=$(php -r '
-    $url = getenv("DATABASE_URL");
+: "${DB_CONNECTION:=pgsql}"
+: "${DB_HOST:?ERRO: DB_HOST não definida}"
+: "${DB_PORT:=5432}"
+: "${DB_DATABASE:?ERRO: DB_DATABASE não definida}"
+: "${DB_USERNAME:?ERRO: DB_USERNAME não definida}"
+: "${DB_PASSWORD:?ERRO: DB_PASSWORD não definida}"
 
-    if (!$url) {
-        fwrite(STDERR, "DATABASE_URL não encontrada\n");
-        exit(1);
-    }
+export 
+DB_CONNECTION 
+DB_HOST 
+DB_PORT 
+DB_DATABASE 
+DB_USERNAME 
+DB_PASSWORD
 
-    $db = parse_url($url);
-
-    if ($db === false || empty($db["host"]) || empty($db["path"])) {
-        fwrite(STDERR, "DATABASE_URL inválida\n");
-        exit(1);
-    }
-
-    echo "DB_HOST=" . escapeshellarg($db["host"]) . " ";
-    echo "DB_PORT=" . escapeshellarg($db["port"] ?? 5432) . " ";
-    echo "DB_NAME=" . escapeshellarg(ltrim($db["path"], "/")) . " ";
-    echo "DB_USER=" . escapeshellarg($db["user"] ?? "") . " ";
-    echo "DB_PASS=" . escapeshellarg($db["pass"] ?? "");
-')
-
-eval "$DB_VALUES"
+echo "[ENTRYPOINT] Configuração do banco:"
+echo "[ENTRYPOINT] Driver: $DB_CONNECTION"
+echo "[ENTRYPOINT] Host: $DB_HOST"
+echo "[ENTRYPOINT] Porta: $DB_PORT"
+echo "[ENTRYPOINT] Banco: $DB_DATABASE"
+echo "[ENTRYPOINT] Usuário: $DB_USERNAME"
 
 # ============================================================
-# 7. Testar conexão com PostgreSQL
+
+# 6. Testar conexão com PostgreSQL
+
 # ============================================================
-echo "[ENTRYPOINT] Testando conexão com o banco..."
+
+echo "[ENTRYPOINT] Testando conexão com PostgreSQL..."
 
 MAX_RETRIES=10
 COUNT=0
@@ -95,137 +95,168 @@ CONNECTED=0
 
 while [ "$COUNT" -lt "$MAX_RETRIES" ]; do
 
-    if php -r '
-        $url = getenv("DATABASE_URL");
+```
+if php -r '
+    try {
+        $dsn = sprintf(
+            "pgsql:host=%s;port=%s;dbname=%s;sslmode=require",
+            getenv("DB_HOST"),
+            getenv("DB_PORT"),
+            getenv("DB_DATABASE")
+        );
 
-        try {
-            $pdo = new PDO(
-                $url,
-                null,
-                null,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_TIMEOUT => 10,
-                ]
-            );
+        new PDO(
+            $dsn,
+            getenv("DB_USERNAME"),
+            getenv("DB_PASSWORD"),
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 10,
+            ]
+        );
 
-            echo "ok";
-        } catch (Throwable $e) {
-            fwrite(STDERR, $e->getMessage());
-            exit(1);
-        }
-    ' >/tmp/db_test 2>&1; then
+        echo "ok";
+    } catch (Throwable $e) {
+        fwrite(STDERR, $e->getMessage());
+        exit(1);
+    }
+' >/tmp/db_test 2>&1; then
 
-        echo "[ENTRYPOINT] Conexão com o banco bem-sucedida!"
-        CONNECTED=1
-        break
-    fi
+    echo "[ENTRYPOINT] Conexão com PostgreSQL bem-sucedida!"
+    CONNECTED=1
+    break
+fi
 
-    COUNT=$((COUNT + 1))
+COUNT=$((COUNT + 1))
 
-    echo "[ENTRYPOINT] Tentativa $COUNT/$MAX_RETRIES falhou:"
-    cat /tmp/db_test
+echo "[ENTRYPOINT] Tentativa $COUNT/$MAX_RETRIES falhou:"
+cat /tmp/db_test || true
 
-    sleep 3
+sleep 3
+```
+
 done
 
 if [ "$CONNECTED" -eq 0 ]; then
-    echo "[ENTRYPOINT] ERRO: Não foi possível conectar ao banco."
-    exit 1
+echo "[ENTRYPOINT] ERRO: Não foi possível conectar ao PostgreSQL."
+exit 1
 fi
 
 # ============================================================
-# 8. Verificação das pastas ANTES do Artisan
-# ============================================================
-echo "[ENTRYPOINT] Verificando estrutura do Laravel..."
 
-for DIR in \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/framework/cache \
-    storage/framework/cache/data \
-    storage/logs \
-    bootstrap/cache
+# 7. Validar diretórios antes do Artisan
+
+# ============================================================
+
+echo "[ENTRYPOINT] Validando estrutura de cache..."
+
+for DIR in 
+storage/framework/sessions 
+storage/framework/views 
+storage/framework/cache 
+storage/framework/cache/data 
+storage/logs 
+bootstrap/cache
 do
-    if [ ! -d "$DIR" ]; then
-        echo "[ENTRYPOINT] ERRO: Diretório ausente: $DIR"
-        exit 1
-    fi
+if [ ! -d "$DIR" ]; then
+echo "[ENTRYPOINT] ERRO: Diretório ausente: $DIR"
+exit 1
+fi
 done
 
-echo "[ENTRYPOINT] Estrutura de cache validada."
+# ============================================================
+
+# 8. APP_KEY
 
 # ============================================================
-# 9. Recriar autoload sem executar scripts automaticamente
-# ============================================================
-echo "[ENTRYPOINT] Recriando autoload..."
 
-composer dump-autoload \
-    --optimize \
-    --no-interaction \
-    --no-scripts
+if [ -z "${APP_KEY:-}" ]; then
+if ! grep -q "^APP_KEY=.+" .env; then
+echo "[ENTRYPOINT] Gerando APP_KEY..."
+php artisan key:generate --force --no-interaction
+fi
+fi
 
 # ============================================================
-# 10. Limpar caches
+
+# 9. Limpar caches
+
 # ============================================================
+
 echo "[ENTRYPOINT] Limpando caches..."
 
 php artisan optimize:clear --no-interaction
 
 # ============================================================
-# 11. APP_KEY
-# ============================================================
-if ! grep -q "^APP_KEY=.\+" .env; then
-    echo "[ENTRYPOINT] Gerando APP_KEY..."
-    php artisan key:generate --force --no-interaction
-fi
+
+# 10. Package Discovery
 
 # ============================================================
-# 12. Package discovery
-# ============================================================
+
 echo "[ENTRYPOINT] Executando package discovery..."
 
-php artisan package:discover \
-    --ansi \
-    --no-interaction
+php artisan package:discover 
+--ansi 
+--no-interaction
 
 # ============================================================
-# 13. Migrações
+
+# 11. Migrações
+
 # ============================================================
+
 if [ "${FORCE_MIGRATION:-false}" = "true" ]; then
-    echo "[ENTRYPOINT] Executando migrations..."
+echo "[ENTRYPOINT] Executando migrations..."
 
-    php artisan migrate \
-        --force \
-        --no-interaction
+```
+php artisan migrate \
+    --force \
+    --no-interaction
+```
+
 fi
 
 # ============================================================
-# 14. Seeders
+
+# 12. Seeders
+
 # ============================================================
+
 if [ "${FORCE_SEED:-false}" = "true" ]; then
-    echo "[ENTRYPOINT] Executando seeders..."
+echo "[ENTRYPOINT] Executando seeders..."
 
-    php artisan db:seed \
-        --force \
-        --no-interaction
+```
+php artisan db:seed \
+    --force \
+    --no-interaction
+```
+
 fi
 
 # ============================================================
-# 15. Cache para produção
+
+# 13. Otimizações para produção
+
 # ============================================================
+
 if [ "${APP_ENV:-production}" = "production" ]; then
 
-    echo "[ENTRYPOINT] Otimizando Laravel para produção..."
+```
+echo "[ENTRYPOINT] Criando caches de produção..."
 
-    php artisan config:cache --no-interaction
-    php artisan route:cache --no-interaction || true
-    php artisan view:cache --no-interaction
+php artisan config:cache --no-interaction
+php artisan route:cache --no-interaction || true
+php artisan view:cache --no-interaction
+```
+
 fi
 
 # ============================================================
-# 16. Porta
+
+# 14. Porta
+
 # ============================================================
+
 export PORT="${PORT:-10000}"
 
 echo "[ENTRYPOINT] Inicialização concluída!"
