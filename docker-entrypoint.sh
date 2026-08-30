@@ -11,7 +11,7 @@ mkdir -p bootstrap/cache
 chmod -R 777 storage bootstrap/cache
 
 # ============================================================
-# 2. Variáveis essenciais (com fallbacks)
+# 2. Variáveis essenciais
 # ============================================================
 export APP_STORAGE=/var/www/html/storage
 export VIEW_COMPILED_PATH=/var/www/html/storage/framework/views
@@ -19,25 +19,38 @@ export SESSION_DRIVER=${SESSION_DRIVER:-file}
 export CACHE_DRIVER=${CACHE_DRIVER:-file}
 
 # ============================================================
-# 3. Configuração fixa do banco de dados (DATABASE_URL embutida)
+# 3. Configuração do banco (DATABASE_URL embutida)
 # ============================================================
-# ⚠️ ATENÇÃO: Credenciais fixas no código – NÃO recomendado para produção!
-# Substitua por variáveis de ambiente em um ambiente seguro.
-export DATABASE_URL="postgresql://loja_virtual_eilu_user:FeNuDK8XRL0XoI7WwqCgvCOJzT6d0Kof@dpg-daa41s9f2nfc7395g1dg-a.oregon-postgres.render.com/loja_virtual_eilu?sslmode=require"
-
-# Se a variável DATABASE_URL já estiver definida no ambiente, mantém ela (prioridade)
-if [ -n "$DATABASE_URL" ]; then
-    echo "[ENTRYPOINT] Usando DATABASE_URL do ambiente."
+# Se a variável DATABASE_URL não estiver definida no ambiente, usa a embutida
+if [ -z "$DATABASE_URL" ]; then
+    export DATABASE_URL="postgresql://loja_virtual_eilu_user:FeNuDK8XRL0XoI7WwqCgvCOJzT6d0Kof@dpg-daa41s9f2nfc7395g1dg-a.oregon-postgres.render.com/loja_virtual_eilu?sslmode=require"
+    echo "[ENTRYPOINT] Usando DATABASE_URL embutida."
 else
-    echo "[ENTRYPOINT] Usando DATABASE_URL embutida no script."
-    export DATABASE_URL="$DATABASE_URL"
+    echo "[ENTRYPOINT] Usando DATABASE_URL do ambiente."
 fi
 
 # ============================================================
-# 4. Gerar .env diretamente
+# 4. Verificar se o driver PDO_PGSQL está carregado
+# ============================================================
+echo "[ENTRYPOINT] Verificando extensões PHP..."
+if php -m | grep -q pdo_pgsql; then
+    echo "[ENTRYPOINT] ✅ PDO_PGSQL está carregado."
+else
+    echo "[ENTRYPOINT] ❌ PDO_PGSQL NÃO está carregado. Tentando habilitar..."
+    # Tenta habilitar a extensão via php.ini (fallback)
+    echo "extension=pdo_pgsql.so" > /usr/local/etc/php/conf.d/docker-php-ext-pdo_pgsql.ini
+    if php -m | grep -q pdo_pgsql; then
+        echo "[ENTRYPOINT] ✅ PDO_PGSQL habilitado com sucesso."
+    else
+        echo "[ENTRYPOINT] ❌ ERRO CRÍTICO: Não foi possível carregar PDO_PGSQL."
+        exit 1
+    fi
+fi
+
+# ============================================================
+# 5. Gerar .env
 # ============================================================
 echo "[ENTRYPOINT] Gerando .env..."
-
 rm -f .env
 
 cat > .env << EOF
@@ -51,7 +64,6 @@ VITE_APP_URL=${VITE_APP_URL:-$APP_URL}
 APP_STORAGE=$APP_STORAGE
 VIEW_COMPILED_PATH=$VIEW_COMPILED_PATH
 
-# Banco de dados (via DATABASE_URL)
 DATABASE_URL=$DATABASE_URL
 DB_CONNECTION=pgsql
 
@@ -68,7 +80,7 @@ EOF
 echo "[ENTRYPOINT] .env gerado com sucesso."
 
 # ============================================================
-# 5. Teste de conexão com o banco
+# 6. Teste de conexão com o banco
 # ============================================================
 echo "[ENTRYPOINT] Testando conexão com o banco via DATABASE_URL..."
 
@@ -99,63 +111,50 @@ done
 
 if [ $CONNECTED -eq 0 ]; then
     echo "[ENTRYPOINT] ❌ ERRO: Não foi possível conectar ao banco."
-    echo "[ENTRYPOINT] DATABASE_URL: $DATABASE_URL"
+    echo "[ENTRYPOINT] Último erro: $ERROR_MSG"
     exit 1
 fi
 
 # ============================================================
-# 6. Limpeza de caches
+# 7. Limpeza de caches
 # ============================================================
-echo "[ENTRYPOINT] Limpando caches..."
 php artisan config:clear --no-interaction || true
 php artisan cache:clear --no-interaction || true
 php artisan view:clear --no-interaction || true
 php artisan route:clear --no-interaction || true
 
 # ============================================================
-# 7. Gerar APP_KEY se necessário
+# 8. APP_KEY
 # ============================================================
 if grep -q "^APP_KEY=$" .env; then
-    echo "[ENTRYPOINT] Gerando APP_KEY..."
     php artisan key:generate --no-interaction
 fi
 
 # ============================================================
-# 8. Recriar autoload
+# 9. Autoload
 # ============================================================
-echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize --no-interaction
 
 # ============================================================
-# 9. Package discover
+# 10. Package discover
 # ============================================================
-echo "[ENTRYPOINT] Executando package:discover..."
 php artisan package:discover --no-ansi --no-interaction || true
 
 # ============================================================
-# 10. Migrações e Seeders
+# 11. Migrations e Seeders
 # ============================================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
-    echo "[ENTRYPOINT] Executando migrations..."
-    php artisan migrate --force --no-interaction || {
-        echo "[ENTRYPOINT] ❌ ERRO: Falha nas migrations."
-        exit 1
-    }
+    php artisan migrate --force --no-interaction || exit 1
 fi
 
 if [ "$FORCE_SEED" = "true" ]; then
-    echo "[ENTRYPOINT] Executando seeders..."
-    php artisan db:seed --force --no-interaction || {
-        echo "[ENTRYPOINT] ❌ ERRO: Falha nos seeders."
-        exit 1
-    }
+    php artisan db:seed --force --no-interaction || exit 1
 fi
 
 # ============================================================
-# 11. Otimizações para produção
+# 12. Otimizações
 # ============================================================
 if [ "$APP_ENV" = "production" ]; then
-    echo "[ENTRYPOINT] Otimizando cache para produção..."
     php artisan config:cache --no-interaction || true
     php artisan route:cache --no-interaction || true
     php artisan view:cache --no-interaction || true
