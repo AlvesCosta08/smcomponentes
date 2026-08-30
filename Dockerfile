@@ -15,7 +15,7 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     freetype-dev \
     oniguruma-dev \
-    postgresql-dev \
+    mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         bcmath \
@@ -24,10 +24,10 @@ RUN apk add --no-cache \
         gd \
         mbstring \
         pdo \
-        pdo_pgsql \
+        pdo_mysql \
         zip \
         opcache \
-    && docker-php-ext-enable pdo pdo_pgsql
+    && docker-php-ext-enable pdo pdo_mysql
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/html
