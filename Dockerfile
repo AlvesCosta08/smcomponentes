@@ -61,12 +61,15 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Cria .env com variáveis essenciais e executa scripts
+# 6. Cria .env com variáveis essenciais e executa scripts (sem gerar chave)
 RUN cp .env.example .env \
     && echo "APP_STORAGE=/var/www/html/storage" >> .env \
     && echo "CACHE_DRIVER=file" >> .env \
     && echo "SESSION_DRIVER=file" >> .env \
-    && php artisan key:generate \
+    && echo "APP_ENV=local" >> .env \
+    && echo "APP_DEBUG=true" >> .env \
+    && echo "APP_URL=http://localhost" >> .env \
+    && export APP_STORAGE=/var/www/html/storage \
     && composer run-script post-autoload-dump
 
 # 7. Permissões finais (reforço)
