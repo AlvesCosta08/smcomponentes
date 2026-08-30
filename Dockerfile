@@ -7,7 +7,6 @@ RUN npm run build
 
 FROM php:8.4-fpm-alpine AS app
 
-# Dependências do sistema
 RUN apk add --no-cache \
     git \
     unzip \
@@ -30,25 +29,20 @@ RUN apk add --no-cache \
         opcache \
     && docker-php-ext-enable pdo pdo_pgsql
 
-# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 WORKDIR /var/www/html
 
-# Dependências PHP
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
-# Código e assets
 COPY . .
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
-# Estrutura do Laravel
 RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache \
     && touch storage/logs/laravel.log \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
