@@ -24,11 +24,10 @@ if [ ! -f .env ]; then
 fi
 
 # ============================================================
-# 3. Sobrescreve variáveis do .env com as do ambiente (Render)
+# 3. Aplica variáveis de ambiente ao .env
 # ============================================================
 echo "[ENTRYPOINT] Aplicando variáveis de ambiente ao .env..."
 
-# Lista de variáveis que podem vir do ambiente
 ENV_VARS="APP_ENV APP_DEBUG APP_KEY APP_URL ASSET_URL VITE_APP_URL \
           DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSLMODE \
           CACHE_DRIVER SESSION_DRIVER SESSION_SECURE_COOKIE FORCE_HTTPS \
@@ -44,12 +43,41 @@ for VAR in $ENV_VARS; do
     fi
 done
 
-# Força variáveis internas
 echo "APP_STORAGE=/var/www/html/storage" >> .env
 echo "VIEW_COMPILED_PATH=/var/www/html/storage/framework/views" >> .env
 
 # ============================================================
-# 4. TESTE DE CONEXÃO COM O BANCO (PostgreSQL)
+# 4. CORREÇÃO AUTOMÁTICA DO HOSTNAME (fallback)
+# ============================================================
+if [ -n "$DB_HOST" ]; then
+    ORIGINAL_HOST="$DB_HOST"
+    echo "[ENTRYPOINT] Hostname original: $ORIGINAL_HOST"
+
+    # Se não contém ".render.com", tenta adicionar
+    if ! echo "$ORIGINAL_HOST" | grep -q '\.render\.com$'; then
+        # Tenta primeiro com .render.com (padrão)
+        TEST_HOST="${ORIGINAL_HOST}.render.com"
+        echo "[ENTRYPOINT] Tentando hostname com domínio: $TEST_HOST"
+
+        if nslookup "$TEST_HOST" >/dev/null 2>&1; then
+            echo "[ENTRYPOINT] ✅ Hostname corrigido para: $TEST_HOST"
+            export DB_HOST="$TEST_HOST"
+            sed -i "s/^DB_HOST=.*/DB_HOST=$TEST_HOST/" .env
+        else
+            # Se não resolver, mantém o original e avisa
+            echo "[ENTRYPOINT] ⚠️  $TEST_HOST não resolve. Verifique o hostname no painel do Render."
+            echo "[ENTRYPOINT] O domínio pode ser diferente (ex: .oregon-postgres.render.com)."
+        fi
+    else
+        # Já tem .render.com, testa se resolve
+        if ! nslookup "$DB_HOST" >/dev/null 2>&1; then
+            echo "[ENTRYPOINT] ⚠️  Hostname $DB_HOST não resolve. Verifique o valor."
+        fi
+    fi
+fi
+
+# ============================================================
+# 5. TESTE DE CONEXÃO COM O BANCO
 # ============================================================
 if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
     echo "[ENTRYPOINT] Testando conexão com o banco em $DB_HOST:$DB_PORT..."
@@ -57,18 +85,21 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
     COUNT=0
     CONNECTED=0
     while [ $COUNT -lt $MAX_RETRIES ]; do
-        # Teste de conexão via PDO (PHP)
-        if php -r "try { new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD'); echo 'ok'; } catch (PDOException \$e) { exit(1); }" 2>/dev/null | grep -q ok; then
+        ERROR_MSG=$(php -r "try { new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD'); echo 'ok'; } catch (PDOException \$e) { echo 'erro: ' . \$e->getMessage(); }" 2>&1)
+        if echo "$ERROR_MSG" | grep -q '^ok$'; then
             echo "[ENTRYPOINT] ✅ Conexão com o banco bem-sucedida!"
             CONNECTED=1
             break
+        else
+            echo "[ENTRYPOINT] Tentativa $((COUNT+1))/$MAX_RETRIES falhou: $ERROR_MSG"
         fi
         COUNT=$((COUNT + 1))
-        echo "[ENTRYPOINT] Aguardando banco... ($COUNT/$MAX_RETRIES)"
         sleep 2
     done
     if [ $CONNECTED -eq 0 ]; then
         echo "[ENTRYPOINT] ❌ ERRO: Não foi possível conectar ao banco após $MAX_RETRIES tentativas."
+        echo "[ENTRYPOINT] Último erro: $ERROR_MSG"
+        echo "[ENTRYPOINT] Verifique se o hostname está correto. O valor atual é: $DB_HOST"
         exit 1
     fi
 else
@@ -76,35 +107,23 @@ else
 fi
 
 # ============================================================
-# 5. Limpa caches existentes
+# 6. Limpa caches e executa tarefas
 # ============================================================
 php artisan config:clear || true
 php artisan cache:clear || true
 php artisan view:clear || true
 php artisan route:clear || true
 
-# ============================================================
-# 6. Gera APP_KEY se necessário
-# ============================================================
 if grep -q "^APP_KEY=$" .env; then
     echo "[ENTRYPOINT] Gerando APP_KEY..."
     php artisan key:generate
 fi
 
-# ============================================================
-# 7. Recria autoload otimizado
-# ============================================================
 echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize
 
-# ============================================================
-# 8. Executa package:discover (se necessário)
-# ============================================================
 php artisan package:discover --no-ansi || true
 
-# ============================================================
-# 9. Migrations (se FORCE_MIGRATION=true)
-# ============================================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
     echo "[ENTRYPOINT] Executando migrations..."
     php artisan migrate --force || {
@@ -113,9 +132,6 @@ if [ "$FORCE_MIGRATION" = "true" ]; then
     }
 fi
 
-# ============================================================
-# 10. Seeders (se FORCE_SEED=true)
-# ============================================================
 if [ "$FORCE_SEED" = "true" ]; then
     echo "[ENTRYPOINT] Executando seeders..."
     php artisan db:seed --force || {
@@ -124,9 +140,6 @@ if [ "$FORCE_SEED" = "true" ]; then
     }
 fi
 
-# ============================================================
-# 11. Otimizações para produção
-# ============================================================
 if [ "$APP_ENV" = "production" ]; then
     echo "[ENTRYPOINT] Otimizando cache para produção..."
     php artisan config:cache || true
@@ -134,8 +147,5 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan view:cache || true
 fi
 
-# ============================================================
-# 12. Inicia o servidor
-# ============================================================
 echo "[ENTRYPOINT] ✅ Inicialização concluída. Iniciando servidor..."
 exec "$@"
