@@ -49,4 +49,3 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 10000
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
-
