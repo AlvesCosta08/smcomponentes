@@ -11,7 +11,7 @@ mkdir -p bootstrap/cache
 chmod -R 777 storage bootstrap/cache
 
 # ============================================================
-# 2. Variáveis essenciais
+# 2. Variáveis essenciais (com fallbacks)
 # ============================================================
 export APP_STORAGE=/var/www/html/storage
 export VIEW_COMPILED_PATH=/var/www/html/storage/framework/views
@@ -19,21 +19,27 @@ export SESSION_DRIVER=${SESSION_DRIVER:-file}
 export CACHE_DRIVER=${CACHE_DRIVER:-file}
 
 # ============================================================
-# 3. GERAR .env
+# 3. Configuração fixa do banco de dados (DATABASE_URL embutida)
+# ============================================================
+# ⚠️ ATENÇÃO: Credenciais fixas no código – NÃO recomendado para produção!
+# Substitua por variáveis de ambiente em um ambiente seguro.
+export DATABASE_URL="postgresql://loja_virtual_eilu_user:FeNuDK8XRL0XoI7WwqCgvCOJzT6d0Kof@dpg-daa41s9f2nfc7395g1dg-a.oregon-postgres.render.com/loja_virtual_eilu?sslmode=require"
+
+# Se a variável DATABASE_URL já estiver definida no ambiente, mantém ela (prioridade)
+if [ -n "$DATABASE_URL" ]; then
+    echo "[ENTRYPOINT] Usando DATABASE_URL do ambiente."
+else
+    echo "[ENTRYPOINT] Usando DATABASE_URL embutida no script."
+    export DATABASE_URL="$DATABASE_URL"
+fi
+
+# ============================================================
+# 4. Gerar .env diretamente
 # ============================================================
 echo "[ENTRYPOINT] Gerando .env..."
 
-# Verifica se DATABASE_URL está definida
-if [ -z "$DATABASE_URL" ]; then
-    echo "[ENTRYPOINT] ERRO: DATABASE_URL não definida!"
-    echo "[ENTRYPOINT] Configure a variável DATABASE_URL no Render com a string de conexão completa."
-    exit 1
-fi
-
-# Remove .env existente
 rm -f .env
 
-# Cria .env com DATABASE_URL
 cat > .env << EOF
 APP_ENV=${APP_ENV:-production}
 APP_DEBUG=${APP_DEBUG:-false}
@@ -45,7 +51,7 @@ VITE_APP_URL=${VITE_APP_URL:-$APP_URL}
 APP_STORAGE=$APP_STORAGE
 VIEW_COMPILED_PATH=$VIEW_COMPILED_PATH
 
-# Banco de dados (usa DATABASE_URL)
+# Banco de dados (via DATABASE_URL)
 DATABASE_URL=$DATABASE_URL
 DB_CONNECTION=pgsql
 
@@ -62,7 +68,7 @@ EOF
 echo "[ENTRYPOINT] .env gerado com sucesso."
 
 # ============================================================
-# 4. TESTE DE CONEXÃO COM O BANCO
+# 5. Teste de conexão com o banco
 # ============================================================
 echo "[ENTRYPOINT] Testando conexão com o banco via DATABASE_URL..."
 
@@ -98,7 +104,7 @@ if [ $CONNECTED -eq 0 ]; then
 fi
 
 # ============================================================
-# 5. Limpeza de caches
+# 6. Limpeza de caches
 # ============================================================
 echo "[ENTRYPOINT] Limpando caches..."
 php artisan config:clear --no-interaction || true
@@ -107,7 +113,7 @@ php artisan view:clear --no-interaction || true
 php artisan route:clear --no-interaction || true
 
 # ============================================================
-# 6. Gerar APP_KEY se não existir
+# 7. Gerar APP_KEY se necessário
 # ============================================================
 if grep -q "^APP_KEY=$" .env; then
     echo "[ENTRYPOINT] Gerando APP_KEY..."
@@ -115,19 +121,19 @@ if grep -q "^APP_KEY=$" .env; then
 fi
 
 # ============================================================
-# 7. Recriar autoload otimizado
+# 8. Recriar autoload
 # ============================================================
 echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize --no-interaction
 
 # ============================================================
-# 8. Executar package:discover
+# 9. Package discover
 # ============================================================
 echo "[ENTRYPOINT] Executando package:discover..."
 php artisan package:discover --no-ansi --no-interaction || true
 
 # ============================================================
-# 9. Migrações e Seeders
+# 10. Migrações e Seeders
 # ============================================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
     echo "[ENTRYPOINT] Executando migrations..."
@@ -146,7 +152,7 @@ if [ "$FORCE_SEED" = "true" ]; then
 fi
 
 # ============================================================
-# 10. Otimizações para produção
+# 11. Otimizações para produção
 # ============================================================
 if [ "$APP_ENV" = "production" ]; then
     echo "[ENTRYPOINT] Otimizando cache para produção..."
