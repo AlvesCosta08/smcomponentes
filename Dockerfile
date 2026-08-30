@@ -5,11 +5,9 @@ FROM node:22-alpine AS vite-builder
 
 WORKDIR /app
 
-# Copia apenas os arquivos de dependência para melhor cache
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-# Copia o restante do código e compila
 COPY . .
 RUN npm run build
 
@@ -43,34 +41,31 @@ RUN apk add --no-cache \
 # Instala o Composer (global)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Define o diretório de trabalho
 WORKDIR /var/www/html
 
-# Copia apenas os arquivos de dependência do PHP (melhor cache)
+# 1. Copia apenas os arquivos de dependência do PHP
 COPY composer.json composer.lock ./
 
-# Instala as dependências em modo produção
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+# 2. Instala as dependências (sem executar scripts)
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
-# Copia o restante do código
+# 3. Copia o restante do código-fonte (agora o helpers.php estará disponível)
 COPY . .
 
-# Copia os assets compilados (do estágio Node)
+# 4. Copia os assets compilados (do estágio Node)
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
-# Ajusta permissões para pastas que o Laravel precisa escrever
+# 5. Executa os scripts de pós-autoload (agora com todos os arquivos presentes)
+RUN composer run-script post-autoload-dump
+
+# 6. Ajusta permissões
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copia o script de entrada e dá permissão de execução
+# 7. Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expõe a porta 8000 (para o servidor embutido, ou 9000 se usar PHP-FPM)
 EXPOSE 8000
-
-# Define o entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Comando padrão: inicia o servidor embutido (pode ser substituído por PHP-FPM + Nginx)
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
