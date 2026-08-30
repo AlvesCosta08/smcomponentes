@@ -55,28 +55,15 @@ COPY . .
 # 4. Copia os assets compilados
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
-# 5. Cria pastas de cache e ajusta permissões
+# 5. Cria pastas de cache e ajusta permissões (para que o entrypoint possa escrever)
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && mkdir -p bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Cria .env com variáveis essenciais e executa scripts (sem gerar chave)
-RUN cp .env.example .env \
-    && echo "APP_STORAGE=/var/www/html/storage" >> .env \
-    && echo "CACHE_DRIVER=file" >> .env \
-    && echo "SESSION_DRIVER=file" >> .env \
-    && echo "APP_ENV=local" >> .env \
-    && echo "APP_DEBUG=true" >> .env \
-    && echo "APP_URL=http://localhost" >> .env \
-    && export APP_STORAGE=/var/www/html/storage \
-    && composer run-script post-autoload-dump
+# 6. Não executamos php artisan ou composer scripts aqui – faremos no entrypoint
 
-# 7. Permissões finais (reforço)
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
-
-# 8. Script de entrada
+# 7. Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
