@@ -43,10 +43,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 1. Copia apenas os arquivos de dependência
+# 1. Copia apenas os arquivos de dependência (melhor cache)
 COPY composer.json composer.lock ./
 
-# 2. Instala dependências (sem scripts)
+# 2. Instala dependências (sem scripts para evitar erros de arquivos faltando)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
 # 3. Copia o restante do código
@@ -55,18 +55,16 @@ COPY . .
 # 4. Copia os assets compilados
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
-# 5. Cria pastas de cache e ajusta permissões (para que o entrypoint possa escrever)
+# 5. Cria pastas de cache e ajusta permissões (durante o build)
 RUN mkdir -p storage/framework/{sessions,views,cache} \
     && mkdir -p bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Não executamos php artisan ou composer scripts aqui – faremos no entrypoint
-
-# 7. Script de entrada
+# 6. Script de entrada (entrypoint)
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8000
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
