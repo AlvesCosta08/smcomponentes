@@ -21,11 +21,10 @@ else
 fi
 
 # ============================================================
-# 3. Extrair parâmetros com PHP (mais confiável)
+# 3. Extrair parâmetros com PHP (parse_url)
 # ============================================================
 echo "[ENTRYPOINT] Extraindo parâmetros da DATABASE_URL..."
 
-# Usa PHP para parsear a URL e montar o DSN
 EXTRACT=$(php -r "
     \$url = parse_url('$DATABASE_URL');
     \$host = \$url['host'] ?? '';
@@ -33,20 +32,18 @@ EXTRACT=$(php -r "
     \$dbname = ltrim(\$url['path'] ?? '', '/');
     \$user = \$url['user'] ?? '';
     \$pass = \$url['pass'] ?? '';
-    echo \"HOST=\$host PORT=\$port DB=\$dbname USER=\$user PASS=\$pass\";
+    echo \"DB_HOST=\$host DB_PORT=\$port DB_NAME=\$dbname DB_USER=\$user DB_PASS=\$pass\";
 " 2>/dev/null)
 
-# Extrai os valores
 eval "$EXTRACT"
 
-echo "[ENTRYPOINT] Host: $HOST, Porta: $PORT, Database: $DB, Usuário: $USER"
+echo "[ENTRYPOINT] Host: $DB_HOST, Porta: $DB_PORT, Database: $DB_NAME"
 
 # ============================================================
 # 4. Montar DSN manual para teste
 # ============================================================
-DSN="pgsql:host=$HOST;port=$PORT;dbname=$DB;sslmode=require"
-
-echo "[ENTRYPOINT] DSN montado: $DSN"
+DSN="pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_NAME;sslmode=require"
+echo "[ENTRYPOINT] DSN: $DSN"
 
 # ============================================================
 # 5. TESTE DE CONEXÃO
@@ -60,7 +57,7 @@ CONNECTED=0
 while [ $COUNT -lt $MAX_RETRIES ]; do
     ERROR_MSG=$(php -r "
         try {
-            new PDO('$DSN', '$USER', '$PASS');
+            new PDO('$DSN', '$DB_USER', '$DB_PASS');
             echo 'ok';
         } catch (PDOException \$e) {
             echo 'erro: ' . \$e->getMessage();
@@ -80,8 +77,7 @@ done
 
 if [ $CONNECTED -eq 0 ]; then
     echo "[ENTRYPOINT] ❌ ERRO: Não foi possível conectar ao banco."
-    echo "[ENTRYPOINT] DSN usado: $DSN"
-    echo "[ENTRYPOINT] Último erro: $ERROR_MSG"
+    echo "[ENTRYPOINT] DSN: $DSN"
     exit 1
 fi
 
@@ -164,5 +160,10 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan view:cache --no-interaction || true
 fi
 
-echo "[ENTRYPOINT] ✅ Inicialização concluída. Iniciando servidor..."
+# ============================================================
+# 14. GARANTIR A PORTA CORRETA PARA O SERVIDOR
+# ============================================================
+export PORT=${PORT:-10000}
+
+echo "[ENTRYPOINT] ✅ Inicialização concluída. Servidor na porta $PORT."
 exec "$@"
