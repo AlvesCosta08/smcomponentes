@@ -18,7 +18,6 @@ chmod -R ug+rwx storage bootstrap/cache
 # ============================================================
 echo "[ENTRYPOINT] Extraindo parâmetros da DATABASE_URL..."
 
-# Define DATABASE_URL (se não existir, usa a embutida)
 if [ -z "$DATABASE_URL" ]; then
     DATABASE_URL="postgresql://loja_virtual_eilu_user:FeNuDK8XRL0XoI7WwqCgvCOJzT6d0Kof@dpg-daa41s9f2nfc7395g1dg-a.oregon-postgres.render.com/loja_virtual_eilu?sslmode=require"
     echo "[ENTRYPOINT] Usando DATABASE_URL embutida."
@@ -26,7 +25,6 @@ else
     echo "[ENTRYPOINT] Usando DATABASE_URL do ambiente."
 fi
 
-# Extrai parâmetros com PHP
 EXTRACT=$(php -r "
     \$url = parse_url('$DATABASE_URL');
     \$host = \$url['host'] ?? '';
@@ -38,15 +36,9 @@ EXTRACT=$(php -r "
 " 2>/dev/null)
 
 eval "$EXTRACT"
-
-# Exporta para o ambiente
 export DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD
 
-echo "[ENTRYPOINT] Banco configurado:"
-echo "  Host: $DB_HOST"
-echo "  Porta: $DB_PORT"
-echo "  Database: $DB_DATABASE"
-echo "  Usuário: $DB_USERNAME"
+echo "[ENTRYPOINT] Banco: $DB_HOST:$DB_PORT/$DB_DATABASE"
 
 # ============================================================
 # 3. Criar .env a partir do .env.example
@@ -68,9 +60,7 @@ echo "[ENTRYPOINT] Substituindo variáveis de ambiente no .env..."
 
 if command -v envsubst >/dev/null 2>&1; then
     envsubst < .env > .env.tmp && mv .env.tmp .env
-    echo "[ENTRYPOINT] Substituído com envsubst."
 else
-    # Fallback manual
     VARS=$(grep -oE '\$\{[A-Za-z_][A-Za-z0-9_]*\}' .env | sed 's/\${//g' | sed 's/}//g' | sort -u)
     for VAR in $VARS; do
         eval VALUE=\$$VAR
@@ -80,11 +70,10 @@ else
             sed -i "s/$$VAR/$ESCAPED_VALUE/g" .env
         fi
     done
-    echo "[ENTRYPOINT] Substituído manualmente."
 fi
 
 # ============================================================
-# 5. Forçar variáveis críticas (APP_ENV, APP_DEBUG, APP_KEY, APP_URL)
+# 5. Forçar variáveis críticas
 # ============================================================
 echo "[ENTRYPOINT] Forçando variáveis críticas..."
 
@@ -153,13 +142,23 @@ done
 
 if [ $CONNECTED -eq 0 ]; then
     echo "[ENTRYPOINT] ❌ ERRO: Não foi possível conectar ao PostgreSQL."
-    echo "[ENTRYPOINT] DSN: $DSN"
-    echo "[ENTRYPOINT] Último erro: $ERROR_MSG"
     exit 1
 fi
 
 # ============================================================
-# 7. Limpar caches e executar tarefas
+# 7. CRIAR TABELAS DE CACHE E SESSÃO (para eliminar erros)
+# ============================================================
+echo "[ENTRYPOINT] Criando tabelas de cache e sessão (se necessário)..."
+
+# Gera as migrations para cache e session (se não existirem)
+php artisan cache:table --no-interaction 2>/dev/null || true
+php artisan session:table --no-interaction 2>/dev/null || true
+
+# Cria as tabelas (migrations)
+php artisan migrate --force --no-interaction || true
+
+# ============================================================
+# 8. Limpar caches e outras tarefas
 # ============================================================
 php artisan optimize:clear --no-interaction || true
 php artisan package:discover --ansi --no-interaction || true
@@ -183,7 +182,7 @@ if [ "${APP_ENV:-production}" = "production" ]; then
 fi
 
 # ============================================================
-# 8. Porta e finalização
+# 9. Porta e finalização
 # ============================================================
 export PORT="${PORT:-10000}"
 echo "[ENTRYPOINT] ✅ Inicialização concluída. Servidor na porta $PORT."
