@@ -4,7 +4,7 @@ set -e
 echo "[ENTRYPOINT] Iniciando configuração do Laravel..."
 
 # ============================================================
-# 1. Pastas de cache
+# 1. Pastas de cache com permissões totais
 # ============================================================
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p bootstrap/cache
@@ -47,52 +47,55 @@ echo "APP_STORAGE=/var/www/html/storage" >> .env
 echo "VIEW_COMPILED_PATH=/var/www/html/storage/framework/views" >> .env
 
 # ============================================================
-# 4. CORREÇÃO AUTOMÁTICA DO HOSTNAME (várias combinações)
+# 4. CORREÇÃO DO HOSTNAME (se estiver incompleto)
 # ============================================================
 if [ -n "$DB_HOST" ]; then
     ORIGINAL_HOST="$DB_HOST"
     echo "[ENTRYPOINT] Hostname original: $ORIGINAL_HOST"
 
-    # Lista de combinações para testar
-    VARIANTS="
-        $ORIGINAL_HOST
-        $ORIGINAL_HOST.render.com
-        $ORIGINAL_HOST.oregon-postgres.render.com
-        $ORIGINAL_HOST.us-east-1.postgres.render.com
-        $ORIGINAL_HOST.postgres.render.com
-    "
-
-    RESOLVED_HOST=""
-    for HOST in $VARIANTS; do
-        if nslookup "$HOST" >/dev/null 2>&1; then
-            echo "[ENTRYPOINT] ✅ Hostname resolvido: $HOST"
-            RESOLVED_HOST="$HOST"
-            break
+    # Se não contém "." (domínio), tenta adicionar
+    if ! echo "$ORIGINAL_HOST" | grep -q '\.'; then
+        # Tenta com .oregon-postgres.render.com (comum no Render)
+        TEST_HOST="${ORIGINAL_HOST}.oregon-postgres.render.com"
+        echo "[ENTRYPOINT] Tentando hostname com domínio: $TEST_HOST"
+        if nslookup "$TEST_HOST" >/dev/null 2>&1; then
+            echo "[ENTRYPOINT] ✅ Hostname corrigido para: $TEST_HOST"
+            export DB_HOST="$TEST_HOST"
+            sed -i "s/^DB_HOST=.*/DB_HOST=$TEST_HOST/" .env
         else
-            echo "[ENTRYPOINT] Tentativa falhou: $HOST"
+            # Tenta apenas .render.com
+            TEST_HOST2="${ORIGINAL_HOST}.render.com"
+            if nslookup "$TEST_HOST2" >/dev/null 2>&1; then
+                echo "[ENTRYPOINT] ✅ Hostname corrigido para: $TEST_HOST2"
+                export DB_HOST="$TEST_HOST2"
+                sed -i "s/^DB_HOST=.*/DB_HOST=$TEST_HOST2/" .env
+            else
+                echo "[ENTRYPOINT] ⚠️  Nenhum domínio resolveu. Mantendo original."
+            fi
         fi
-    done
-
-    if [ -n "$RESOLVED_HOST" ]; then
-        export DB_HOST="$RESOLVED_HOST"
-        sed -i "s/^DB_HOST=.*/DB_HOST=$RESOLVED_HOST/" .env
-        echo "[ENTRYPOINT] Hostname atualizado para: $DB_HOST"
     else
-        echo "[ENTRYPOINT] ⚠️  Nenhuma combinação resolveu. Usando original: $ORIGINAL_HOST"
-        export DB_HOST="$ORIGINAL_HOST"
+        echo "[ENTRYPOINT] Hostname já contém domínio."
     fi
 fi
 
 # ============================================================
-# 5. TESTE DE CONEXÃO COM O BANCO
+# 5. TESTE DE CONEXÃO COM SSL FORÇADO (sslmode=require)
 # ============================================================
 if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
-    echo "[ENTRYPOINT] Testando conexão com o banco em $DB_HOST:$DB_PORT..."
+    echo "[ENTRYPOINT] Testando conexão SSL em $DB_HOST:$DB_PORT (sslmode=require)..."
     MAX_RETRIES=30
     COUNT=0
     CONNECTED=0
     while [ $COUNT -lt $MAX_RETRIES ]; do
-        ERROR_MSG=$(php -r "try { new PDO('pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE', '$DB_USERNAME', '$DB_PASSWORD'); echo 'ok'; } catch (PDOException \$e) { echo 'erro: ' . \$e->getMessage(); }" 2>&1)
+        ERROR_MSG=$(php -r "
+            try {
+                \$dsn = 'pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_DATABASE;sslmode=require';
+                new PDO(\$dsn, '$DB_USERNAME', '$DB_PASSWORD');
+                echo 'ok';
+            } catch (PDOException \$e) {
+                echo 'erro: ' . \$e->getMessage();
+            }
+        " 2>&1)
         if echo "$ERROR_MSG" | grep -q '^ok$'; then
             echo "[ENTRYPOINT] ✅ Conexão com o banco bem-sucedida!"
             CONNECTED=1
@@ -106,7 +109,7 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
     if [ $CONNECTED -eq 0 ]; then
         echo "[ENTRYPOINT] ❌ ERRO: Não foi possível conectar ao banco após $MAX_RETRIES tentativas."
         echo "[ENTRYPOINT] Último erro: $ERROR_MSG"
-        echo "[ENTRYPOINT] Verifique se o hostname está correto. O valor atual é: $DB_HOST"
+        echo "[ENTRYPOINT] Hostname testado: $DB_HOST"
         exit 1
     fi
 else
@@ -114,23 +117,35 @@ else
 fi
 
 # ============================================================
-# 6. Limpa caches e executa tarefas
+# 6. Limpa caches existentes
 # ============================================================
 php artisan config:clear || true
 php artisan cache:clear || true
 php artisan view:clear || true
 php artisan route:clear || true
 
+# ============================================================
+# 7. Gerar APP_KEY se necessário
+# ============================================================
 if grep -q "^APP_KEY=$" .env; then
     echo "[ENTRYPOINT] Gerando APP_KEY..."
     php artisan key:generate
 fi
 
+# ============================================================
+# 8. Recria autoload otimizado
+# ============================================================
 echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize
 
+# ============================================================
+# 9. Executa package:discover (se necessário)
+# ============================================================
 php artisan package:discover --no-ansi || true
 
+# ============================================================
+# 10. Migrations (se FORCE_MIGRATION=true)
+# ============================================================
 if [ "$FORCE_MIGRATION" = "true" ]; then
     echo "[ENTRYPOINT] Executando migrations..."
     php artisan migrate --force || {
@@ -139,6 +154,9 @@ if [ "$FORCE_MIGRATION" = "true" ]; then
     }
 fi
 
+# ============================================================
+# 11. Seeders (se FORCE_SEED=true)
+# ============================================================
 if [ "$FORCE_SEED" = "true" ]; then
     echo "[ENTRYPOINT] Executando seeders..."
     php artisan db:seed --force || {
@@ -147,6 +165,9 @@ if [ "$FORCE_SEED" = "true" ]; then
     }
 fi
 
+# ============================================================
+# 12. Otimizações para produção (se APP_ENV=production)
+# ============================================================
 if [ "$APP_ENV" = "production" ]; then
     echo "[ENTRYPOINT] Otimizando cache para produção..."
     php artisan config:cache || true
@@ -154,5 +175,8 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan view:cache || true
 fi
 
+# ============================================================
+# 13. Inicia o servidor
+# ============================================================
 echo "[ENTRYPOINT] ✅ Inicialização concluída. Iniciando servidor..."
 exec "$@"
