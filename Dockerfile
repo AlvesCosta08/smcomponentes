@@ -1,5 +1,5 @@
 # ====================
-# ESTÁGIO 1: Build do Vite (assets)
+# ESTÁGIO 1: Build do Vite
 # ====================
 FROM node:22-alpine AS vite-builder
 
@@ -38,31 +38,37 @@ RUN apk add --no-cache \
         zip \
         opcache
 
-# Instala o Composer (global)
+# Instala o Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 1. Copia apenas os arquivos de dependência do PHP
+# 1. Copia apenas os arquivos de dependência
 COPY composer.json composer.lock ./
 
-# 2. Instala as dependências (sem executar scripts)
+# 2. Instala dependências (sem scripts para evitar erro de arquivos faltando)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
-# 3. Copia o restante do código-fonte (agora o helpers.php estará disponível)
+# 3. Copia o restante do código
 COPY . .
 
-# 4. Copia os assets compilados (do estágio Node)
+# 4. Copia os assets compilados
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
-# 5. Executa os scripts de pós-autoload (agora com todos os arquivos presentes)
+# 5. Cria pastas de cache e ajusta permissões
+RUN mkdir -p storage/framework/{sessions,views,cache} \
+    && mkdir -p bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# 6. Executa scripts de pós-autoload (agora com pastas existentes)
 RUN composer run-script post-autoload-dump
 
-# 6. Ajusta permissões
+# 7. Permissões finais (reforço)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 7. Script de entrada
+# 8. Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
