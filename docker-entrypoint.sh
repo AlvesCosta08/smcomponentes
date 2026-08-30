@@ -19,22 +19,22 @@ export SESSION_DRIVER=${SESSION_DRIVER:-file}
 export CACHE_DRIVER=${CACHE_DRIVER:-file}
 
 # ============================================================
-# 3. Criar .env a partir do .env.example
+# 3. Criar .env a partir do .env.example (com envsubst)
 # ============================================================
-if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        echo "[ENTRYPOINT] .env criado a partir do .env.example"
-    else
-        echo "[ENTRYPOINT] ERRO: .env.example não encontrado!"
-        exit 1
-    fi
+if [ -f .env.example ]; then
+    echo "[ENTRYPOINT] Gerando .env a partir do .env.example com envsubst..."
+    # Substitui variáveis no formato ${VAR} ou $VAR pelos valores do ambiente
+    envsubst < .env.example > .env
+    echo "[ENTRYPOINT] .env gerado com sucesso."
+else
+    echo "[ENTRYPOINT] ERRO: .env.example não encontrado!"
+    exit 1
 fi
 
 # ============================================================
-# 4. Forçar variáveis essenciais no .env (inclusive storage)
+# 4. Forçar variáveis essenciais (sobrescrevendo se necessário)
 # ============================================================
-echo "[ENTRYPOINT] Forçando variáveis de ambiente no .env..."
+echo "[ENTRYPOINT] Forçando variáveis essenciais no .env..."
 
 # Remove linhas existentes para substituir
 sed -i '/^APP_STORAGE=/d' .env
@@ -64,10 +64,10 @@ for VAR in $ENV_VARS; do
 done
 
 # ============================================================
-# 5. USAR DATABASE_URL se disponível
+# 5. USAR DATABASE_URL se disponível (sobrescreve variáveis)
 # ============================================================
 if [ -n "$DATABASE_URL" ]; then
-    echo "[ENTRYPOINT] DATABASE_URL detectada."
+    echo "[ENTRYPOINT] DATABASE_URL detectada. Usando string de conexão."
     sed -i "/^DATABASE_URL=/d" .env
     echo "DATABASE_URL=$DATABASE_URL" >> .env
     # Remove variáveis individuais para evitar conflitos
@@ -114,15 +114,16 @@ if [ -n "$DATABASE_URL" ]; then
         exit 1
     fi
 else
-    # Fallback manual
+    # Fallback manual com correção de hostname
     if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ] && [ -n "$DB_USERNAME" ]; then
-        # Corrige hostname se necessário
+        # Corrige hostname (pdpg -> dpg)
         DB_HOST_CORRECTED=$(echo "$DB_HOST" | sed 's/^pdpg/dpg/')
         if [ "$DB_HOST_CORRECTED" != "$DB_HOST" ]; then
             echo "[ENTRYPOINT] 🔄 Corrigido hostname para: $DB_HOST_CORRECTED"
             export DB_HOST="$DB_HOST_CORRECTED"
             sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST_CORRECTED/" .env
         fi
+        # Se não tiver domínio, adiciona .oregon-postgres.render.com
         if ! echo "$DB_HOST" | grep -q '\.'; then
             TEST_HOST="${DB_HOST}.oregon-postgres.render.com"
             if nslookup "$TEST_HOST" >/dev/null 2>&1; then
@@ -163,7 +164,7 @@ else
 fi
 
 # ============================================================
-# 7. Limpeza de caches (AGORA COM APP_STORAGE DEFINIDO)
+# 7. Limpeza de caches (com APP_STORAGE já definido)
 # ============================================================
 echo "[ENTRYPOINT] Limpando caches..."
 php artisan config:clear --no-interaction || true
