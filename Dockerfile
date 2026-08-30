@@ -16,7 +16,7 @@ RUN npm run build
 # ====================
 FROM php:8.4-fpm-alpine AS app
 
-# Instala dependências do sistema e extensões PHP
+# Instala dependências
 RUN apk add --no-cache \
     git \
     unzip \
@@ -38,21 +38,20 @@ RUN apk add --no-cache \
         zip \
         opcache
 
-# Instala o Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# 1. Copia apenas os arquivos de dependência
+# 1. Copia dependências
 COPY composer.json composer.lock ./
 
-# 2. Instala dependências (sem scripts para evitar erro de arquivos faltando)
+# 2. Instala sem scripts
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-scripts
 
-# 3. Copia o restante do código
+# 3. Copia o código
 COPY . .
 
-# 4. Copia os assets compilados
+# 4. Copia assets
 COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
 # 5. Cria pastas de cache e ajusta permissões
@@ -61,14 +60,19 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# 6. Executa scripts de pós-autoload (agora com pastas existentes)
-RUN composer run-script post-autoload-dump
+# 6. Cria .env temporário e executa scripts de pós-autoload
+RUN cp .env.example .env \
+    && php artisan key:generate \
+    && composer run-script post-autoload-dump
 
-# 7. Permissões finais (reforço)
+# 7. Remove .env temporário (opcional, mas o entrypoint criará novamente se necessário)
+# RUN rm .env  # não remover, pois o entrypoint pode precisar, mas podemos manter.
+
+# 8. Permissões finais
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 8. Script de entrada
+# 9. Script de entrada
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
