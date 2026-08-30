@@ -274,6 +274,22 @@ Route::middleware(['auth'])->prefix('api/images')->name('api.images.')->group(fu
     Route::delete('/delete', [ImageController::class, 'delete'])->name('delete');
     Route::post('/upload-multiple', [ImageController::class, 'uploadMultiple'])->name('upload.multiple');
 });
+// routes/web.php
+Route::get('/health', function () {
+    try {
+        DB::connection()->getPdo();
+        return response()->json([
+            'status' => 'ok',
+            'database' => 'connected',
+            'db_name' => DB::connection()->getDatabaseName()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
 
 // ============================================================
 // LÓGICA 10: ROTA PARA TESTAR IMAGENS (APENAS DESENVOLVIMENTO)
