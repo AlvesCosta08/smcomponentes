@@ -53,9 +53,7 @@ if [ -n "$DB_HOST" ]; then
     ORIGINAL_HOST="$DB_HOST"
     echo "[ENTRYPOINT] Hostname original: $ORIGINAL_HOST"
 
-    # Se não contém "." (domínio), tenta adicionar
     if ! echo "$ORIGINAL_HOST" | grep -q '\.'; then
-        # Tenta com .oregon-postgres.render.com (comum no Render)
         TEST_HOST="${ORIGINAL_HOST}.oregon-postgres.render.com"
         echo "[ENTRYPOINT] Tentando hostname com domínio: $TEST_HOST"
         if nslookup "$TEST_HOST" >/dev/null 2>&1; then
@@ -63,7 +61,6 @@ if [ -n "$DB_HOST" ]; then
             export DB_HOST="$TEST_HOST"
             sed -i "s/^DB_HOST=.*/DB_HOST=$TEST_HOST/" .env
         else
-            # Tenta apenas .render.com
             TEST_HOST2="${ORIGINAL_HOST}.render.com"
             if nslookup "$TEST_HOST2" >/dev/null 2>&1; then
                 echo "[ENTRYPOINT] ✅ Hostname corrigido para: $TEST_HOST2"
@@ -73,8 +70,6 @@ if [ -n "$DB_HOST" ]; then
                 echo "[ENTRYPOINT] ⚠️  Nenhum domínio resolveu. Mantendo original."
             fi
         fi
-    else
-        echo "[ENTRYPOINT] Hostname já contém domínio."
     fi
 fi
 
@@ -139,7 +134,7 @@ echo "[ENTRYPOINT] Recriando autoload otimizado..."
 composer dump-autoload --optimize
 
 # ============================================================
-# 9. Executa package:discover (se necessário)
+# 9. Executa package:discover
 # ============================================================
 php artisan package:discover --no-ansi || true
 
@@ -166,7 +161,7 @@ if [ "$FORCE_SEED" = "true" ]; then
 fi
 
 # ============================================================
-# 12. Otimizações para produção (se APP_ENV=production)
+# 12. Otimizações para produção
 # ============================================================
 if [ "$APP_ENV" = "production" ]; then
     echo "[ENTRYPOINT] Otimizando cache para produção..."

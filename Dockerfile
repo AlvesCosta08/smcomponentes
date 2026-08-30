@@ -9,7 +9,7 @@ FROM php:8.4-fpm-alpine AS app
 RUN apk add --no-cache \
     git unzip libzip-dev libpng-dev libjpeg-turbo-dev freetype-dev oniguruma-dev postgresql-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) bcmath ctype exif gd mbstring pdo_mysql pdo_pgsql pdo_sqlite zip opcache
+    && docker-php-ext-install -j$(nproc) bcmath ctype exif gd mbstring pdo_mysql pdo_pgsql zip opcache
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY composer.json composer.lock ./
