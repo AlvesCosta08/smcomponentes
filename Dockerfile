@@ -24,7 +24,11 @@ RUN npm run build
 
 FROM php:8.4-fpm-alpine AS app
 
+# ============================================================
+
 # Dependências do sistema
+
+# ============================================================
 
 RUN apk add --no-cache 
 git 
@@ -36,13 +40,21 @@ freetype-dev
 oniguruma-dev 
 postgresql-dev
 
+# ============================================================
+
 # Configurar GD
+
+# ============================================================
 
 RUN docker-php-ext-configure gd 
 --with-freetype 
 --with-jpeg
 
+# ============================================================
+
 # Instalar extensões PHP
+
+# ============================================================
 
 RUN docker-php-ext-install -j$(nproc) 
 bcmath 
@@ -53,7 +65,11 @@ pdo_pgsql
 zip 
 opcache
 
+# ============================================================
+
 # Composer
+
+# ============================================================
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
@@ -61,7 +77,7 @@ WORKDIR /var/www/html
 
 # ============================================================
 
-# Instalar dependências PHP primeiro para aproveitar cache
+# Instalar dependências PHP
 
 # ============================================================
 
@@ -88,9 +104,7 @@ COPY . .
 
 # ============================================================
 
-COPY --from=vite-builder 
-/app/public/build 
-/var/www/html/public/build
+COPY --from=vite-builder /app/public/build /var/www/html/public/build
 
 # ============================================================
 
@@ -106,7 +120,7 @@ storage/logs
 bootstrap/cache 
 && touch storage/logs/laravel.log 
 && chown -R www-data:www-data storage bootstrap/cache 
-&& chmod -R ug+rwx storage bootstrap/cache
+&& chmod -R 775 storage bootstrap/cache
 
 # ============================================================
 
@@ -118,10 +132,15 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Render define PORT automaticamente
+# ============================================================
+
+# Porta padrão do Render
+
+# ============================================================
 
 EXPOSE 10000
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
+
