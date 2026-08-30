@@ -4,7 +4,7 @@ set -e
 echo "[ENTRYPOINT] Iniciando configuração do Laravel..."
 
 # ============================================================
-# 1. Criar pastas de cache
+# 1. Pastas de cache
 # ============================================================
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p bootstrap/cache
@@ -21,32 +21,37 @@ else
 fi
 
 # ============================================================
-# 3. Extrair parâmetros da URL (para DSN manual)
+# 3. Extrair parâmetros com PHP (mais confiável)
 # ============================================================
-# Remove protocolo
-URL_NO_PROTO=$(echo "$DATABASE_URL" | sed -E 's/^postgres(ql)?:\/\///')
+echo "[ENTRYPOINT] Extraindo parâmetros da DATABASE_URL..."
 
-# Extrai usuário, senha, host, porta, database
-DB_USER=$(echo "$URL_NO_PROTO" | cut -d':' -f1)
-DB_PASS=$(echo "$URL_NO_PROTO" | cut -d':' -f2 | cut -d'@' -f1)
-HOST_PORT=$(echo "$URL_NO_PROTO" | cut -d'@' -f2 | cut -d'/' -f1)
-DB_NAME=$(echo "$URL_NO_PROTO" | cut -d'/' -f2 | cut -d'?' -f1)
-DB_HOST=$(echo "$HOST_PORT" | cut -d':' -f1)
-DB_PORT=$(echo "$HOST_PORT" | cut -d':' -f2)
+# Usa PHP para parsear a URL e montar o DSN
+EXTRACT=$(php -r "
+    \$url = parse_url('$DATABASE_URL');
+    \$host = \$url['host'] ?? '';
+    \$port = \$url['port'] ?? 5432;
+    \$dbname = ltrim(\$url['path'] ?? '', '/');
+    \$user = \$url['user'] ?? '';
+    \$pass = \$url['pass'] ?? '';
+    echo \"HOST=\$host PORT=\$port DB=\$dbname USER=\$user PASS=\$pass\";
+" 2>/dev/null)
 
-[ -z "$DB_PORT" ] && DB_PORT=5432
+# Extrai os valores
+eval "$EXTRACT"
 
-echo "[ENTRYPOINT] DB_HOST=$DB_HOST, DB_PORT=$DB_PORT, DB_NAME=$DB_NAME, DB_USER=$DB_USER"
+echo "[ENTRYPOINT] Host: $HOST, Porta: $PORT, Database: $DB, Usuário: $USER"
 
 # ============================================================
 # 4. Montar DSN manual para teste
 # ============================================================
-DSN="pgsql:host=$DB_HOST;port=$DB_PORT;dbname=$DB_NAME;sslmode=require"
+DSN="pgsql:host=$HOST;port=$PORT;dbname=$DB;sslmode=require"
+
+echo "[ENTRYPOINT] DSN montado: $DSN"
 
 # ============================================================
-# 5. TESTE DE CONEXÃO COM DSN MANUAL
+# 5. TESTE DE CONEXÃO
 # ============================================================
-echo "[ENTRYPOINT] Testando conexão com banco usando DSN manual..."
+echo "[ENTRYPOINT] Testando conexão com banco..."
 
 MAX_RETRIES=10
 COUNT=0
@@ -55,7 +60,7 @@ CONNECTED=0
 while [ $COUNT -lt $MAX_RETRIES ]; do
     ERROR_MSG=$(php -r "
         try {
-            new PDO('$DSN', '$DB_USER', '$DB_PASS');
+            new PDO('$DSN', '$USER', '$PASS');
             echo 'ok';
         } catch (PDOException \$e) {
             echo 'erro: ' . \$e->getMessage();
@@ -120,7 +125,7 @@ php artisan view:clear --no-interaction || true
 php artisan route:clear --no-interaction || true
 
 # ============================================================
-# 8. Gerar APP_KEY se necessário
+# 8. APP_KEY
 # ============================================================
 if grep -q "^APP_KEY=$" .env; then
     php artisan key:generate --no-interaction
@@ -159,8 +164,5 @@ if [ "$APP_ENV" = "production" ]; then
     php artisan view:cache --no-interaction || true
 fi
 
-# ============================================================
-# 14. Iniciar servidor
-# ============================================================
 echo "[ENTRYPOINT] ✅ Inicialização concluída. Iniciando servidor..."
 exec "$@"
