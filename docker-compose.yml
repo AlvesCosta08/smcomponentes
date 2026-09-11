@@ -1,0 +1,55 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sm_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: smcomponentes
+      MYSQL_USER: alves
+      MYSQL_PASSWORD: alves123A
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --bind-address=0.0.0.0
+      - --port=3306
+      - --max_allowed_packet=256M
+      - --innodb_buffer_pool_size=512M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -ualves -palves123A -e 'SELECT 1' smcomponentes"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+      start_period: 60s
+    networks:
+      - sm_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: sm_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: alves
+      PMA_PASSWORD: alves123A
+      UPLOAD_LIMIT: 256M
+    ports:
+      - "8081:80"
+    networks:
+      - sm_network
+
+volumes:
+  mysql_data:
+
+networks:
+  sm_network:
+    driver: bridge
