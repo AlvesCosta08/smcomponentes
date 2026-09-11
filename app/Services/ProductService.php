@@ -10,19 +10,15 @@ class ProductService
     public function list(array $filters = []): Collection
     {
         $query = Produto::query();
-        
         if (isset($filters['categoria'])) {
-            $query->where('categoria', $filters['categoria']);
+            $query->where('categoria_id', $filters['categoria']);
         }
-        
         if (isset($filters['search'])) {
             $query->where('descricao', 'like', "%{$filters['search']}%");
         }
-        
         if (isset($filters['active'])) {
             $query->where('ativo', $filters['active']);
         }
-        
         return $query->get();
     }
 
@@ -48,9 +44,9 @@ class ProductService
 
     public function update(int $id, array $data): Produto
     {
-        $product = $this->findById($id);
-        $product->update($data);
-        return $product;
+        $produto = $this->findById($id);
+        $produto->update($data);
+        return $produto;
     }
 
     public function delete(int $id): bool
@@ -60,70 +56,55 @@ class ProductService
 
     public function restore(int $id): bool
     {
-        $product = Produto::withTrashed()->find($id);
-        if ($product) {
-            return $product->restore();
+        $produto = Produto::withTrashed()->find($id);
+        if ($produto) {
+            return $produto->restore();
         }
         return false;
     }
 
     public function ajustarEstoque(int $id, int $quantidade, string $tipo = 'adicionar'): Produto
     {
-        $product = $this->findById($id);
-        
+        $produto = $this->findById($id);
         if ($tipo === 'adicionar') {
-            $product->quantidade += $quantidade;
+            $produto->quantidade += $quantidade;
         } else {
-            $product->quantidade -= $quantidade;
+            $produto->quantidade -= $quantidade;
         }
-        
-        $product->save();
-        return $product;
+        $produto->save();
+        return $produto;
     }
 
-    public function getProdutosPorCategoria(string $categoria): Collection
+    public function getProdutosPorCategoria(int $categoriaId): Collection
     {
-        return Produto::where('categoria', $categoria)->get();
+        return Produto::where('categoria_id', $categoriaId)->get();
     }
 
     public function getProdutosPorTermo(string $termo): Collection
     {
         return Produto::where('descricao', 'like', "%{$termo}%")
-            ->orWhere('categoria', 'like', "%{$termo}%")
-            ->get();
+                      ->orWhere('referencia', 'like', "%{$termo}%")
+                      ->get();
     }
 
     public function getDestaques(): Collection
     {
-        return Produto::where('destaque', true)
-            ->where('ativo', true)
-            ->where('quantidade', '>', 0)
-            ->get();
+        return Produto::emDestaque()->get();
     }
 
     public function getOfertas(): Collection
     {
-        return Produto::whereNotNull('preco_promocional')
-            ->where('preco_promocional', '>', 0)
-            ->where('ativo', true)
-            ->get();
+        return Produto::ofertas()->get();
     }
 
     public function getNovos(): Collection
     {
-        return Produto::where('novo', true)
-            ->where('ativo', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        return Produto::novos()->get();
     }
 
     public function getBaixoEstoque(int $limite = 5): Collection
     {
-        return Produto::where('quantidade', '<=', $limite)
-            ->where('quantidade', '>', 0)
-            ->where('ativo', true)
-            ->orderBy('quantidade', 'asc')
-            ->get();
+        return Produto::baixoEstoque($limite)->get();
     }
 
     public function getEstatisticas(): array
@@ -132,32 +113,30 @@ class ProductService
             'total' => Produto::count(),
             'ativos' => Produto::where('ativo', true)->count(),
             'destaques' => Produto::where('destaque', true)->count(),
-            'baixo_estoque' => Produto::where('quantidade', '<=', 5)
-                ->where('quantidade', '>', 0)
-                ->count(),
-            'indisponiveis' => Produto::where('quantidade', '<=', 0)->count(),
+            'baixo_estoque' => Produto::baixoEstoque(5)->count(),
+            'indisponiveis' => Produto::where('ativo', true)->where('quantidade', '<=', 0)->count(),
         ];
     }
 
     public function listarCategorias(): Collection
     {
-        return Produto::distinct()->pluck('categoria');
+        return Produto::distinct()->pluck('categoria_id');
     }
 
     public function contarProdutosPorCategoria(): Collection
     {
-        return Produto::selectRaw('categoria, count(*) as total')
-            ->groupBy('categoria')
-            ->get();
+        return Produto::selectRaw('categoria_id, count(*) as total')
+                      ->groupBy('categoria_id')
+                      ->get();
     }
 
     public function incrementarVisualizacoes(int $id): void
     {
-        $product = $this->findById($id);
-        if ($product) {
-            $product->increment('visualizacoes');
-            $product->ultima_visualizacao = now();
-            $product->save();
+        $produto = $this->findById($id);
+        if ($produto) {
+            $produto->increment('visualizacoes');
+            $produto->ultima_visualizacao = now();
+            $produto->save();
         }
     }
 }

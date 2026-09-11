@@ -10,9 +10,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            AdminUserSeeder::class,
             BannerSeeder::class,
-            ProdutoSeederFixed::class,
-            // ✅ REMOVER AdminUserSeeder - RoleSeeder já cria os usuários
+            ClienteSeederFinal::class,
+            ProdutoSeederSimplificado::class,
         ]);
     }
 }

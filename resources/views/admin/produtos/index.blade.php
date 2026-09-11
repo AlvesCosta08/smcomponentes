@@ -32,12 +32,13 @@
                            placeholder="Descrição, referência..." value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
-                    <label for="categoria" class="form-label">Categoria</label>
-                    <select name="categoria" id="categoria" class="form-select">
+                    <label for="categoria_id" class="form-label">Categoria</label>
+                    <select name="categoria_id" id="categoria_id" class="form-select">
                         <option value="">Todas</option>
                         @foreach($categorias as $categoria)
-                            <option value="{{ $categoria }}" {{ request('categoria') == $categoria ? 'selected' : '' }}>
-                                {{ $categoria }}
+                            <option value="{{ $categoria->id }}" 
+                                {{ request('categoria_id') == $categoria->id ? 'selected' : '' }}>
+                                {{ $categoria->nome }}
                             </option>
                         @endforeach
                     </select>
@@ -54,7 +55,7 @@
                     <label for="estoque" class="form-label">Estoque</label>
                     <select name="estoque" id="estoque" class="form-select">
                         <option value="">Todos</option>
-                        <option value="disponivel" {{ request('estoque') == 'disponivel' ? 'selected' : '' }}>Disponível</option>
+                        <option value="disponivel" {{ request('estoque') == 'disponivel' ? 'selected' : '' }}>Disponível (quantidade > 0)</option>
                         <option value="baixo" {{ request('estoque') == 'baixo' ? 'selected' : '' }}>Estoque Baixo</option>
                         <option value="zerado" {{ request('estoque') == 'zerado' ? 'selected' : '' }}>Zerado</option>
                     </select>
@@ -73,7 +74,7 @@
         </div>
     </div>
 
-    <!-- Estatísticas -->
+    <!-- Estatísticas (ajustadas) -->
     <div class="row g-3 mb-4">
         <div class="col-md-2">
             <div class="admin-stat-card border-primary">
@@ -84,7 +85,7 @@
         <div class="col-md-2">
             <div class="admin-stat-card border-success">
                 <div class="stat-number text-success">{{ $estatisticas['com_estoque'] ?? 0 }}</div>
-                <div class="stat-label">Disponíveis</div>
+                <div class="stat-label">Disponíveis (qtd > 0)</div>
             </div>
         </div>
         <div class="col-md-2">
@@ -127,11 +128,12 @@
                             <tr>
                                 <th style="width: 5%;">ID</th>
                                 <th style="width: 8%;">Imagem</th>
-                                <th style="width: 25%;">Produto</th>
-                                <th style="width: 15%;">Categoria</th>
-                                <th style="width: 15%;">Preço (Atacado)</th>
+                                <th style="width: 20%;">Produto</th>
+                                <th style="width: 12%;">Categoria</th>
+                                <th style="width: 10%;">Fornecedor</th>
+                                <th style="width: 15%;">Preço (Unitário)</th>
                                 <th style="width: 10%;">Estoque</th>
-                                <th style="width: 12%;">Status</th>
+                                <th style="width: 10%;">Status</th>
                                 <th style="width: 10%;">Ações</th>
                             </tr>
                         </thead>
@@ -155,16 +157,19 @@
                                         <strong>{{ Str::limit($produto->descricao, 40) }}</strong>
                                         <br>
                                         <small class="text-muted">Ref: {{ $produto->referencia ?? '-' }}</small>
-                                        @if($produto->ipi > 0)
-                                            <br>
-                                            <small class="badge bg-info">IPI: {{ $produto->ipi }}%</small>
+                                    </td>
+                                    <td>
+                                        @if($produto->categoria)
+                                            {{ Str::limit($produto->categoria->nome, 20) }}
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td>{{ Str::limit($produto->categoria, 20) }}</td>
+                                    <td>{{ $produto->fornecedor ?? '-' }}</td>
                                     <td>
                                         @if($produto->preco_promocional && $produto->preco_promocional > 0)
                                             <span class="text-decoration-line-through text-muted small">
-                                                {{ $produto->preco_atacado_formatado }}
+                                                {{ $produto->preco_formatado }}
                                             </span>
                                             <br>
                                             <span class="fw-bold text-danger">
@@ -172,14 +177,8 @@
                                             </span>
                                         @else
                                             <span class="fw-bold">
-                                                {{ $produto->preco_atacado_formatado }}
+                                                {{ $produto->preco_formatado }}
                                             </span>
-                                        @endif
-                                        @if($produto->ipi > 0)
-                                            <br>
-                                            <small class="text-muted">
-                                                + IPI: {{ $produto->preco_com_ipi_formatado }}
-                                            </small>
                                         @endif
                                     </td>
                                     <td>
@@ -196,6 +195,15 @@
                                     <td>
                                         <span class="badge bg-{{ $produto->ativo ? 'success' : 'secondary' }}">
                                             {{ $produto->ativo ? 'Ativo' : 'Inativo' }}
+                                        </span>
+                                        <br>
+                                        <span class="badge bg-{{ match($produto->status) {
+                                            'disponivel' => 'success',
+                                            'indisponivel' => 'danger',
+                                            'sob_encomenda' => 'warning',
+                                            default => 'secondary'
+                                        } }}">
+                                            {{ ucfirst(str_replace('_', ' ', $produto->status ?? 'desconhecido')) }}
                                         </span>
                                         @if($produto->destaque)
                                             <span class="badge bg-warning text-dark">⭐</span>
@@ -329,7 +337,7 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const selects = document.querySelectorAll('#categoria, #ativo, #estoque');
+        const selects = document.querySelectorAll('#categoria_id, #ativo, #estoque');
         selects.forEach(select => {
             select.addEventListener('change', function() {
                 this.closest('form').submit();

@@ -9,7 +9,9 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
             <li class="breadcrumb-item"><a href="{{ route('produtos.index') }}">Produtos</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('produtos.categoria', $produto->categoria) }}">{{ $produto->categoria }}</a></li>
+            @if($produto->categoria)
+                <li class="breadcrumb-item"><a href="{{ route('produtos.categoria', $produto->categoria->slug) }}">{{ $produto->categoria->nome }}</a></li>
+            @endif
             <li class="breadcrumb-item active" aria-current="page">{{ $produto->descricao }}</li>
         </ol>
     </nav>
@@ -30,7 +32,9 @@
             <h1 class="display-6 fw-bold">{{ $produto->descricao }}</h1>
             
             <p class="text-muted mb-2">
-                <i class="bi bi-tag"></i> {{ $produto->categoria }}
+                @if($produto->categoria)
+                    <i class="bi bi-tag"></i> {{ $produto->categoria->nome }}
+                @endif
                 @if($produto->tipo)
                     | <i class="bi bi-box"></i> {{ $produto->tipo }}
                 @endif
@@ -42,14 +46,21 @@
                     <i class="bi bi-upc-scan"></i> Referência: {{ $produto->referencia }}
                 </p>
             @endif
+
+            <!-- Fornecedor -->
+            @if($produto->fornecedor)
+                <p class="text-muted small">
+                    <i class="bi bi-building"></i> Fornecedor: {{ $produto->fornecedor }}
+                </p>
+            @endif
             
-            <!-- Disponibilidade -->
+            <!-- Status e Estoque -->
             <div class="mb-3">
                 <span class="badge bg-{{ $produto->disponivel ? 'success' : 'danger' }} fs-6">
                     {{ $produto->disponivel ? '✓ Disponível' : '✗ Indisponível' }}
                 </span>
                 <span class="badge bg-secondary ms-2">Estoque: {{ $produto->quantidade }} unidades</span>
-                <span class="badge bg-{{ str_contains(strtolower($produto->status_label), 'disponível') ? 'success' : 'warning' }} ms-2">
+                <span class="badge bg-{{ $produto->status == 'disponivel' ? 'success' : ($produto->status == 'sob_encomenda' ? 'warning' : 'danger') }} ms-2">
                     {{ $produto->status_label }}
                 </span>
             </div>
@@ -99,7 +110,7 @@
         </div>
     </div>
 
-    <!-- Descrição -->
+    <!-- Descrição (se houver) -->
     @if($produto->descricao)
         <hr class="my-5">
         <h3 class="mb-3">Descrição</h3>

@@ -1,3 +1,4 @@
+// app/Actions/Admin/Produto/AjustarEstoqueAction.php
 <?php
 
 namespace App\Actions\Admin\Produto;
@@ -15,12 +16,9 @@ class AjustarEstoqueAction
         $this->repository = $repository;
     }
 
-    /**
-     * Executar ajuste de estoque
-     */
     public function executar(int $id, string $tipo, int $quantidade): bool
     {
-        $produto = $this->repository->buscarPorId($id);
+        $produto = $this->repository->find($id);
 
         if (!$produto) {
             throw new \Exception('Produto não encontrado.');
@@ -39,7 +37,6 @@ class AjustarEstoqueAction
             throw new \Exception('Tipo de ajuste inválido.');
         }
 
-        // Log de atividade
         if ($resultado) {
             Log::info('Estoque ajustado', [
                 'produto_id' => $produto->id,

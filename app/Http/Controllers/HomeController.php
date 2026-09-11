@@ -9,25 +9,18 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Collection;
 use stdClass;
 
 class HomeController extends Controller
 {
-    /**
-     * Tempo de cache em segundos (1 hora)
-     */
-    private const CACHE_TTL = 3600;
+    private const CACHE_TTL = 21600; // 6 horas
 
-    /**
-     * Exibe a página inicial.
-     */
     public function index(Request $request): \Illuminate\View\View
     {
         $banners = $this->getBanners();
-        
+
         $produtosDestaque = $this->getProdutosPaginated(
             'produtos_destaque',
             fn() => $this->getProdutosComSafe('emDestaque'),
@@ -35,7 +28,7 @@ class HomeController extends Controller
             8,
             'page_destaque'
         );
-        
+
         $ofertas = $this->getProdutosPaginated(
             'ofertas_ativas',
             fn() => $this->getProdutosComSafe('ofertas'),
@@ -43,7 +36,7 @@ class HomeController extends Controller
             8,
             'page_ofertas'
         );
-        
+
         $novosProdutos = $this->getProdutosPaginated(
             'novos_produtos',
             fn() => $this->getProdutosComSafe('novos'),
@@ -51,7 +44,7 @@ class HomeController extends Controller
             8,
             'page_novos'
         );
-        
+
         $maisVendidos = $this->getProdutosPaginated(
             'mais_vendidos',
             fn() => $this->getProdutosComSafe('maisVendidos'),
@@ -59,7 +52,7 @@ class HomeController extends Controller
             8,
             'page_vendidos'
         );
-        
+
         $produtosDisponiveis = $this->getProdutosPaginated(
             'produtos_disponiveis',
             fn() => $this->getProdutosComSafe('disponivel'),
@@ -82,23 +75,19 @@ class HomeController extends Controller
     // MÉTODOS PRIVADOS
     // ================================================================
 
-    /**
-     * Obtém produtos com segurança, verificando se a tabela existe
-     */
     private function getProdutosComSafe(string $scope): Collection
     {
-        // ✅ Verificar se a tabela produtos existe
         if (!Schema::hasTable('produtos')) {
             return collect();
         }
 
         try {
-            // Verificar se o método existe no modelo
-            if (method_exists(Produto::class, $scope)) {
-                return Produto::$scope()->get();
+            $query = Produto::query();
+            $method = $scope;
+            if (method_exists(Produto::class, 'scope' . ucfirst($scope))) {
+                $result = $query->$method()->get();
+                return $result instanceof Collection ? $result : collect($result);
             }
-            
-            // Fallback: buscar todos os produtos ativos
             return Produto::where('ativo', true)->get();
         } catch (\Exception $e) {
             Log::error("Erro ao buscar produtos com scope '{$scope}': " . $e->getMessage());
@@ -107,29 +96,101 @@ class HomeController extends Controller
     }
 
     /**
-     * Obtém os banners ativos com fallback.
+     * Obtém os banners ativos com fallback seguro.
+     * Cache armazena apenas arrays para evitar __PHP_Incomplete_Class.
      */
     private function getBanners(): Collection
     {
-        // ✅ Verificar se a tabela banners existe
         if (!Schema::hasTable('banners')) {
-            Log::info('Tabela banners não existe, usando banner padrão');
             return $this->getDefaultBanner();
         }
 
-        return Cache::remember('home_banners', self::CACHE_TTL, function () {
-            try {
-                $bannersFromDb = Banner::ativo()->ordenado()->get();
+        $cachedData = Cache::get('home_banners_data');
 
-                if ($bannersFromDb->isEmpty()) {
-                    return $this->getDefaultBanner();
-                }
+        // Se o cache existe mas não é um array válido, remova-o
+        if ($cachedData !== null && !is_array($cachedData)) {
+            Cache::forget('home_banners_data');
+            Log::warning('Cache de banners removido por estar corrompido.');
+            $cachedData = null;
+        }
 
-                return $bannersFromDb->map(fn($banner) => $this->formatBanner($banner));
-            } catch (\Exception $e) {
-                Log::error('Erro ao buscar banners: ' . $e->getMessage());
-                return $this->getDefaultBanner();
+        // Se o cache é um array válido, use-o
+        if ($cachedData !== null && is_array($cachedData) && !empty($cachedData)) {
+            return $this->buildBannerCollection($cachedData);
+        }
+
+        try {
+            $bannersFromDb = Banner::ativo()->ordenado()->get();
+
+            if ($bannersFromDb->isEmpty()) {
+                $default = $this->getDefaultBanner();
+                Cache::put('home_banners_data', $default->toArray(), self::CACHE_TTL);
+                return $default;
             }
+
+            // Converte para array antes de cachear
+            $bannerData = $bannersFromDb->map(fn($banner) => [
+                'id'          => $banner->id,
+                'titulo'      => $banner->titulo,
+                'subtitulo'   => $banner->subtitulo,
+                'descricao'   => $banner->descricao,
+                'imagem_url'  => $banner->imagem_url,
+                'link'        => $banner->link,
+                'texto_botao' => $banner->texto_botao,
+                'cor_texto'   => $banner->cor_texto,
+                'cor_botao'   => $banner->cor_botao,
+                'estilo_fundo'=> $banner->estilo_fundo,
+            ])->toArray();
+
+            Cache::put('home_banners_data', $bannerData, self::CACHE_TTL);
+            return $this->buildBannerCollection($bannerData);
+        } catch (\Exception $e) {
+            Log::error('Erro ao buscar banners: ' . $e->getMessage());
+            return $this->getDefaultBanner();
+        }
+    }
+
+    /**
+     * Constrói uma coleção de banners a partir de um array de dados.
+     * Suporta tanto arrays quanto objetos como entrada (evita __PHP_Incomplete_Class).
+     */
+    private function buildBannerCollection(array $data): Collection
+    {
+        // Garantia extra de que $data é um array
+        if (!is_array($data)) {
+            Log::warning('buildBannerCollection recebeu dados não-array, usando fallback.');
+            return $this->getDefaultBanner();
+        }
+
+        return collect($data)->map(function ($item) {
+            // Se for um objeto, converte para array
+            if (is_object($item)) {
+                // Verifica se é um objeto incompleto e tenta normalizar
+                if ($item instanceof __PHP_Incomplete_Class) {
+                    Log::warning('Objeto incompleto detectado em banners, usando fallback');
+                    return $this->getDefaultBanner()->first();
+                }
+                // Converte objeto para array
+                $item = (array) $item;
+            }
+
+            // Se não for array, usa fallback
+            if (!is_array($item)) {
+                return $this->getDefaultBanner()->first();
+            }
+
+            $banner = new stdClass();
+            $banner->id          = $item['id'] ?? null;
+            $banner->titulo      = $item['titulo'] ?? 'SM Componentes';
+            $banner->subtitulo   = $item['subtitulo'] ?? 'Qualidade em Componentes Eletrônicos';
+            $banner->descricao   = $item['descricao'] ?? 'Encontre os melhores componentes para seus projetos';
+            $banner->imagem_url  = $item['imagem_url'] ?? null;
+            $banner->link        = $item['link'] ?? route('produtos.index');
+            $banner->texto_botao = $item['texto_botao'] ?? 'Ver Produtos';
+            $banner->cor_texto   = $item['cor_texto'] ?? '#ffffff';
+            $banner->cor_botao   = $item['cor_botao'] ?? 'primary';
+            $banner->estilo_fundo= $item['estilo_fundo'] ?? 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+            return $banner;
         });
     }
 
@@ -139,52 +200,23 @@ class HomeController extends Controller
     private function getDefaultBanner(): Collection
     {
         $banner = new stdClass();
-        $banner->id = null;
-        $banner->titulo = 'SM Componentes';
-        $banner->subtitulo = 'Qualidade em Componentes Eletrônicos';
-        $banner->descricao = 'Encontre os melhores componentes para seus projetos';
-        $banner->imagem_url = null;
-        $banner->link = route('produtos.index');
+        $banner->id          = null;
+        $banner->titulo      = 'SM Componentes';
+        $banner->subtitulo   = 'Qualidade em Componentes Eletrônicos';
+        $banner->descricao   = 'Encontre os melhores componentes para seus projetos';
+        $banner->imagem_url  = null;
+        $banner->link        = route('produtos.index');
         $banner->texto_botao = 'Ver Produtos';
-        $banner->cor_texto = '#ffffff';
-        $banner->cor_botao = 'light';
-        $banner->estilo_fundo = 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
+        $banner->cor_texto   = '#ffffff';
+        $banner->cor_botao   = 'light';
+        $banner->estilo_fundo= 'background: linear-gradient(135deg, #0b1a33 0%, #1a3a5c 100%);';
 
         return collect([$banner]);
     }
 
     /**
-     * Formata um banner para exibição.
-     */
-    private function formatBanner(Banner $banner): stdClass
-    {
-        $obj = new stdClass();
-        $obj->id = $banner->id;
-        
-        // Textos
-        $obj->titulo = $banner->titulo ?? 'SM Componentes';
-        $obj->subtitulo = $banner->subtitulo ?? 'Qualidade em Componentes Eletrônicos';
-        $obj->descricao = $banner->descricao ?? 'Encontre os melhores componentes para seus projetos';
-        
-        // Imagem - USANDO O ACCESSOR DO MODEL
-        $obj->imagem_url = $banner->imagem_url;
-        
-        // Link e botão
-        $obj->link = $banner->link ?? route('produtos.index');
-        $obj->texto_botao = $banner->texto_botao ?? 'Ver Produtos';
-        
-        // Cores
-        $obj->cor_texto = $banner->cor_texto ?? '#ffffff';
-        $obj->cor_botao = $banner->cor_botao ?? 'primary';
-        
-        // Estilo de fundo - USANDO O ACCESSOR DO MODEL
-        $obj->estilo_fundo = $banner->estilo_fundo;
-
-        return $obj;
-    }
-
-    /**
-     * Obtém produtos paginados com cache
+     * Obtém produtos paginados com cache.
+     * Cache armazena apenas arrays para evitar __PHP_Incomplete_Class.
      */
     private function getProdutosPaginated(
         string $cacheKey,
@@ -193,7 +225,6 @@ class HomeController extends Controller
         int $perPage = 12,
         string $pageName = 'page'
     ): LengthAwarePaginator {
-        // ✅ Verificar se a tabela produtos existe
         if (!Schema::hasTable('produtos')) {
             return new LengthAwarePaginator([], 0, $perPage, $page, [
                 'path' => request()->url(),
@@ -204,50 +235,94 @@ class HomeController extends Controller
 
         $fullCacheKey = "{$cacheKey}_{$pageName}_{$page}";
 
-        return Cache::remember($fullCacheKey, self::CACHE_TTL, function () use ($queryBuilder, $perPage, $page, $pageName) {
-            try {
-                $items = $queryBuilder();
-                
-                if ($items instanceof Collection) {
-                    $items = $items->all();
-                }
-                
-                if (is_object($items) && method_exists($items, 'get')) {
-                    $items = $items->get()->all();
-                }
-                
-                if (!is_array($items)) {
-                    $items = [];
-                }
+        // Tenta obter do cache (dados como array)
+        $cachedData = Cache::get($fullCacheKey);
 
-                $total = count($items);
-                $offset = ($page - 1) * $perPage;
-                $items = array_slice($items, $offset, $perPage);
-                
-                return new LengthAwarePaginator(
-                    $items,
-                    $total,
-                    $perPage,
-                    $page,
-                    [
-                        'path' => request()->url(),
-                        'query' => request()->query(),
-                        'pageName' => $pageName,
-                    ]
-                );
-            } catch (\Exception $e) {
-                Log::error("Erro ao obter produtos paginados para '{$cacheKey}': " . $e->getMessage());
-                return new LengthAwarePaginator([], 0, $perPage, $page, [
+        if ($cachedData !== null && is_array($cachedData) && isset($cachedData['items'], $cachedData['total'])) {
+            // Reconstrói objetos stdClass a partir dos arrays
+            $items = array_map(function ($item) {
+                if (is_array($item)) {
+                    return (object) $item;
+                }
+                if (is_object($item) && !($item instanceof __PHP_Incomplete_Class)) {
+                    return $item;
+                }
+                // Se for incompleto, usa fallback
+                Log::warning('Item incompleto no cache de produtos', ['key' => $fullCacheKey]);
+                return new stdClass();
+            }, $cachedData['items']);
+
+            return new LengthAwarePaginator(
+                $items,
+                $cachedData['total'],
+                $perPage,
+                $page,
+                [
                     'path' => request()->url(),
                     'query' => request()->query(),
                     'pageName' => $pageName,
-                ]);
+                ]
+            );
+        }
+
+        try {
+            $items = $queryBuilder();
+
+            if ($items instanceof Collection) {
+                $items = $items->all();
+            } elseif (is_object($items) && method_exists($items, 'get')) {
+                $items = $items->get()->all();
             }
-        });
+
+            if (!is_array($items)) {
+                $items = [];
+            }
+
+            $total = count($items);
+            $offset = ($page - 1) * $perPage;
+            $paginatedItems = array_slice($items, $offset, $perPage);
+
+            // Prepara dados para cache (serializável)
+            $cacheItems = array_map(function ($item) {
+                if (is_object($item) && method_exists($item, 'toArray')) {
+                    return $item->toArray();
+                }
+                if (is_object($item)) {
+                    return (array) $item;
+                }
+                return $item;
+            }, $paginatedItems);
+
+            $cacheData = [
+                'items' => $cacheItems,
+                'total' => $total,
+            ];
+
+            Cache::put($fullCacheKey, $cacheData, self::CACHE_TTL);
+
+            return new LengthAwarePaginator(
+                $paginatedItems,
+                $total,
+                $perPage,
+                $page,
+                [
+                    'path' => request()->url(),
+                    'query' => request()->query(),
+                    'pageName' => $pageName,
+                ]
+            );
+        } catch (\Exception $e) {
+            Log::error("Erro ao obter produtos paginados para '{$cacheKey}': " . $e->getMessage());
+            return new LengthAwarePaginator([], 0, $perPage, $page, [
+                'path' => request()->url(),
+                'query' => request()->query(),
+                'pageName' => $pageName,
+            ]);
+        }
     }
 
     // ================================================================
-    // MÉTODOS DE CACHE
+    // MÉTODOS PARA LIMPEZA DE CACHE
     // ================================================================
 
     public function clearCache(): \Illuminate\Http\RedirectResponse
@@ -258,7 +333,6 @@ class HomeController extends Controller
             Artisan::call('route:clear');
             Artisan::call('event:clear');
             Artisan::call('cache:clear');
-
             Cache::flush();
 
             Log::info('Cache limpo pelo administrador', [
@@ -280,10 +354,10 @@ class HomeController extends Controller
     public function clearBannerCache(): \Illuminate\Http\RedirectResponse
     {
         try {
+            Cache::forget('home_banners_data');
             Cache::forget('home_banners');
             Cache::forget('banners_ativos');
             Cache::forget('banners');
-            Cache::forget('banners_active');
 
             Log::info('Cache de banners limpo', [
                 'usuario_id' => auth()->id()
@@ -303,25 +377,37 @@ class HomeController extends Controller
     public function reloadBanners(): \Illuminate\Http\RedirectResponse
     {
         try {
+            Cache::forget('home_banners_data');
             Cache::forget('home_banners');
             Cache::forget('banners_ativos');
             Cache::forget('banners');
-            Cache::forget('banners_active');
 
             if (!Schema::hasTable('banners')) {
                 return redirect()->back()->with('warning', '⚠️ Tabela banners não existe!');
             }
 
             $banners = Banner::ativo()->ordenado()->get();
-            Cache::put('home_banners', $banners, self::CACHE_TTL);
-            Cache::put('banners_ativos', $banners, self::CACHE_TTL);
+            $bannerData = $banners->map(fn($banner) => [
+                'id'          => $banner->id,
+                'titulo'      => $banner->titulo,
+                'subtitulo'   => $banner->subtitulo,
+                'descricao'   => $banner->descricao,
+                'imagem_url'  => $banner->imagem_url,
+                'link'        => $banner->link,
+                'texto_botao' => $banner->texto_botao,
+                'cor_texto'   => $banner->cor_texto,
+                'cor_botao'   => $banner->cor_botao,
+                'estilo_fundo'=> $banner->estilo_fundo,
+            ])->toArray();
+
+            Cache::put('home_banners_data', $bannerData, self::CACHE_TTL);
 
             Log::info('Banners recarregados', [
                 'usuario_id' => auth()->id(),
-                'quantidade' => $banners->count()
+                'quantidade' => count($bannerData)
             ]);
 
-            return redirect()->back()->with('success', "✅ Banners recarregados com sucesso! ({$banners->count()} banners)");
+            return redirect()->back()->with('success', "✅ Banners recarregados com sucesso! (" . count($bannerData) . " banners)");
         } catch (\Exception $e) {
             Log::error('Erro ao recarregar banners', [
                 'erro' => $e->getMessage(),
@@ -342,7 +428,7 @@ class HomeController extends Controller
                 'mais_vendidos',
                 'produtos_disponiveis'
             ];
-            
+
             foreach ($keys as $key) {
                 Cache::forget($key);
                 for ($i = 1; $i <= 10; $i++) {
@@ -378,7 +464,6 @@ class HomeController extends Controller
             Artisan::call('event:clear');
             Artisan::call('cache:clear');
             Artisan::call('optimize:clear');
-
             Cache::flush();
 
             Log::info('Todos os caches limpos', [

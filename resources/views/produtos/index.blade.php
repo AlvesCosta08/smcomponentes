@@ -37,15 +37,20 @@
             <a href="{{ route('produtos.index') }}" class="btn btn-outline-secondary btn-sm {{ !request('status') ? 'active' : '' }}">
                 <i class="bi bi-grid"></i> Todos ({{ $totais['total'] ?? 0 }})
             </a>
-            <a href="{{ route('produtos.filtro', 'disponiveis') }}" class="btn btn-outline-success btn-sm {{ request('status') == 'disponiveis' ? 'active' : '' }}">
+            <a href="{{ route('produtos.filtro', 'disponivel') }}" class="btn btn-outline-success btn-sm {{ request('status') == 'disponivel' ? 'active' : '' }}">
                 <i class="bi bi-check-circle"></i> Disponíveis ({{ $totais['disponiveis'] ?? 0 }})
             </a>
             <a href="{{ route('produtos.filtro', 'estoque_baixo') }}" class="btn btn-outline-warning btn-sm {{ request('status') == 'estoque_baixo' ? 'active' : '' }}">
                 <i class="bi bi-exclamation-triangle"></i> Estoque Baixo ({{ $totais['estoque_baixo'] ?? 0 }})
             </a>
-            <a href="{{ route('produtos.filtro', 'indisponiveis') }}" class="btn btn-outline-danger btn-sm {{ request('status') == 'indisponiveis' ? 'active' : '' }}">
+            <a href="{{ route('produtos.filtro', 'indisponivel') }}" class="btn btn-outline-danger btn-sm {{ request('status') == 'indisponivel' ? 'active' : '' }}">
                 <i class="bi bi-x-circle"></i> Indisponíveis ({{ $totais['indisponiveis'] ?? 0 }})
             </a>
+            @if(isset($totais['sob_encomenda']) && $totais['sob_encomenda'] > 0)
+                <a href="{{ route('produtos.filtro', 'sob_encomenda') }}" class="btn btn-outline-info btn-sm {{ request('status') == 'sob_encomenda' ? 'active' : '' }}">
+                    <i class="bi bi-clock"></i> Sob Encomenda ({{ $totais['sob_encomenda'] }})
+                </a>
+            @endif
         </div>
     </div>
     @endif
@@ -95,7 +100,8 @@
                             </h6>
                             <div class="mt-auto">
                                 <span class="categoria-badge">
-                                    <i class="bi bi-tag"></i> {{ Str::limit($produto->categoria, 20) }}
+                                    <i class="bi bi-tag"></i> 
+                                    {{ $produto->categoria?->nome ?? 'Sem categoria' }}
                                 </span>
                                 <p class="card-text mt-2 mb-0">
                                     <span class="price">{{ $produto->preco_atacado_formatado }}</span>

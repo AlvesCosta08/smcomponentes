@@ -13,26 +13,28 @@ use Illuminate\Support\Facades\Storage;
 
 class ProdutoAdminController extends Controller
 {
-    // Constantes de disponibilidade
-    const DISPONIVEL = 'DISPONIVEL';
-    const INDISPONIVEL = 'INDISPONIVEL';
-    const ESTOQUE_BAIXO = 'ESTOQUE_BAIXO';
+    // 🔥 Removemos as constantes de disponibilidade (agora usamos status)
+    // Mantemos apenas para compatibilidade de filtros (opcional)
+    const STATUS_DISPONIVEL = 'disponivel';
+    const STATUS_INDISPONIVEL = 'indisponivel';
+    const STATUS_SOB_ENCOMENDA = 'sob_encomenda';
+    const STATUS_ESTOQUE_BAIXO = 'estoque_baixo'; // usado apenas para filtro
 
     public function index(Request $request)
     {
         $query = Produto::query()->with(['categoria']);
-        
+
         if ($request->has('busca') && $request->busca) {
             $query->buscar($request->busca);
         }
-        
+
         if ($request->has('status') && $request->status) {
             switch ($request->status) {
                 case 'disponivel':
                     $query->disponivel();
                     break;
                 case 'indisponivel':
-                    $query->where('disponibilidade', self::INDISPONIVEL);
+                    $query->where('status', self::STATUS_INDISPONIVEL);
                     break;
                 case 'estoque_baixo':
                     $query->baixoEstoque();
@@ -42,52 +44,51 @@ class ProdutoAdminController extends Controller
                     break;
             }
         }
-        
+
         if ($request->has('categoria') && $request->categoria) {
             $query->where('categoria_id', $request->categoria);
         }
-        
+
         $produtos = $query->latest()->paginate(15);
         $categorias = Categoria::ativo()->ordenado()->get();
-        
+
         return view('admin.produtos.index', compact('produtos', 'categorias'));
     }
 
     public function create()
     {
         $categorias = Categoria::ativo()->ordenado()->get();
-        $margens = Produto::getMargensDisponiveis();
-        return view('admin.produtos.create', compact('categorias', 'margens'));
+        // 🔥 Removido $margens (não mais usado)
+        return view('admin.produtos.create', compact('categorias'));
     }
 
     public function store(ProdutoRequest $request)
     {
         $data = $request->validated();
-        
-        // Gerar slug
-        $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
-        
-        // ✅ CORRIGIDO: Criar produto e depois calcular preços
+
+        // Gerar slug (se não vier do request)
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
+        }
+
+        // 🔥 Criar produto sem cálculos automáticos
         $produto = new Produto($data);
-        
-        // Calcular preços usando o método do model
-        $produto->calcularTodosPrecos();
-        
+
         // Processar imagem principal
         if ($request->hasFile('imagem')) {
             $produto->imagem = $this->uploadImagem($request->file('imagem'));
         }
-        
-        // Calcular disponibilidade
-        $produto->disponibilidade = $this->calcularDisponibilidade(
-            $produto->quantidade ?? 0,
-            $produto->ativo ?? true
-        );
-        
-        // Salvar produto
+
+        // 🔥 Definir status baseado na quantidade e ativo (mas o Model já faz isso via boot)
+        // Apenas garantimos que status tenha um valor padrão
+        if (empty($produto->status)) {
+            $produto->status = $this->calcularStatus($produto->quantidade ?? 0, $produto->ativo ?? true);
+        }
+
+        // Salvar produto (o boot do Model já gera slug e define status se necessário)
         $produto->save();
-        
-        // Processar imagens adicionais
+
+        // Processar imagens adicionais (galeria)
         if ($request->hasFile('imagens')) {
             foreach ($request->file('imagens') as $index => $imagem) {
                 $nome = $this->uploadImagem($imagem);
@@ -99,7 +100,7 @@ class ProdutoAdminController extends Controller
                 ]);
             }
         }
-        
+
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto criado com sucesso!');
@@ -116,26 +117,23 @@ class ProdutoAdminController extends Controller
     {
         $produto = Produto::with(['imagens'])->findOrFail($id);
         $categorias = Categoria::ativo()->ordenado()->get();
-        $margens = Produto::getMargensDisponiveis();
-        return view('admin.produtos.edit', compact('produto', 'categorias', 'margens'));
+        // 🔥 Removido $margens
+        return view('admin.produtos.edit', compact('produto', 'categorias'));
     }
 
     public function update(ProdutoRequest $request, $id)
     {
         $produto = Produto::findOrFail($id);
         $data = $request->validated();
-        
-        // Gerar slug se mudou
-        if ($produto->descricao !== $data['descricao']) {
+
+        // Gerar slug se descrição mudou
+        if ($produto->descricao !== $data['descricao'] && empty($data['slug'])) {
             $data['slug'] = Str::slug($data['descricao'] . '-' . Str::random(6));
         }
-        
-        // ✅ CORRIGIDO: Atualizar dados primeiro
+
+        // 🔥 Atualizar dados (sem cálculos)
         $produto->fill($data);
-        
-        // Recalcular preços
-        $produto->calcularTodosPrecos();
-        
+
         // Processar nova imagem principal
         if ($request->hasFile('imagem')) {
             if ($produto->imagem) {
@@ -143,8 +141,8 @@ class ProdutoAdminController extends Controller
             }
             $produto->imagem = $this->uploadImagem($request->file('imagem'));
         }
-        
-        // Processar imagens adicionais
+
+        // Processar imagens adicionais (apenas as novas)
         if ($request->hasFile('imagens')) {
             foreach ($request->file('imagens') as $index => $imagem) {
                 $nome = $this->uploadImagem($imagem);
@@ -155,15 +153,13 @@ class ProdutoAdminController extends Controller
                 ]);
             }
         }
-        
-        // Atualizar disponibilidade
-        $produto->disponibilidade = $this->calcularDisponibilidade(
-            $produto->quantidade ?? 0,
-            $produto->ativo ?? true
-        );
-        
+
+        // 🔥 Atualizar status automaticamente (se quantidade ou ativo mudaram)
+        // O Model já faz isso no boot, mas podemos forçar se necessário
+        $produto->atualizarDisponibilidade();
+
         $produto->save();
-        
+
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto atualizado com sucesso!');
@@ -172,19 +168,19 @@ class ProdutoAdminController extends Controller
     public function destroy($id)
     {
         $produto = Produto::findOrFail($id);
-        
+
         // Remover imagens
         if ($produto->imagem) {
             Storage::disk('public')->delete($produto->imagem);
         }
-        
+
         foreach ($produto->imagens as $imagem) {
             Storage::disk('public')->delete($imagem->imagem);
             $imagem->delete();
         }
-        
+
         $produto->delete();
-        
+
         return redirect()
             ->route('admin.produtos.index')
             ->with('success', 'Produto excluído com sucesso!');
@@ -196,9 +192,9 @@ class ProdutoAdminController extends Controller
             'quantidade' => 'required|integer|min:1',
             'operacao' => 'required|in:adicionar,remover,definir',
         ]);
-        
+
         $produto = Produto::findOrFail($id);
-        
+
         switch ($request->operacao) {
             case 'adicionar':
                 $produto->quantidade += $request->quantidade;
@@ -216,11 +212,12 @@ class ProdutoAdminController extends Controller
                 $mensagem = "Estoque definido para {$request->quantidade} itens.";
                 break;
         }
-        
+
+        // 🔥 Atualizar status com base na nova quantidade
         $produto->atualizarDisponibilidade();
         $produto->ultima_atualizacao_estoque = now();
         $produto->save();
-        
+
         return back()->with('success', $mensagem);
     }
 
@@ -252,20 +249,22 @@ class ProdutoAdminController extends Controller
         return $path;
     }
 
-    private function calcularDisponibilidade(int $quantidade, bool $ativo): string
+    /**
+     * 🔥 Novo método para calcular status (disponivel, indisponivel, sob_encomenda)
+     * Pode ser usado como fallback caso o Model não defina automaticamente.
+     */
+    private function calcularStatus(int $quantidade, bool $ativo): string
     {
         if (!$ativo) {
-            return self::INDISPONIVEL;
+            return self::STATUS_INDISPONIVEL;
         }
-        
+
         if ($quantidade <= 0) {
-            return self::INDISPONIVEL;
+            return self::STATUS_INDISPONIVEL;
         }
-        
-        if ($quantidade <= 5) {
-            return self::ESTOQUE_BAIXO;
-        }
-        
-        return self::DISPONIVEL;
+
+        // Se quiser, pode adicionar lógica para 'sob_encomenda' baseado em algo
+        // Por enquanto, se tem estoque e está ativo, é 'disponivel'
+        return self::STATUS_DISPONIVEL;
     }
 }

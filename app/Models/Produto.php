@@ -2,9 +2,6 @@
 
 namespace App\Models;
 
-use App\Domain\Produtos\Services\PricingCalculator;
-use App\Domain\Produtos\ValueObjects\Stock;
-use App\Enums\DisponibilidadeEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,24 +15,18 @@ class Produto extends Model
     protected $table = 'produtos';
 
     protected $fillable = [
-        'categoria',
         'categoria_id',
         'referencia',
         'descricao',
         'tipo',
-        'disponibilidade',
+        'status',
         'imagem',
         'slug',
         'quantidade',
         'estoque_minimo',
-        'valor_atacado',
-        'valor_compra',
         'valor_unitario',
-        'valor_custo',
+        'valor_atacado',
         'preco_promocional',
-        'ipi',
-        'percentual_custo',
-        'margem_lucro',
         'ativo',
         'destaque',
         'novo',
@@ -44,17 +35,13 @@ class Produto extends Model
         'ultima_atualizacao_estoque',
         'visualizacoes',
         'ultima_visualizacao',
+        'fornecedor',
     ];
 
     protected $casts = [
-        'valor_atacado' => 'float',
-        'valor_compra' => 'float',
         'valor_unitario' => 'float',
-        'valor_custo' => 'float',
+        'valor_atacado' => 'float',
         'preco_promocional' => 'float',
-        'ipi' => 'float',
-        'percentual_custo' => 'float',
-        'margem_lucro' => 'float',
         'quantidade' => 'integer',
         'estoque_minimo' => 'integer',
         'ativo' => 'boolean',
@@ -64,10 +51,6 @@ class Produto extends Model
         'data_compra' => 'date',
         'ultima_atualizacao_estoque' => 'datetime',
         'ultima_visualizacao' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
-        'disponibilidade' => DisponibilidadeEnum::class,
         'visualizacoes' => 'integer',
     ];
 
@@ -81,14 +64,10 @@ class Produto extends Model
         'disponivel',
         'tem_promocao',
         'desconto_percentual',
-        'lucro_bruto_formatado',
         'pode_comprar',
     ];
 
-    // ==============================================
-    // RELACIONAMENTOS
-    // ==============================================
-
+    // ========== RELACIONAMENTOS ==========
     public function categoria()
     {
         return $this->belongsTo(Categoria::class);
@@ -96,7 +75,7 @@ class Produto extends Model
 
     public function imagens()
     {
-        return $this->hasMany(ProdutoImagem::class)->orderBy('ordem', 'asc');
+        return $this->hasMany(ProdutoImagem::class)->orderBy('ordem');
     }
 
     public function imagemPrincipal()
@@ -104,116 +83,84 @@ class Produto extends Model
         return $this->hasOne(ProdutoImagem::class)->where('principal', true);
     }
 
-    public function itensPedido()
-    {
-        return $this->hasMany(PedidoItem::class);
-    }
-
-    public function wishlistItems()
-    {
-        return $this->hasMany(WishlistItem::class);
-    }
-
-    // ==============================================
-    // ACESSORS (GETTERS)
-    // ==============================================
-
+    // ========== ACESSORS (GETTERS) ==========
     public function getPrecoFormatadoAttribute(): string
     {
-        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
+        return 'R$ ' . number_format($this->valor_unitario ?? 0, 2, ',', '.');
     }
 
     public function getPrecoAtacadoFormatadoAttribute(): string
     {
-        return 'R$ ' . number_format($this->valor_atacado ?? 0, 2, ',', '.');
+        $valor = $this->valor_atacado ?? $this->valor_unitario ?? 0;
+        return 'R$ ' . number_format($valor, 2, ',', '.');
+    }
+
+    public function getPrecoAtacadoAttribute(): float
+    {
+        return (float) ($this->attributes['valor_atacado'] ?? $this->valor_unitario ?? 0);
     }
 
     public function getPrecoPromocionalFormatadoAttribute(): ?string
     {
-        return $this->preco_promocional 
-            ? 'R$ ' . number_format($this->preco_promocional, 2, ',', '.') 
+        return $this->preco_promocional
+            ? 'R$ ' . number_format($this->preco_promocional, 2, ',', '.')
             : null;
     }
 
     public function getImagemUrlAttribute(): string
     {
         if (!empty($this->imagem)) {
-            $filename = basename($this->imagem);
-            $path = 'produtos/' . $filename;
+            $path = 'produtos/' . basename($this->imagem);
             if (Storage::disk('public')->exists($path)) {
                 return asset('storage/' . $path);
             }
-            $altPath = 'images/' . $filename;
-            if (Storage::disk('public')->exists($altPath)) {
-                return asset('storage/' . $altPath);
-            }
         }
-
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
-            $primeiraImagem = $this->imagens->first();
-            if ($primeiraImagem && !empty($primeiraImagem->imagem)) {
-                $filename = basename($primeiraImagem->imagem);
-                $path = 'produtos/' . $filename;
+            $primeira = $this->imagens->first();
+            if ($primeira && !empty($primeira->imagem)) {
+                $path = 'produtos/' . basename($primeira->imagem);
                 if (Storage::disk('public')->exists($path)) {
                     return asset('storage/' . $path);
                 }
-                $altPath = 'images/' . $filename;
-                if (Storage::disk('public')->exists($altPath)) {
-                    return asset('storage/' . $altPath);
-                }
             }
         }
-
         return asset('images/produto-placeholder.jpg');
     }
 
     public function getImagensUrlsAttribute(): array
     {
         $urls = [];
-
         if ($this->relationLoaded('imagens') && $this->imagens->isNotEmpty()) {
             foreach ($this->imagens as $imagem) {
                 if (!empty($imagem->imagem)) {
-                    $filename = basename($imagem->imagem);
-                    $path = 'produtos/' . $filename;
+                    $path = 'produtos/' . basename($imagem->imagem);
                     if (Storage::disk('public')->exists($path)) {
                         $urls[] = asset('storage/' . $path);
-                        continue;
-                    }
-                    $altPath = 'images/' . $filename;
-                    if (Storage::disk('public')->exists($altPath)) {
-                        $urls[] = asset('storage/' . $altPath);
                     }
                 }
             }
         }
-
         if (empty($urls) && !empty($this->imagem)) {
-            $filename = basename($this->imagem);
-            $path = 'produtos/' . $filename;
+            $path = 'produtos/' . basename($this->imagem);
             if (Storage::disk('public')->exists($path)) {
                 $urls[] = asset('storage/' . $path);
-            } else {
-                $altPath = 'images/' . $filename;
-                if (Storage::disk('public')->exists($altPath)) {
-                    $urls[] = asset('storage/' . $altPath);
-                }
             }
         }
-
         if (empty($urls)) {
             $urls[] = asset('images/produto-placeholder.jpg');
         }
-
         return $urls;
     }
 
     public function getStatusLabelAttribute(): string
     {
-        if (!$this->ativo) {
-            return 'Inativo';
-        }
-        return $this->disponibilidade?->label() ?? 'Desconhecido';
+        if (!$this->ativo) return 'Inativo';
+        return match ($this->status) {
+            'disponivel' => 'Disponível',
+            'indisponivel' => 'Indisponível',
+            'sob_encomenda' => 'Sob Encomenda',
+            default => 'Desconhecido',
+        };
     }
 
     public function getDisponivelAttribute(): bool
@@ -223,17 +170,17 @@ class Produto extends Model
 
     public function getTemPromocaoAttribute(): bool
     {
-        return $this->hasPromocao();
+        $precoBase = $this->preco_atacado;
+        return $this->preco_promocional
+            && $this->preco_promocional > 0
+            && $this->preco_promocional < $precoBase;
     }
 
     public function getDescontoPercentualAttribute(): int
     {
-        return $this->getDescontoPercentual();
-    }
-
-    public function getLucroBrutoFormatadoAttribute(): string
-    {
-        return $this->getLucroBrutoFormatado();
+        $precoBase = $this->preco_atacado;
+        if (!$this->tem_promocao || $precoBase <= 0) return 0;
+        return (int) round((($precoBase - $this->preco_promocional) / $precoBase) * 100);
     }
 
     public function getPodeComprarAttribute(): bool
@@ -241,67 +188,20 @@ class Produto extends Model
         return $this->isDisponivel();
     }
 
-    // ==============================================
-    // MÉTODOS AUXILIARES
-    // ==============================================
-
+    // ========== MÉTODOS AUXILIARES ==========
     public function isDisponivel(): bool
     {
-        return $this->ativo 
-            && ($this->quantidade ?? 0) > 0 
-            && $this->disponibilidade === DisponibilidadeEnum::DISPONIVEL;
-    }
-
-    public function hasPromocao(): bool
-    {
-        return $this->preco_promocional !== null 
-            && $this->preco_promocional > 0 
-            && $this->preco_promocional < ($this->valor_atacado ?? 0);
-    }
-
-    public function getDescontoPercentual(): int
-    {
-        if (!$this->hasPromocao() || ($this->valor_atacado ?? 0) <= 0) {
-            return 0;
-        }
-        return (int) round((($this->valor_atacado - $this->preco_promocional) / $this->valor_atacado) * 100);
-    }
-
-    public function getPrecoComIpi(): float
-    {
-        $preco = $this->valor_atacado ?? 0;
-        $ipi = $this->ipi ?? 0;
-        return round($preco * (1 + ($ipi / 100)), 2);
-    }
-
-    public function getPrecoComIpiFormatado(): string
-    {
-        return 'R$ ' . number_format($this->getPrecoComIpi(), 2, ',', '.');
-    }
-
-    public function getLucroBruto(): float
-    {
-        $preco = $this->valor_atacado ?? 0;
-        $custo = $this->valor_custo ?? 0;
-        return round($preco - $custo, 2);
-    }
-
-    public function getLucroBrutoFormatado(): string
-    {
-        return 'R$ ' . number_format($this->getLucroBruto(), 2, ',', '.');
+        return $this->ativo
+            && ($this->quantidade ?? 0) > 0
+            && $this->status === 'disponivel';
     }
 
     public function atualizarDisponibilidade(): void
     {
-        $stockVO = new Stock(
-            (int) ($this->quantidade ?? 0),
-            (int) ($this->estoque_minimo ?? 5)
-        );
-        
         if (!$this->ativo) {
-            $this->disponibilidade = DisponibilidadeEnum::INDISPONIVEL;
-        } else {
-            $this->disponibilidade = $stockVO->getDisponibilidade();
+            $this->status = 'indisponivel';
+        } elseif ($this->quantidade <= 0) {
+            $this->status = 'indisponivel';
         }
     }
 
@@ -312,48 +212,32 @@ class Produto extends Model
         $this->saveQuietly();
     }
 
-    // ==============================================
-    // MÉTODOS DE CÁLCULO  ✅ ADICIONADO
-    // ==============================================
-
-    /**
-     * Calcula todos os preços do produto baseado no valor de compra e margem
-     * Este método é chamado pelo ProdutoAdminController
-     */
-    public function calcularTodosPrecos(): void
+    public function aumentarEstoque(int $quantidade): bool
     {
-        if (!empty($this->valor_compra) && !empty($this->margem_lucro)) {
-            $calculator = new PricingCalculator();
-            $resultados = $calculator->calculate(
-                (float) $this->valor_compra,
-                (float) ($this->margem_lucro ?? 80),
-                (float) ($this->ipi ?? 0)
-            );
-            
-            $this->valor_custo = $resultados['valor_custo'];
-            $this->valor_atacado = $resultados['valor_atacado'];
-            $this->percentual_custo = $resultados['percentual_custo'];
-            $this->save();
-        }
+        $this->quantidade += $quantidade;
+        $this->ultima_atualizacao_estoque = now();
+        return $this->save();
     }
 
-    /**
-     * Recalcula os preços (alias para calcularTodosPrecos)
-     */
-    public function recalcularPrecos(): void
+    public function reduzirEstoque(int $quantidade): bool
     {
-        $this->calcularTodosPrecos();
+        if ($this->quantidade < $quantidade) return false;
+        $this->quantidade -= $quantidade;
+        $this->ultima_atualizacao_estoque = now();
+        return $this->save();
     }
 
-    // ==============================================
-    // SCOPES
-    // ==============================================
+    public function temEstoque(int $quantidade): bool
+    {
+        return $this->quantidade >= $quantidade;
+    }
 
+    // ========== SCOPES ==========
     public function scopeDisponivel($query)
     {
         return $query->where('ativo', true)
-            ->where('disponibilidade', DisponibilidadeEnum::DISPONIVEL->value)
-            ->where('quantidade', '>', 0);
+                     ->where('status', 'disponivel')
+                     ->where('quantidade', '>', 0);
     }
 
     public function scopeEmDestaque($query)
@@ -364,135 +248,76 @@ class Produto extends Model
     public function scopeOfertas($query)
     {
         return $query->disponivel()
-            ->whereNotNull('preco_promocional')
-            ->where('preco_promocional', '>', 0)
-            ->whereRaw('preco_promocional < valor_atacado');
+                     ->whereNotNull('preco_promocional')
+                     ->where('preco_promocional', '>', 0)
+                     ->whereRaw('preco_promocional < COALESCE(valor_atacado, valor_unitario)');
     }
 
     public function scopeNovos($query)
     {
-        return $query->disponivel()
-            ->where('novo', true)
-            ->orderBy('created_at', 'desc');
+        return $query->disponivel()->where('novo', true)->orderBy('created_at', 'desc');
     }
 
     public function scopeMaisVendidos($query)
     {
-        return $query->disponivel()
-            ->where('mais_vendido', true)
-            ->orderBy('visualizacoes', 'desc');
+        return $query->disponivel()->where('mais_vendido', true)->orderBy('visualizacoes', 'desc');
     }
 
     public function scopeBaixoEstoque($query, int $limite = 5)
     {
         return $query->where('ativo', true)
-            ->where('quantidade', '<=', $limite)
-            ->where('quantidade', '>', 0)
-            ->orderBy('quantidade', 'asc');
+                     ->where('quantidade', '<=', $limite)
+                     ->where('quantidade', '>', 0)
+                     ->orderBy('quantidade');
     }
 
     public function scopeBuscar($query, string $termo)
     {
-        return $query->where(function($q) use ($termo) {
+        return $query->where(function ($q) use ($termo) {
             $q->where('descricao', 'LIKE', "%{$termo}%")
               ->orWhere('referencia', 'LIKE', "%{$termo}%")
-              ->orWhere('categoria', 'LIKE', "%{$termo}%")
-              ->orWhereHas('categoria', function($q) use ($termo) {
-                  $q->where('nome', 'LIKE', "%{$termo}%");
-              });
+              ->orWhereHas('categoria', fn($q) => $q->where('nome', 'LIKE', "%{$termo}%"));
         });
     }
 
-    // ==============================================
-    // MÉTODOS ESTÁTICOS
-    // ==============================================
-
-    public static function getMargensDisponiveis(): array
-    {
-        return [
-            20 => '20% - Lucro Baixo',
-            30 => '30% - Lucro Médio',
-            40 => '40% - Lucro Bom',
-            50 => '50% - Lucro Ótimo',
-            60 => '60% - Lucro Excelente',
-            80 => '80% - Lucro Premium',
-            100 => '100% - Lucro Máximo',
-        ];
-    }
-
-    // ==============================================
-    // BOOT
-    // ==============================================
-
+    // ========== BOOT ==========
     protected static function booted()
     {
         static::creating(function ($produto) {
             if (empty($produto->slug)) {
-                $baseSlug = Str::slug($produto->descricao);
-                $slug = $baseSlug;
+                $base = Str::slug($produto->descricao);
+                $slug = $base;
                 $counter = 1;
-                
                 while (static::where('slug', $slug)->exists()) {
-                    $slug = $baseSlug . '-' . $counter;
-                    $counter++;
+                    $slug = $base . '-' . $counter++;
                 }
                 $produto->slug = $slug;
             }
-            
-            $produto->disponibilidade ??= DisponibilidadeEnum::DISPONIVEL->value;
+            $produto->status ??= 'indisponivel';
             $produto->visualizacoes ??= 0;
             $produto->estoque_minimo ??= 5;
 
-            if (!empty($produto->valor_compra)) {
-                $calculator = new PricingCalculator();
-                $resultados = $calculator->calculate(
-                    (float) $produto->valor_compra,
-                    (float) ($produto->margem_lucro ?? 80),
-                    (float) ($produto->ipi ?? 0)
-                );
-                
-                $produto->valor_custo = $resultados['valor_custo'];
-                $produto->valor_atacado = $resultados['valor_atacado'];
-                $produto->percentual_custo = $resultados['percentual_custo'];
+            if (empty($produto->valor_atacado) && !empty($produto->valor_unitario)) {
+                $produto->valor_atacado = $produto->valor_unitario;
             }
         });
 
         static::updating(function ($produto) {
             if ($produto->isDirty('descricao') && empty($produto->slug)) {
-                $baseSlug = Str::slug($produto->descricao);
-                $slug = $baseSlug;
+                $base = Str::slug($produto->descricao);
+                $slug = $base;
                 $counter = 1;
-                
                 while (static::where('slug', $slug)->where('id', '!=', $produto->id)->exists()) {
-                    $slug = $baseSlug . '-' . $counter;
-                    $counter++;
+                    $slug = $base . '-' . $counter++;
                 }
                 $produto->slug = $slug;
-            }
-            
-            if ($produto->isDirty(['quantidade', 'ativo', 'estoque_minimo'])) {
-                $stockVO = new Stock(
-                    (int) ($produto->quantidade ?? 0),
-                    (int) ($produto->estoque_minimo ?? 5)
-                );
-                $produto->disponibilidade = $stockVO->getDisponibilidade();
             }
 
             if ($produto->isDirty('quantidade')) {
                 $produto->ultima_atualizacao_estoque = now();
-            }
-
-            if ($produto->isDirty(['valor_compra', 'margem_lucro', 'ipi'])) {
-                $calculator = new PricingCalculator();
-                $resultados = $calculator->calculate(
-                    (float) $produto->valor_compra,
-                    (float) ($produto->margem_lucro ?? 80),
-                    (float) ($produto->ipi ?? 0)
-                );
-                
-                $produto->valor_custo = $resultados['valor_custo'];
-                $produto->valor_atacado = $resultados['valor_atacado'];
-                $produto->percentual_custo = $resultados['percentual_custo'];
+                if ($produto->quantidade <= 0 && $produto->ativo) {
+                    $produto->status = 'indisponivel';
+                }
             }
         });
     }

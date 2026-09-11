@@ -5,43 +5,47 @@ namespace App\Http\Controllers;
 use App\Models\Produto;
 use App\Models\Categoria;
 use App\Http\Requests\Produto\BuscarProdutoRequest;
-use App\Http\Requests\Produto\FiltroProdutoRequest;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 
 class ProdutoController extends Controller
 {
-    /**
-     * Tempo de cache em segundos (1 hora)
-     */
     private const CACHE_TTL = 3600;
+    private const PER_PAGE = 12;
+
+    // ================================================================
+    // LISTAGEM
+    // ================================================================
 
     /**
-     * Listagem de produtos com filtros.
+     * Listagem de produtos com filtros e ordenação.
      */
-    public function index(FiltroProdutoRequest $request): View|JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
-        $filters = $request->getFilters();
-        $ordenacao = $request->getOrdenacao();
-        $paginacao = $request->getPaginacao();
+        $query = Produto::query()->with(['categoria']);
 
-        $query = Produto::query()->disponivel();
+        // Filtros
+        $this->aplicarFiltros($query, $request);
 
-        // Aplicar filtros
-        $query = $this->applyFilters($query, $filters);
-        $query = $this->applyOrdenacao($query, $ordenacao);
+        // Ordenação
+        $this->aplicarOrdenacao($query, $request);
 
-        $produtos = $query->paginate($paginacao['per_page']);
+        // Paginação
+        $perPage = (int) $request->get('per_page', self::PER_PAGE);
+        $produtos = $query->paginate($perPage)->withQueryString();
 
-        // Categorias com cache
+        // Totais para os filtros
+        $totais = $this->calcularTotais();
+
+        // Categorias para o filtro
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
-            return Categoria::ativo()->ordenado()->get();
+            return Categoria::where('ativo', true)->orderBy('nome')->get();
         });
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'html' => view('produtos.partials.lista', compact('produtos'))->render(),
                 'pagination' => (string) $produtos->links(),
@@ -49,8 +53,12 @@ class ProdutoController extends Controller
             ]);
         }
 
-        return view('produtos.index', compact('produtos', 'categorias'));
+        return view('produtos.index', compact('produtos', 'totais', 'categorias'));
     }
+
+    // ================================================================
+    // DETALHE
+    // ================================================================
 
     /**
      * Detalhe do produto.
@@ -62,146 +70,195 @@ class ProdutoController extends Controller
             ->where('ativo', true)
             ->firstOrFail();
 
-        // Incrementar visualizações
         $produto->incrementarVisualizacoes();
 
-        // Produtos relacionados (mesma categoria)
-        $relacionados = $this->getProdutosRelacionados($produto);
+        // Produtos relacionados
+        $relacionados = collect();
+        if ($produto->categoria_id) {
+            $relacionados = Produto::query()
+                ->with('categoria')
+                ->where('ativo', true)
+                ->where('status', 'disponivel')
+                ->where('quantidade', '>', 0)
+                ->where('categoria_id', $produto->categoria_id)
+                ->where('id', '!=', $produto->id)
+                ->limit(4)
+                ->get();
+        }
 
-        // Verificar se está na wishlist (se autenticado)
+        // Wishlist
         $naWishlist = false;
-        if (auth()->check()) {
+        if (auth()->check() && method_exists(auth()->user(), 'isInWishlist')) {
             $naWishlist = auth()->user()->isInWishlist($produto->id);
         }
 
-        return view('produtos.show', compact(
-            'produto',
-            'relacionados',
-            'naWishlist'
-        ));
+        return view('produtos.show', compact('produto', 'relacionados', 'naWishlist'));
     }
+
+    // ================================================================
+    // BUSCA
+    // ================================================================
 
     /**
      * Busca de produtos.
      */
     public function buscar(BuscarProdutoRequest $request): View|RedirectResponse
     {
-        $termo = $request->get('q', '');
-        $porPagina = $request->get('por_pagina', 12);
+        $termo = $request->getTermo();
+        $perPage = $request->getPorPagina();
 
-        if (empty($termo) || strlen($termo) < 2) {
+        if (empty($termo) || mb_strlen($termo) < 2) {
             return redirect()->route('produtos.index')
                 ->with('warning', 'Digite pelo menos 2 caracteres para buscar.');
         }
 
-        $produtos = Produto::disponivel()
+        $produtos = Produto::query()
+            ->with('categoria')
+            ->where('ativo', true)
             ->buscar($termo)
-            ->paginate($porPagina);
+            ->orderBy('descricao')
+            ->paginate($perPage)
+            ->withQueryString();
 
         return view('produtos.busca', compact('produtos', 'termo'));
     }
 
+    // ================================================================
+    // CATEGORIA
+    // ================================================================
+
     /**
      * Produtos por categoria.
-     * ✅ CORRIGIDO: Usar view existente (produtos.index) em vez de produtos.categoria
+     * Aceita SLUG ou ID.
      */
-    public function porCategoria(string $slug): View
+    public function porCategoria(string $categoria): View
     {
-        $categoria = Categoria::where('slug', $slug)
+        // Tenta por slug primeiro
+        $categoriaModel = Categoria::where('slug', $categoria)
             ->where('ativo', true)
-            ->firstOrFail();
+            ->first();
 
-        $produtos = Produto::disponivel()
-            ->where('categoria_id', $categoria->id)
-            ->paginate(12);
+        // Se não achou e for numérico, busca por ID
+        if (!$categoriaModel && is_numeric($categoria)) {
+            $categoriaModel = Categoria::where('id', (int) $categoria)
+                ->where('ativo', true)
+                ->first();
+        }
 
-        // ✅ CORRIGIDO: Usar view 'produtos.index' que já existe
-        // Passar 'titulo' para exibir o nome da categoria
-        $titulo = "Categoria: {$categoria->nome}";
-        
-        // Buscar categorias para o filtro lateral
+        if (!$categoriaModel) {
+            abort(404, 'Categoria não encontrada');
+        }
+
+        $produtos = Produto::query()
+            ->with('categoria')
+            ->where('ativo', true)
+            ->where('status', 'disponivel')
+            ->where('quantidade', '>', 0)
+            ->where('categoria_id', $categoriaModel->id)
+            ->orderBy('descricao')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString();
+
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
-            return Categoria::ativo()->ordenado()->get();
+            return Categoria::where('ativo', true)->orderBy('nome')->get();
         });
 
-        return view('produtos.index', compact('produtos', 'categorias', 'titulo'));
+        return view('produtos.categoria', compact('produtos', 'categoria', 'categorias'));
     }
 
+    // ================================================================
+    // FILTRO POR STATUS
+    // ================================================================
+
     /**
-     * Filtro por disponibilidade.
+     * Filtro por status de disponibilidade.
      */
     public function filtroDisponibilidade(string $status): View
     {
-        $query = Produto::where('ativo', true);
+        $query = Produto::query()->with('categoria')->where('ativo', true);
         $titulo = 'Produtos';
 
-        // Aplicar filtro de status
-        $query = $this->applyStatusFilter($query, $status);
-        $titulo = $this->getStatusTitle($status);
+        switch ($status) {
+            case 'disponivel':
+                $query->where('status', 'disponivel')
+                      ->where('quantidade', '>', 0);
+                $titulo = 'Produtos Disponíveis';
+                break;
 
-        $produtos = $query->paginate(12);
-        
+            case 'indisponivel':
+                $query->where(function ($q) {
+                    $q->where('status', 'indisponivel')
+                      ->orWhere('quantidade', '<=', 0);
+                });
+                $titulo = 'Produtos Indisponíveis';
+                break;
+
+            case 'estoque_baixo':
+                $query->where('quantidade', '>', 0)
+                      ->whereRaw('quantidade <= COALESCE(estoque_minimo, 5)');
+                $titulo = 'Produtos com Estoque Baixo';
+                break;
+
+            case 'sob_encomenda':
+                $query->where('status', 'sob_encomenda');
+                $titulo = 'Produtos Sob Encomenda';
+                break;
+
+            default:
+                abort(404);
+        }
+
+        $produtos = $query->orderBy('descricao')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString();
+
+        $totais = $this->calcularTotais();
+
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
-            return Categoria::ativo()->ordenado()->get();
+            return Categoria::where('ativo', true)->orderBy('nome')->get();
         });
 
-        return view('produtos.index', compact('produtos', 'categorias', 'titulo'));
+        return view('produtos.index', compact('produtos', 'totais', 'categorias', 'titulo'));
     }
 
-    /**
-     * API: Produtos em destaque.
-     */
+    // ================================================================
+    // APIs
+    // ================================================================
+
     public function destaques(): JsonResponse
     {
         $produtos = Cache::remember('api_produtos_destaque', self::CACHE_TTL, function () {
-            return Produto::emDestaque()
-                ->limit(6)
-                ->get()
+            return Produto::emDestaque()->limit(6)->get()
                 ->map(fn($p) => $this->formatProdutoApi($p));
         });
 
         return response()->json($produtos);
     }
 
-    /**
-     * API: Produtos em oferta.
-     */
     public function ofertas(): JsonResponse
     {
         $produtos = Cache::remember('api_produtos_ofertas', self::CACHE_TTL, function () {
-            return Produto::ofertas()
-                ->limit(6)
-                ->get()
+            return Produto::ofertas()->limit(6)->get()
                 ->map(fn($p) => $this->formatProdutoApi($p));
         });
 
         return response()->json($produtos);
     }
 
-    /**
-     * API: Produtos novos.
-     */
     public function novos(): JsonResponse
     {
         $produtos = Cache::remember('api_produtos_novos', self::CACHE_TTL, function () {
-            return Produto::novos()
-                ->limit(6)
-                ->get()
+            return Produto::novos()->limit(6)->get()
                 ->map(fn($p) => $this->formatProdutoApi($p));
         });
 
         return response()->json($produtos);
     }
 
-    /**
-     * API: Produtos mais vendidos.
-     */
     public function maisVendidos(): JsonResponse
     {
         $produtos = Cache::remember('api_produtos_mais_vendidos', self::CACHE_TTL, function () {
-            return Produto::maisVendidos()
-                ->limit(6)
-                ->get()
+            return Produto::maisVendidos()->limit(6)->get()
                 ->map(fn($p) => $this->formatProdutoApi($p));
         });
 
@@ -213,129 +270,122 @@ class ProdutoController extends Controller
     // ================================================================
 
     /**
-     * Aplica filtros à query.
+     * Aplica filtros do request.
      */
-    private function applyFilters($query, array $filters)
+    private function aplicarFiltros($query, Request $request): void
     {
-        if (!empty($filters['categoria_id'])) {
-            $query->where('categoria_id', $filters['categoria_id']);
+        // Filtro por categoria
+        if ($request->filled('categoria')) {
+            $query->where('categoria_id', $request->categoria);
         }
 
-        if (!empty($filters['status'])) {
-            $query = $this->applyStatusFilter($query, $filters['status']);
+        // Filtro por status
+        if ($request->filled('status')) {
+            switch ($request->status) {
+                case 'disponivel':
+                    $query->where('status', 'disponivel')
+                          ->where('quantidade', '>', 0);
+                    break;
+                case 'indisponivel':
+                    $query->where(function ($q) {
+                        $q->where('status', 'indisponivel')
+                          ->orWhere('quantidade', '<=', 0);
+                    });
+                    break;
+                case 'estoque_baixo':
+                    $query->where('quantidade', '>', 0)
+                          ->whereRaw('quantidade <= COALESCE(estoque_minimo, 5)');
+                    break;
+                case 'sob_encomenda':
+                    $query->where('status', 'sob_encomenda');
+                    break;
+            }
         }
 
-        // Filtro de preço
-        if (!empty($filters['preco_min'])) {
-            $query->where(function($q) use ($filters) {
-                $q->where('valor_atacado', '>=', $filters['preco_min'])
-                  ->orWhere('valor_unitario', '>=', $filters['preco_min']);
-            });
+        // Filtro por preço (usa valor_atacado com fallback)
+        if ($request->filled('preco_min')) {
+            $query->whereRaw(
+                'COALESCE(valor_atacado, valor_unitario) >= ?',
+                [(float) $request->preco_min]
+            );
         }
-
-        if (!empty($filters['preco_max'])) {
-            $query->where(function($q) use ($filters) {
-                $q->where('valor_atacado', '<=', $filters['preco_max'])
-                  ->orWhere('valor_unitario', '<=', $filters['preco_max']);
-            });
+        if ($request->filled('preco_max')) {
+            $query->whereRaw(
+                'COALESCE(valor_atacado, valor_unitario) <= ?',
+                [(float) $request->preco_max]
+            );
         }
 
         // Filtros booleanos
-        if (!empty($filters['destaque'])) {
+        if ($request->filled('destaque')) {
             $query->where('destaque', true);
         }
-
-        if (!empty($filters['novo'])) {
+        if ($request->filled('novo')) {
             $query->where('novo', true);
         }
-
-        if (!empty($filters['mais_vendido'])) {
+        if ($request->filled('mais_vendido')) {
             $query->where('mais_vendido', true);
         }
 
-        // Busca
-        if (!empty($filters['busca'])) {
-            $query->buscar($filters['busca']);
+        // Busca textual
+        if ($request->filled('q')) {
+            $query->buscar($request->q);
         }
-
-        return $query;
     }
 
     /**
-     * Aplica ordenação à query.
+     * Aplica ordenação.
      */
-    private function applyOrdenacao($query, array $ordenacao)
+    private function aplicarOrdenacao($query, Request $request): void
     {
-        $campo = $ordenacao['campo'];
-        $direcao = $ordenacao['direcao'];
+        $campo = (string) $request->get('order', 'created_at');
+        $dir = (string) $request->get('dir', 'desc');
+        $dir = in_array($dir, ['asc', 'desc'], true) ? $dir : 'desc';
 
-        // Se for ordenação especial (scopes)
-        if ($campo === 'novos') {
-            return $query->novos();
-        }
+        switch ($campo) {
+            case 'valor_atacado':
+            case 'valor_unitario':
+            case 'preco':
+                $query->orderByRaw("COALESCE(valor_atacado, valor_unitario) {$dir}");
+                break;
 
-        if ($campo === 'destaque') {
-            return $query->emDestaque();
-        }
+            case 'descricao':
+            case 'referencia':
+            case 'visualizacoes':
+            case 'created_at':
+                $query->orderBy($campo, $dir);
+                break;
 
-        if ($campo === 'mais_vendidos') {
-            return $query->maisVendidos();
-        }
-
-        return $query->orderBy($campo, $direcao);
-    }
-
-    /**
-     * Aplica filtro de status.
-     */
-    private function applyStatusFilter($query, string $status)
-    {
-        switch ($status) {
-            case 'disponivel':
-                return $query->disponivel();
-            case 'estoque_baixo':
-                return $query->baixoEstoque();
-            case 'indisponivel':
-                return $query->where('quantidade', 0)
-                    ->orWhere('disponibilidade', 'INDISPONIVEL');
             default:
-                return $query;
+                $query->orderBy('created_at', 'desc');
         }
     }
 
     /**
-     * Retorna o título do status.
+     * Calcula totais para os filtros.
      */
-    private function getStatusTitle(string $status): string
+    private function calcularTotais(): array
     {
-        return match ($status) {
-            'disponivel' => 'Produtos Disponíveis',
-            'estoque_baixo' => 'Produtos com Estoque Baixo',
-            'indisponivel' => 'Produtos Indisponíveis',
-            default => 'Produtos Disponíveis',
-        };
-    }
-
-    /**
-     * Obtém produtos relacionados.
-     */
-    private function getProdutosRelacionados(Produto $produto)
-    {
-        if (!$produto->categoria_id) {
-            return new \Illuminate\Database\Eloquent\Collection();
-        }
-
-        return Cache::remember(
-            "produtos_relacionados_{$produto->id}",
-            self::CACHE_TTL,
-            function () use ($produto) {
-                return Produto::disponivel()
-                    ->where('categoria_id', $produto->categoria_id)
-                    ->where('id', '!=', $produto->id)
-                    ->limit(4)
-                    ->get();
-            }
-        );
+        return [
+            'total' => Produto::where('ativo', true)->count(),
+            'disponiveis' => Produto::where('ativo', true)
+                ->where('status', 'disponivel')
+                ->where('quantidade', '>', 0)
+                ->count(),
+            'indisponiveis' => Produto::where('ativo', true)
+                ->where(function ($q) {
+                    $q->where('status', 'indisponivel')
+                      ->orWhere('quantidade', '<=', 0);
+                })
+                ->count(),
+            'estoque_baixo' => Produto::where('ativo', true)
+                ->where('quantidade', '>', 0)
+                ->whereRaw('quantidade <= COALESCE(estoque_minimo, 5)')
+                ->count(),
+            'sob_encomenda' => Produto::where('ativo', true)
+                ->where('status', 'sob_encomenda')
+                ->count(),
+        ];
     }
 
     /**
@@ -348,9 +398,12 @@ class ProdutoController extends Controller
             'descricao' => $produto->descricao,
             'slug' => $produto->slug,
             'imagem' => $produto->imagem_url,
-            'preco' => $produto->preco_formatado,
+            'preco' => $produto->preco_atacado_formatado,
+            'preco_unitario' => $produto->preco_formatado,
             'preco_promocional' => $produto->preco_promocional_formatado,
             'tem_promocao' => $produto->tem_promocao,
+            'desconto_percentual' => $produto->desconto_percentual,
+            'status' => $produto->status,
             'categoria' => $produto->categoria?->nome,
             'link' => route('produtos.show', $produto->slug),
         ];

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\DisponibilidadeEnum;
 use App\Enums\TipoProdutoEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,12 +33,6 @@ class ProdutoRequest extends FormRequest
                 Rule::unique('produtos', 'referencia')->ignore($id),
             ],
 
-            'categoria' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
             'categoria_id' => [
                 'nullable',
                 'exists:categorias,id',
@@ -48,6 +41,12 @@ class ProdutoRequest extends FormRequest
             'tipo' => [
                 'nullable',
                 new Enum(TipoProdutoEnum::class),
+            ],
+
+            'fornecedor' => [
+                'nullable',
+                'string',
+                'max:255',
             ],
 
             // Estoque
@@ -63,32 +62,15 @@ class ProdutoRequest extends FormRequest
                 'min:0',
             ],
 
-            'disponibilidade' => [
-                'nullable',
-                new Enum(DisponibilidadeEnum::class),
-            ],
-
-            // Preços
-            'valor_compra' => [
+            // Status (substitui disponibilidade)
+            'status' => [
                 'required',
-                'numeric',
-                'min:0',
+                Rule::in(['disponivel', 'indisponivel', 'sob_encomenda']),
             ],
 
-            'valor_atacado' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
+            // Preços (apenas unitário e promocional)
             'valor_unitario' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'valor_custo' => [
-                'nullable',
+                'required',
                 'numeric',
                 'min:0',
             ],
@@ -99,21 +81,7 @@ class ProdutoRequest extends FormRequest
                 'min:0',
             ],
 
-            'ipi' => [
-                'nullable',
-                'numeric',
-                'min:0',
-                'max:100',
-            ],
-
-            'margem_lucro' => [
-                'required',
-                'numeric',
-                'min:60',
-                'max:150',
-            ],
-
-            // Status
+            // Flags
             'ativo' => [
                 'boolean',
             ],
@@ -156,17 +124,14 @@ class ProdutoRequest extends FormRequest
         return [
             'descricao.required' => 'A descrição é obrigatória.',
 
-            'valor_compra.required' => 'O valor de compra é obrigatório.',
-            'valor_compra.min' => 'O valor de compra não pode ser negativo.',
+            'valor_unitario.required' => 'O valor unitário é obrigatório.',
+            'valor_unitario.min' => 'O valor unitário não pode ser negativo.',
 
             'quantidade.required' => 'A quantidade é obrigatória.',
             'quantidade.min' => 'A quantidade não pode ser negativa.',
 
-            'margem_lucro.required' => 'A margem de lucro é obrigatória.',
-            'margem_lucro.min' => 'A margem de lucro deve ser no mínimo 60%.',
-            'margem_lucro.max' => 'A margem de lucro deve ser no máximo 150%.',
-
-            'ipi.max' => 'O IPI não pode ser maior que 100%.',
+            'status.required' => 'O status é obrigatório.',
+            'status.in' => 'O status deve ser: disponivel, indisponivel ou sob_encomenda.',
 
             'referencia.unique' => 'Esta referência já está sendo usada.',
 
@@ -180,14 +145,10 @@ class ProdutoRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        // Campos monetários que ainda existem
         $decimais = [
-            'valor_compra',
-            'valor_atacado',
             'valor_unitario',
-            'valor_custo',
-            'ipi',
             'preco_promocional',
-            'margem_lucro',
         ];
 
         foreach ($decimais as $campo) {
@@ -200,8 +161,7 @@ class ProdutoRequest extends FormRequest
             // Remove símbolo de moeda e espaços.
             $valor = str_replace(['R$', ' '], '', $valor);
 
-            // Converte valores no formato brasileiro:
-            // 1.234,56 -> 1234.56
+            // Converte formato brasileiro: 1.234,56 -> 1234.56
             $valor = str_replace('.', '', $valor);
             $valor = str_replace(',', '.', $valor);
 
@@ -211,6 +171,10 @@ class ProdutoRequest extends FormRequest
                     : 0,
             ]);
         }
+
+        // Garantir que fornecedor seja nulo se vazio
+        if ($this->has('fornecedor') && empty($this->input('fornecedor'))) {
+            $this->merge(['fornecedor' => null]);
+        }
     }
 }
-

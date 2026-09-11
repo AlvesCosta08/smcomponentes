@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SM Componentes API - Documentação</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #3490dc; padding-bottom: 10px; }
+        .route { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #3490dc; }
+        .method { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 12px; margin-right: 10px; }
+        .GET { background: #28a745; color: white; }
+        .POST { background: #007bff; color: white; }
+        .PUT { background: #fd7e14; color: white; }
+        .DELETE { background: #dc3545; color: white; }
+        .PATCH { background: #6f42c1; color: white; }
+        .uri { font-weight: bold; color: #333; }
+        .meta { color: #666; font-size: 14px; margin-top: 5px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; background: #e9ecef; color: #495057; }
+        .footer { margin-top: 30px; text-align: center; color: #666; font-size: 14px; border-top: 1px solid #dee2e6; padding-top: 20px; }
+        .info { background: #d1ecf1; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 SM Componentes - API</h1>
+        <div class="info">
+            <strong>Total de rotas:</strong> 24 | 
+            <strong>Gerado em:</strong> 29/08/2026 19:37:34
+        </div>
+        <hr>
+        <div class="route">
+            <div>
+                <span class="method POST">POST</span>
+                <span class="uri">/api/webhooks/mercadopago</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> WebhookController@mercadopago | <strong>Nome:</strong> webhook.mercadopago | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method POST">POST</span>
+                <span class="uri">/api/webhooks/{gateway}</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> WebhookController@handle | <strong>Nome:</strong> webhook.generic | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/health</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> Closure | <strong>Nome:</strong> health | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/status</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> Closure | <strong>Nome:</strong> status | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@index | <strong>Nome:</strong> api.v1.produtos.index | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos/destaques</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@destaques | <strong>Nome:</strong> api.v1.produtos.destaques | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos/ofertas</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@ofertas | <strong>Nome:</strong> api.v1.produtos.ofertas | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos/novos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@novos | <strong>Nome:</strong> api.v1.produtos.novos | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos/mais-vendidos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@maisVendidos | <strong>Nome:</strong> api.v1.produtos.mais-vendidos | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/produtos/{slug}</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@show | <strong>Nome:</strong> api.v1.produtos.show | <strong>Middleware:</strong> <span class="badge">api</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/user</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> Closure | <strong>Nome:</strong> api.v1.user | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/cliente/perfil</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> Closure | <strong>Nome:</strong> api.v1.cliente.perfil | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/cliente/pedidos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> PedidoApiController@meusPedidos | <strong>Nome:</strong> api.v1.cliente.pedidos | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/cliente/pedidos/{pedido}</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> PedidoApiController@show | <strong>Nome:</strong> api.v1.cliente.pedidos.show | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/cliente/wishlist</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> WishlistController@index | <strong>Nome:</strong> api.v1.cliente.wishlist | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/admin/dashboard</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> DashboardController@apiStats | <strong>Nome:</strong> api.v1.admin.dashboard | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum, role:Admin</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/admin/stats</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> DashboardController@apiStats | <strong>Nome:</strong> api.v1.admin.stats | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum, role:Admin</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/admin/pedidos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> PedidoApiController@index | <strong>Nome:</strong> api.v1.admin.pedidos | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum, role:Admin</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/admin/produtos</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ProdutoApiController@adminIndex | <strong>Nome:</strong> api.v1.admin.produtos | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum, role:Admin</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method GET">GET|HEAD</span>
+                <span class="uri">/api/v1/admin/usuarios</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> UserApiController@index | <strong>Nome:</strong> api.v1.admin.usuarios | <strong>Middleware:</strong> <span class="badge">api, auth:sanctum, role:Admin</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method POST">POST</span>
+                <span class="uri">/api/images/upload</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ImageController@upload | <strong>Nome:</strong> api.images.upload | <strong>Middleware:</strong> <span class="badge">web, auth</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method POST">POST</span>
+                <span class="uri">/api/images/upload-optimized</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ImageController@uploadOptimized | <strong>Nome:</strong> api.images.upload.optimized | <strong>Middleware:</strong> <span class="badge">web, auth</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method DELETE">DELETE</span>
+                <span class="uri">/api/images/delete</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ImageController@delete | <strong>Nome:</strong> api.images.delete | <strong>Middleware:</strong> <span class="badge">web, auth</span>
+            </div>
+        </div>
+        <div class="route">
+            <div>
+                <span class="method POST">POST</span>
+                <span class="uri">/api/images/upload-multiple</span>
+            </div>
+            <div class="meta">
+                <strong>Controller:</strong> ImageController@uploadMultiple | <strong>Nome:</strong> api.images.upload.multiple | <strong>Middleware:</strong> <span class="badge">web, auth</span>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Documentação gerada automaticamente pelo Laravel</p>
+        </div>
+    </div>
+</body>
+</html>

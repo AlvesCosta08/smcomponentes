@@ -16,26 +16,21 @@ class AtualizarProdutoAction
 
     public function executar(Produto $produto, UpdateProductRequestDTO $dto): bool
     {
-        // 1. Gerenciar Imagem
+        $dados = $dto->toArray();
+
+        // Gerenciar imagem
         if ($dto->remover_imagem_existente && $produto->imagem) {
             $this->imageUploader->delete($produto->imagem);
             $dados['imagem'] = null;
         }
 
         if ($dto->imagem) {
-            if ($produto->imagem) {
-                $this->imageUploader->delete($produto->imagem);
-            }
+            if ($produto->imagem) $this->imageUploader->delete($produto->imagem);
             $dados['imagem'] = $this->imageUploader->upload($dto->imagem);
+        } else {
+            unset($dados['imagem']); // não altera a imagem se não for enviada nova
         }
 
-        // 2. Preparar dados
-        $dados = $dto->toArray();
-        if (isset($dados['imagem'])) {
-            $dados['imagem'] = $dados['imagem']; // Garante que a nova imagem seja salva
-        }
-
-        // 3. Delegar atualização (Model booted recalculará preços se valor_compra/margem mudarem)
-        return $this->repository->atualizar($produto, $dados);
+        return $this->repository->update($produto->id, $dados);
     }
 }

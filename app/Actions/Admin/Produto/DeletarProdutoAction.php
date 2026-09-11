@@ -15,23 +15,21 @@ class DeletarProdutoAction
 
     public function executar(int $id): bool
     {
-        $produto = $this->repository->buscarPorId($id);
+        $produto = $this->repository->find($id);
 
         if (!$produto) {
             return false;
         }
 
-        // Regra de Domínio: Verifica se o produto pode ser seguramente deletado
+        // Verifica se pode deletar (ex: sem pedidos pendentes)
         if (!$produto->podeSerDeletado()) {
             throw new DomainException('Não é possível deletar um produto que possui pedidos pendentes, pagos ou em processamento.');
         }
 
-        // Limpar Infraestrutura (Imagem)
         if ($produto->imagem) {
             $this->imageUploader->delete($produto->imagem);
         }
 
-        // Executar Soft Delete via Interface
-        return $this->repository->deletar($produto);
+        return $this->repository->delete($produto->id); // soft delete
     }
 }

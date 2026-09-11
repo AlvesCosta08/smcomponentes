@@ -10,7 +10,11 @@
             <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
             <li class="breadcrumb-item"><a href="{{ route('produtos.index') }}">Produtos</a></li>
             @if($produto->categoria)
-                <li class="breadcrumb-item"><a href="{{ route('produtos.categoria', $produto->categoria) }}">{{ $produto->categoria }}</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{{ route('produtos.categoria', $produto->categoria->slug) }}">
+                        {{ $produto->categoria->nome }}
+                    </a>
+                </li>
             @endif
             <li class="breadcrumb-item active" aria-current="page">{{ $produto->descricao }}</li>
         </ol>
@@ -41,7 +45,7 @@
             <h1 class="display-6 fw-bold">{{ $produto->descricao }}</h1>
             
             <p class="text-muted mb-2">
-                <i class="bi bi-tag"></i> {{ $produto->categoria ?? 'Sem categoria' }}
+                <i class="bi bi-tag"></i> {{ $produto->categoria?->nome ?? 'Sem categoria' }}
                 @if($produto->tipo)
                     | <i class="bi bi-box"></i> {{ $produto->tipo }}
                 @endif

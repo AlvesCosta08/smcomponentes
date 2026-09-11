@@ -206,6 +206,15 @@
         </div>
         <div class="row g-3">
             @foreach($produtosDestaque as $produto)
+                @php
+                    $precoUnitario = $produto->valor_unitario ?? 0;
+                    $precoPromocional = $produto->preco_promocional ?? 0;
+                    $temPromocao = $precoPromocional > 0 && $precoPromocional < $precoUnitario;
+                    $descontoPercentual = $temPromocao ? round((($precoUnitario - $precoPromocional) / $precoUnitario) * 100) : 0;
+                    $precoFormatado = 'R$ ' . number_format($precoUnitario, 2, ',', '.');
+                    $precoPromocionalFormatado = $temPromocao ? 'R$ ' . number_format($precoPromocional, 2, ',', '.') : null;
+                    $podeComprar = ($produto->ativo ?? 0) == 1 && ($produto->quantidade ?? 0) > 0 && ($produto->status ?? '') === 'disponivel';
+                @endphp
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
@@ -223,29 +232,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->tem_promocao)
+                            @if($temPromocao)
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
-                                    -{{ $produto->desconto_percentual }}%
+                                    -{{ $descontoPercentual }}%
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->tem_promocao)
+                                @if($temPromocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->preco_promocional_formatado }}
+                                        {{ $precoPromocionalFormatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->pode_comprar)
+                            @if($podeComprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-primary w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -288,6 +297,15 @@
         </div>
         <div class="row g-3">
             @foreach($ofertas as $produto)
+                @php
+                    $precoUnitario = $produto->valor_unitario ?? 0;
+                    $precoPromocional = $produto->preco_promocional ?? 0;
+                    $temPromocao = $precoPromocional > 0 && $precoPromocional < $precoUnitario;
+                    $descontoPercentual = $temPromocao ? round((($precoUnitario - $precoPromocional) / $precoUnitario) * 100) : 0;
+                    $precoFormatado = 'R$ ' . number_format($precoUnitario, 2, ',', '.');
+                    $precoPromocionalFormatado = $temPromocao ? 'R$ ' . number_format($precoPromocional, 2, ',', '.') : null;
+                    $podeComprar = ($produto->ativo ?? 0) == 1 && ($produto->quantidade ?? 0) > 0 && ($produto->status ?? '') === 'disponivel';
+                @endphp
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0 border-warning border-2">
                         <div class="position-relative">
@@ -305,29 +323,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->tem_promocao)
+                            @if($temPromocao)
                                 <span class="badge bg-danger position-absolute top-0 start-0 m-2 rounded-pill">
-                                    -{{ $produto->desconto_percentual }}% OFF
+                                    -{{ $descontoPercentual }}% OFF
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->tem_promocao)
+                                @if($temPromocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->preco_promocional_formatado }}
+                                        {{ $precoPromocionalFormatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-danger">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->pode_comprar)
+                            @if($podeComprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-danger w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -370,6 +388,15 @@
         </div>
         <div class="row g-3">
             @foreach($maisVendidos as $produto)
+                @php
+                    $precoUnitario = $produto->valor_unitario ?? 0;
+                    $precoPromocional = $produto->preco_promocional ?? 0;
+                    $temPromocao = $precoPromocional > 0 && $precoPromocional < $precoUnitario;
+                    $descontoPercentual = $temPromocao ? round((($precoUnitario - $precoPromocional) / $precoUnitario) * 100) : 0;
+                    $precoFormatado = 'R$ ' . number_format($precoUnitario, 2, ',', '.');
+                    $precoPromocionalFormatado = $temPromocao ? 'R$ ' . number_format($precoPromocional, 2, ',', '.') : null;
+                    $podeComprar = ($produto->ativo ?? 0) == 1 && ($produto->quantidade ?? 0) > 0 && ($produto->status ?? '') === 'disponivel';
+                @endphp
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
@@ -394,20 +421,20 @@
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->tem_promocao)
+                                @if($temPromocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                     <span class="fw-bold text-warning">
-                                        {{ $produto->preco_promocional_formatado }}
+                                        {{ $precoPromocionalFormatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-warning">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->pode_comprar)
+                            @if($podeComprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-warning w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -453,6 +480,15 @@
         </p>
         <div class="row g-3">
             @foreach($produtosDisponiveis as $produto)
+                @php
+                    $precoUnitario = $produto->valor_unitario ?? 0;
+                    $precoPromocional = $produto->preco_promocional ?? 0;
+                    $temPromocao = $precoPromocional > 0 && $precoPromocional < $precoUnitario;
+                    $descontoPercentual = $temPromocao ? round((($precoUnitario - $precoPromocional) / $precoUnitario) * 100) : 0;
+                    $precoFormatado = 'R$ ' . number_format($precoUnitario, 2, ',', '.');
+                    $precoPromocionalFormatado = $temPromocao ? 'R$ ' . number_format($precoPromocional, 2, ',', '.') : null;
+                    $podeComprar = ($produto->ativo ?? 0) == 1 && ($produto->quantidade ?? 0) > 0 && ($produto->status ?? '') === 'disponivel';
+                @endphp
                 <div class="col-lg-3 col-md-4 col-6">
                     <div class="card produto-card-smart h-100 shadow-sm border-0">
                         <div class="position-relative">
@@ -470,29 +506,29 @@
                                     <i class="bi bi-plug fs-1 text-muted"></i>
                                 @endif
                             </div>
-                            @if($produto->tem_promocao)
+                            @if($temPromocao)
                                 <span class="badge bg-danger position-absolute top-0 end-0 m-2 rounded-pill">
-                                    -{{ $produto->desconto_percentual }}%
+                                    -{{ $descontoPercentual }}%
                                 </span>
                             @endif
                         </div>
                         <div class="card-body d-flex flex-column p-3">
                             <h6 class="card-title text-truncate">{{ Str::limit($produto->descricao ?? 'Produto', 30) }}</h6>
                             <p class="card-text mt-auto">
-                                @if($produto->tem_promocao)
+                                @if($temPromocao)
                                     <span class="text-decoration-line-through text-muted me-1 small">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->preco_promocional_formatado }}
+                                        {{ $precoPromocionalFormatado }}
                                     </span>
                                 @else
                                     <span class="fw-bold text-primary">
-                                        {{ $produto->preco_atacado_formatado }}
+                                        {{ $precoFormatado }}
                                     </span>
                                 @endif
                             </p>
-                            @if($produto->pode_comprar)
+                            @if($podeComprar)
                                 <a href="{{ route('produtos.show', $produto->slug ?? '#') }}" 
                                    class="btn btn-sm btn-outline-primary w-100 rounded-pill">
                                     <i class="bi bi-eye me-1"></i> Ver Detalhes
@@ -526,26 +562,20 @@
 {{-- ============================================ --}}
 @push('styles')
 <style>
-    /* ============================================ */
-    /* CARROSSEL - LARGURA TOTAL                  */
-    /* ============================================ */
     .carousel-principal {
         width: 100%;
         overflow: hidden;
         margin-bottom: 0;
     }
-
     .carousel-principal .carousel-item img {
         height: 450px;
         object-fit: cover;
         width: 100%;
         display: block;
     }
-
     .carousel-principal .carousel-indicators {
         margin-bottom: 10px;
     }
-
     .carousel-principal .carousel-indicators button {
         width: 12px !important;
         height: 12px !important;
@@ -555,13 +585,11 @@
         background: transparent !important;
         transition: all 0.3s ease;
     }
-
     .carousel-principal .carousel-indicators .active {
         background: #ffffff !important;
         border-color: #ffffff !important;
         transform: scale(1.15);
     }
-
     .carousel-principal .carousel-control-prev,
     .carousel-principal .carousel-control-next {
         width: 44px;
@@ -573,26 +601,21 @@
         border-radius: 50%;
         background: rgba(0,0,0,0.25);
     }
-
     .carousel-principal:hover .carousel-control-prev,
     .carousel-principal:hover .carousel-control-next {
         opacity: 1;
     }
-
     .carousel-principal .carousel-control-prev {
         left: 16px;
     }
-
     .carousel-principal .carousel-control-next {
         right: 16px;
     }
-
     .carousel-principal .carousel-control-prev:hover,
     .carousel-principal .carousel-control-next:hover {
         background: rgba(0,0,0,0.5);
         transform: translateY(-50%) scale(1.05);
     }
-
     .carousel-principal .banner-placeholder {
         height: 450px;
         display: flex;
@@ -600,10 +623,6 @@
         justify-content: center;
         text-align: center;
     }
-
-    /* ============================================ */
-    /* OVERLAY DO BANNER                          */
-    /* ============================================ */
     .banner-overlay {
         position: absolute;
         top: 0;
@@ -613,26 +632,19 @@
         background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 100%);
         padding: 2rem;
     }
-
     .banner-content h1 {
         font-size: 3rem;
         line-height: 1.2;
         letter-spacing: -0.5px;
     }
-
     .banner-content .lead {
         font-size: 1.25rem;
         opacity: 0.95;
     }
-
     .banner-content .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 102, 204, 0.4) !important;
     }
-
-    /* ============================================ */
-    /* VANTAGENS - SMART KITS                     */
-    /* ============================================ */
     .vantagem-card {
         transition: all 0.2s ease;
         border-radius: 8px;
@@ -654,10 +666,6 @@
     .vantagem-card small {
         font-size: 0.7rem;
     }
-
-    /* ============================================ */
-    /* PRODUTOS CARD - SMART KITS                 */
-    /* ============================================ */
     .produto-card-smart {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         border-radius: 12px !important;
@@ -697,10 +705,6 @@
         font-size: 0.78rem;
         padding: 5px 10px;
     }
-
-    /* ============================================ */
-    /* RESPONSIVO                                 */
-    /* ============================================ */
     @media (max-width: 992px) {
         .carousel-principal .carousel-item img {
             height: 350px;
@@ -715,7 +719,6 @@
             font-size: 1rem;
         }
     }
-
     @media (max-width: 768px) {
         .carousel-principal .carousel-item img {
             height: 250px;
@@ -784,7 +787,6 @@
             font-size: 1.1rem;
         }
     }
-
     @media (max-width: 576px) {
         .carousel-principal .carousel-item img {
             height: 180px;

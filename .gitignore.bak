@@ -1,0 +1,93 @@
+# ============================================
+# Dependências
+# ============================================
+/node_modules
+/vendor
+
+# ============================================
+# Ambiente / Segredos
+# ============================================
+.env
+.env.backup
+.env.production
+/auth.json
+
+# ============================================
+# Build / Assets compilados
+# ============================================
+/public/build
+/public/hot
+/public/storage
+/public/fonts-manifest.dev.json
+
+# ============================================
+# Storage (logs e temporários)
+# ============================================
+/storage/*.key
+/storage/pail
+/storage/*.log
+/storage/app/backup-temp
+/storage/app/imports/*.tmp
+
+# ============================================
+# Cache / Bootstrap
+# ============================================
+/bootstrap/cache/*.php
+/.phpunit.cache
+/.phpunit.result.cache
+.phpunit.result.cache
+
+# ============================================
+# Cobertura de testes
+# ============================================
+/coverage
+/coverage.xml
+
+# ============================================
+# IDEs / Editores
+# ============================================
+/.idea
+/.vscode
+/.nova
+/.zed
+/.cursor/
+/.codex
+_ide_helper.php
+.phpactor.json
+.php-cs-fixer.php
+.php-version
+
+# ============================================
+# Sistema operacional
+# ============================================
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Banco de dados (SQLite)
+# ============================================
+*.sqlite
+*.sqlite-journal
+/database/database.sqlite
+
+# ============================================
+# Docker / Dev local
+# ============================================
+docker-desktop-amd64.deb
+bfg-1.14.0.jar
+*.jar
+
+# ============================================
+# CI/CD (se quiser manter localmente apenas)
+# ============================================
+# .github/
+# .gitlab-ci.yml
+
+# ============================================
+# Arquivos temporários na raiz
+# ============================================
+/*.csv
+/*.txt
+/*.pdf
+Homestead.json
+Homestead.yaml

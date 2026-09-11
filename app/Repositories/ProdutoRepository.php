@@ -16,9 +16,7 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
         return Produto::class;
     }
 
-    // ==========================================
-    // OVERRIDES PARA TIPO FORTE (PHP 8+)
-    // ==========================================
+    // Overrides com tipagem forte
     public function find(int $id, array $columns = ['*']): ?Produto
     {
         return parent::find($id, $columns);
@@ -39,25 +37,21 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
         return parent::update($id, $data);
     }
 
-    // ==========================================
-    // MÉTODOS ESPECÍFICOS (Usando Model Scopes)
-    // ==========================================
-
+    // Métodos específicos (usando scopes do model)
     public function findBySlug(string $slug): ?Produto
     {
         return Produto::where('slug', $slug)->first();
     }
 
-    public function findByCategoria(string $categoria, ?int $limit = null): Collection
+    public function findByCategoria(int $categoriaId, ?int $limit = null): Collection
     {
-        $query = Produto::disponivel()->where('categoria', $categoria);
+        $query = Produto::disponivel()->where('categoria_id', $categoriaId);
         return $limit ? $query->limit($limit)->get() : $query->get();
     }
 
     public function getDestaques(int $limit = 8): Collection
     {
         return Cache::remember("produtos_destaques_{$limit}", 3600, function () use ($limit) {
-            // ✅ Usando o Scope do Model em vez de reescrever a lógica
             return Produto::emDestaque()->limit($limit)->get();
         });
     }
@@ -83,14 +77,16 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
 
     public function getOutOfStock(): Collection
     {
-        return Produto::where('ativo', true)->where('quantidade', '<=', 0)->orderBy('descricao', 'asc')->get();
+        return Produto::where('ativo', true)
+                      ->where('quantidade', '<=', 0)
+                      ->orderBy('descricao')
+                      ->get();
     }
 
     public function getFiltered(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Produto::query()->with(['categoria']);
 
-        // ✅ Usando o Scope de Busca do Model
         if (!empty($filters['busca'])) {
             $query->buscar($filters['busca']);
         }
@@ -99,35 +95,31 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
             $query->where('categoria_id', $filters['categoria']);
         }
 
-        // Filtro de Status (usando scopes ou where direto)
         if (!empty($filters['status'])) {
             match ($filters['status']) {
                 'disponivel' => $query->disponivel(),
-                'indisponivel' => $query->where('disponibilidade', \App\Enums\DisponibilidadeEnum::INDISPONIVEL),
+                'indisponivel' => $query->where('status', 'indisponivel'),
                 'estoque_baixo' => $query->baixoEstoque(),
                 'inativo' => $query->where('ativo', false),
                 default => null,
             };
         }
 
-        // ✅ CORREÇÃO: Usando 'valor_atacado' em vez de 'preco'
         if (!empty($filters['preco_min'])) {
-            $query->where('valor_atacado', '>=', $filters['preco_min']);
+            $query->where('valor_unitario', '>=', $filters['preco_min']);
         }
         if (!empty($filters['preco_max'])) {
-            $query->where('valor_atacado', '<=', $filters['preco_max']);
+            $query->where('valor_unitario', '<=', $filters['preco_max']);
         }
 
         if (!empty($filters['destaque'])) {
             $query->where('destaque', true);
         }
 
-        // Ordenação
         $ordenacao = $filters['ordenar'] ?? 'created_at';
         $direcao = $filters['direcao'] ?? 'desc';
-        
         $campoOrdenacao = match ($ordenacao) {
-            'preco' => 'valor_atacado',
+            'preco' => 'valor_unitario',
             'nome' => 'descricao',
             'popularidade' => 'visualizacoes',
             default => 'created_at',
@@ -146,22 +138,22 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
         }
     }
 
-    public function getRelated(int $productId, string $categoria, int $limit = 4): Collection
+    public function getRelated(int $productId, int $categoriaId, int $limit = 4): Collection
     {
         return Produto::disponivel()
-            ->where('categoria', $categoria)
-            ->where('id', '!=', $productId)
-            ->inRandomOrder()
-            ->limit($limit)
-            ->get();
+                      ->where('categoria_id', $categoriaId)
+                      ->where('id', '!=', $productId)
+                      ->inRandomOrder()
+                      ->limit($limit)
+                      ->get();
     }
 
     public function findByPriceRange(float $min, float $max): Collection
     {
         return Produto::disponivel()
-            ->whereBetween('valor_atacado', [$min, $max])
-            ->orderBy('valor_atacado', 'asc')
-            ->get();
+                      ->whereBetween('valor_unitario', [$min, $max])
+                      ->orderBy('valor_unitario')
+                      ->get();
     }
 
     public function getAvailable(array $columns = ['*']): Collection
@@ -171,14 +163,13 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
 
     public function search(string $term, int $limit = 10): Collection
     {
-        // ✅ CORREÇÃO: 'referencia' em vez de 'codigo'
         return Produto::disponivel()
-            ->where(function ($q) use ($term) {
-                $q->where('descricao', 'LIKE', "%{$term}%")
-                  ->orWhere('referencia', 'LIKE', "%{$term}%");
-            })
-            ->limit($limit)
-            ->get();
+                      ->where(function ($q) use ($term) {
+                          $q->where('descricao', 'LIKE', "%{$term}%")
+                            ->orWhere('referencia', 'LIKE', "%{$term}%");
+                      })
+                      ->limit($limit)
+                      ->get();
     }
 
     public function updateAvailability(int $id): bool
@@ -186,11 +177,8 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
         try {
             $produto = $this->find($id);
             if (!$produto) return false;
-
-            // ✅ O próprio model já tem esse método que usa o Value Object Stock
             $produto->atualizarDisponibilidade();
             $produto->save();
-
             $this->clearCache();
             return true;
         } catch (\Exception $e) {
@@ -204,7 +192,7 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
         return [
             'total' => Produto::count(),
             'disponiveis' => Produto::disponivel()->count(),
-            'indisponiveis' => Produto::where('ativo', false)->count(),
+            'indisponiveis' => Produto::where('ativo', true)->where('status', 'indisponivel')->count(),
             'estoque_baixo' => Produto::baixoEstoque()->count(),
             'sem_estoque' => Produto::where('ativo', true)->where('quantidade', '<=', 0)->count(),
             'destaques' => Produto::where('destaque', true)->count(),
@@ -216,25 +204,21 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
     {
         $imported = 0;
         $failed = 0;
-
         return $this->transaction(function () use ($products, &$imported, &$failed) {
-            foreach ($products as $productData) {
+            foreach ($products as $data) {
                 try {
-                    // ✅ CORREÇÃO: 'referencia' em vez de 'codigo'
-                    $existing = $this->findFirstBy('referencia', $productData['referencia']);
-
+                    $existing = $this->findFirstBy('referencia', $data['referencia']);
                     if ($existing) {
-                        $this->update($existing->id, $productData);
+                        $this->update($existing->id, $data);
                     } else {
-                        $this->create($productData);
+                        $this->create($data);
                     }
                     $imported++;
                 } catch (\Exception $e) {
                     $failed++;
-                    Log::warning('Erro ao importar produto', ['produto' => $productData, 'error' => $e->getMessage()]);
+                    Log::warning('Falha ao importar produto', ['data' => $data, 'error' => $e->getMessage()]);
                 }
             }
-            
             $this->clearCache();
             return ['imported' => $imported, 'failed' => $failed];
         });
@@ -242,8 +226,6 @@ class ProdutoRepository extends BaseRepository implements ProdutoRepositoryInter
 
     protected function clearCache(): void
     {
-        // Nota: Certifique-se de que 'produtos' está configurado como tag de cache no config/cache.php
-        // Se não estiver, use Cache::flush() ou remova as chaves específicas manualmente.
         if (config('cache.default') !== 'array') {
             Cache::tags(['produtos'])->flush();
         }
