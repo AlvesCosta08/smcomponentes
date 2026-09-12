@@ -75,6 +75,12 @@ class ProdutoRequest extends FormRequest
                 'min:0',
             ],
 
+            'valor_atacado' => [
+                'nullable',
+                'numeric',
+                'min:0',
+            ],
+
             'preco_promocional' => [
                 'nullable',
                 'numeric',
@@ -145,9 +151,10 @@ class ProdutoRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // Campos monetários que ainda existem
+        // Campos monetários
         $decimais = [
             'valor_unitario',
+            'valor_atacado',
             'preco_promocional',
         ];
 
@@ -158,17 +165,18 @@ class ProdutoRequest extends FormRequest
 
             $valor = (string) $this->input($campo);
 
-            // Remove símbolo de moeda e espaços.
+            // Remove símbolo de moeda e espaços
             $valor = str_replace(['R$', ' '], '', $valor);
 
-            // Converte formato brasileiro: 1.234,56 -> 1234.56
-            $valor = str_replace('.', '', $valor);
-            $valor = str_replace(',', '.', $valor);
+            // ✅ CORRIGIDO: só converte formato BR (1.234,56) SE tiver vírgula
+            if (str_contains($valor, ',')) {
+                $valor = str_replace('.', '', $valor);   // remove separador de milhar
+                $valor = str_replace(',', '.', $valor);  // troca decimal por ponto
+            }
+            // Se não tem vírgula, assume formato US (99.99) — deixa como está
 
             $this->merge([
-                $campo => is_numeric($valor)
-                    ? (float) $valor
-                    : 0,
+                $campo => is_numeric($valor) ? (float) $valor : 0,
             ]);
         }
 

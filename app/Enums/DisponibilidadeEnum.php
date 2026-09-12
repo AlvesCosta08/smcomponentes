@@ -5,16 +5,16 @@ namespace App\Enums;
 
 enum DisponibilidadeEnum: string
 {
-    case DISPONIVEL = 'DISPONIVEL';
-    case INDISPONIVEL = 'INDISPONIVEL';
-    case ESTOQUE_BAIXO = 'ESTOQUE_BAIXO';  // ✅ Corrigido para ESTOQUE_BAIXO
+    case DISPONIVEL = 'disponivel';
+    case INDISPONIVEL = 'indisponivel';
+    case SOB_ENCOMENDA = 'sob_encomenda';
 
     public function label(): string
     {
         return match($this) {
             self::DISPONIVEL => 'Disponível',
             self::INDISPONIVEL => 'Indisponível',
-            self::ESTOQUE_BAIXO => 'Estoque Baixo',
+            self::SOB_ENCOMENDA => 'Sob Encomenda',
         };
     }
 
@@ -23,7 +23,7 @@ enum DisponibilidadeEnum: string
         return match($this) {
             self::DISPONIVEL => 'success',
             self::INDISPONIVEL => 'danger',
-            self::ESTOQUE_BAIXO => 'warning',
+            self::SOB_ENCOMENDA => 'warning',
         };
     }
 

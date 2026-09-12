@@ -18,7 +18,7 @@ class CheckoutTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->artisan('db:seed', ['--class' => 'RoleSeeder', '--force' => true]);
         config(['services.mercadopago.access_token' => null]);
     }
@@ -49,20 +49,21 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
+        // ✅ CORRIGIDO: removido 'estoque' (coluna removida)
         $produto = Produto::factory()->create([
             'valor_unitario' => 100.00,
-            'estoque' => 10,
             'quantidade' => 10,
-            'ativo' => true
+            'ativo' => true,
+            'status' => 'disponivel',
         ]);
-        
+
         $this->adicionarAoCarrinhoViaSession($produto->id, 1);
-        
+
         $response = $this->get('/checkout');
-        
+
         $this->assertTrue(
-            $response->getStatusCode() === 200 || 
+            $response->getStatusCode() === 200 ||
             $response->getStatusCode() === 302,
             'Status deve ser 200 ou 302'
         );
@@ -73,7 +74,7 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
         $pedido = Pedido::create([
             'user_id' => $user->id,
             'numero_pedido' => 'PED-TEST-' . uniqid(),
@@ -88,7 +89,7 @@ class CheckoutTest extends TestCase
             'estado' => 'SP',
             'cep' => '01234-567',
         ]);
-        
+
         $this->assertDatabaseHas('pedidos', [
             'id' => $pedido->id,
             'user_id' => $user->id,
@@ -103,9 +104,9 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
         Session::forget('carrinho');
-        
+
         $response = $this->get('/checkout');
         $response->assertRedirect('/carrinho');
     }
@@ -122,16 +123,17 @@ class CheckoutTest extends TestCase
             'ativo' => true
         ]);
         $this->actingAs($user);
-        
+
+        // ✅ CORRIGIDO: removido 'estoque'
         $produto = Produto::factory()->create([
             'valor_unitario' => 100.00,
-            'estoque' => 10,
             'quantidade' => 10,
-            'ativo' => true
+            'ativo' => true,
+            'status' => 'disponivel',
         ]);
-        
+
         $this->adicionarAoCarrinhoViaSession($produto->id, 1);
-        
+
         $response = $this->get('/checkout');
         $response->assertRedirect('/cliente/perfil');
     }
@@ -148,7 +150,7 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
         $pedido = Pedido::create([
             'user_id' => $user->id,
             'numero_pedido' => 'PED-TEST-' . uniqid(),
@@ -163,11 +165,9 @@ class CheckoutTest extends TestCase
             'estado' => 'SP',
             'cep' => '01234-567',
         ]);
-        
-        // Recarrega o modelo
+
         $pedido = Pedido::find($pedido->id);
-        
-        // ✅ CORRIGIDO: Usar $pedido->status->value para acessar o valor do Enum
+
         $this->assertEquals('pendente', $pedido->status->value);
         $this->assertEquals('aguardando', $pedido->status_pagamento->value);
         $this->assertEquals(StatusPedidoEnum::PENDENTE, $pedido->status);
@@ -179,7 +179,7 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
         $pedido = Pedido::create([
             'user_id' => $user->id,
             'numero_pedido' => 'PED-TEST-' . uniqid(),
@@ -194,16 +194,15 @@ class CheckoutTest extends TestCase
             'estado' => 'SP',
             'cep' => '01234-567',
         ]);
-        
+
         $pedido->update([
             'status' => 'pago',
             'status_pagamento' => 'aprovado',
             'data_pagamento' => now(),
         ]);
-        
+
         $pedido = Pedido::find($pedido->id);
-        
-        // ✅ CORRIGIDO: Usar $pedido->status->value para acessar o valor do Enum
+
         $this->assertEquals('pago', $pedido->status->value);
         $this->assertEquals('aprovado', $pedido->status_pagamento->value);
         $this->assertEquals(StatusPedidoEnum::PAGO, $pedido->status);
@@ -216,7 +215,7 @@ class CheckoutTest extends TestCase
     {
         $user = $this->criarUsuarioComEndereco();
         $this->actingAs($user);
-        
+
         $pedido = Pedido::create([
             'user_id' => $user->id,
             'numero_pedido' => 'PED-TEST-' . uniqid(),
@@ -231,15 +230,14 @@ class CheckoutTest extends TestCase
             'estado' => 'SP',
             'cep' => '01234-567',
         ]);
-        
+
         $pedido->update([
             'status' => 'cancelado',
             'status_pagamento' => 'cancelado',
         ]);
-        
+
         $pedido = Pedido::find($pedido->id);
-        
-        // ✅ CORRIGIDO: Usar $pedido->status->value para acessar o valor do Enum
+
         $this->assertEquals('cancelado', $pedido->status->value);
         $this->assertEquals('cancelado', $pedido->status_pagamento->value);
         $this->assertEquals(StatusPedidoEnum::CANCELADO, $pedido->status);

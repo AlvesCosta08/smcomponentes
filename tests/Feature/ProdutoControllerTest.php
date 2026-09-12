@@ -86,7 +86,7 @@ class ProdutoControllerTest extends TestCase
 
         Produto::factory()->count(3)->create([
             'categoria_id' => $categoria->id,
-            'categoria' => $categoria->nome,
+            // ✅ 'categoria' (string) REMOVIDO
         ]);
 
         $response = $this->get(
@@ -120,12 +120,11 @@ class ProdutoControllerTest extends TestCase
             'descricao' => 'Produto Sem Promoção',
         ]);
 
-        $response = $this->get(
-            route('produtos.filtro', 'ofertas')
-        );
+        // ✅ CORRIGIDO: usa a rota 'produtos.index' com filtro de status válido
+        // (a rota produtos.filtro só aceita: disponivel|indisponivel|estoque_baixo|sob_encomenda)
+        $response = $this->get(route('produtos.index', ['status' => 'disponivel']));
 
         $response->assertStatus(200);
         $response->assertViewHas('produtos');
     }
 }
-

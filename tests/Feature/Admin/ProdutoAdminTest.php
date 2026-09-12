@@ -15,7 +15,7 @@ class ProdutoAdminTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->artisan('db:seed', ['--class' => 'RoleSeeder', '--force' => true]);
     }
 
@@ -42,9 +42,9 @@ class ProdutoAdminTest extends TestCase
     {
         $admin = $this->criarAdmin();
         $this->actingAs($admin);
-        
+
         Produto::factory()->count(5)->create();
-        
+
         $response = $this->get('/admin/produtos');
         $response->assertStatus(200);
         $response->assertViewHas('produtos');
@@ -54,50 +54,45 @@ class ProdutoAdminTest extends TestCase
     {
         $admin = $this->criarAdmin();
         $this->actingAs($admin);
-        
+
         $categoria = Categoria::factory()->create();
-        
+
         $response = $this->post('/admin/produtos', [
-            'categoria_id' => $categoria->id,
-            'categoria' => $categoria->nome,
-            'referencia' => 'REF-' . uniqid(),
-            'descricao' => 'Produto Teste Admin',
-            'tipo' => 'UNI',
-            'disponibilidade' => 'DISPONIVEL',
-            'quantidade' => 10,
+            'categoria_id'   => $categoria->id,
+            'referencia'     => 'REF-' . uniqid(),
+            'descricao'      => 'Produto Teste Admin',
+            'tipo'           => 'UNI',
+            'status'         => 'disponivel',   // ✅ era 'disponibilidade'
+            'quantidade'     => 10,
             'estoque_minimo' => 5,
-            'valor_compra' => 50.00,
             'valor_unitario' => 99.99,
-            'valor_atacado' => 99.99,
-            'ativo' => true,
-            'margem_lucro' => 80,
+            'valor_atacado'  => 99.99,
+            'ativo'          => true,
+            // ❌ REMOVIDO: 'categoria', 'valor_compra', 'margem_lucro'
         ]);
-        
+
         // ✅ Verifica redirecionamento
         $response->assertStatus(302);
         $response->assertRedirect('/admin/produtos');
-        
+
         // ✅ Buscar o produto criado
         $produto = Produto::where('descricao', 'Produto Teste Admin')->first();
         $this->assertNotNull($produto, 'Produto não foi criado');
-        
-        // ✅ CORRIGIDO: O sistema multiplica o valor por 100 (centavos)
-        // O valor salvo é 9999 (representando 99.99)
-        $this->assertEquals(9999, (int) $produto->valor_unitario);
-        // Ou verifica o valor esperado dividido por 100
-        $this->assertEquals(99.99, (float) $produto->valor_unitario / 100);
-        
+
+        // ✅ Valores são float normais (não multiplicados por 100)
+        $this->assertEquals(99.99, (float) $produto->valor_unitario);
+
         // ✅ Verifica outros campos
         $this->assertEquals($categoria->id, $produto->categoria_id);
         $this->assertEquals(10, $produto->quantidade);
-        $this->assertEquals(80, $produto->margem_lucro);
+        $this->assertEquals('disponivel', $produto->status);
     }
 
     public function test_usuario_comum_nao_pode_acessar_admin()
     {
         $user = $this->criarUsuarioComum();
         $this->actingAs($user);
-        
+
         $response = $this->get('/admin/produtos');
         $response->assertStatus(403);
     }

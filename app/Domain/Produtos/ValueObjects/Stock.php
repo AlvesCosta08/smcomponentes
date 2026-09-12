@@ -45,7 +45,7 @@ final class Stock
             return DisponibilidadeEnum::INDISPONIVEL->value;
         }
         if ($this->isLow()) {
-            return DisponibilidadeEnum::ESTOQUE_BAIXO->value;
+            return DisponibilidadeEnum::SOB_ENCOMENDA->value;
         }
         return DisponibilidadeEnum::DISPONIVEL->value;
     }

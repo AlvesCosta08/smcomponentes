@@ -54,7 +54,7 @@ class CategoriaControllerTest extends TestCase
         $response = $this->get("/produtos/categoria/{$categoria->slug}");
         
         $response->assertStatus(200);
-        $response->assertViewIs('produtos.index');
+        $response->assertViewIs('produtos.categoria');
         $response->assertViewHas('produtos');
         $response->assertViewHas('titulo');
     }

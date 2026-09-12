@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Implementação concreta do repositório de produtos usando Eloquent ORM.
- * 
+ *
  * Responsabilidade: Abstrair a camada de persistência de dados,
  * atendendo ao contrato definido na Interface de Domínio.
  */
@@ -21,11 +21,7 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
      */
     public function create(array $data): Produto
     {
-        // O Model disparará o evento 'creating', onde o PricingCalculator 
-        // e a geração de slug já estão configurados para atuar.
         return Produto::create($data);
-        // 💡 DICA PRO: Se precisar invalidar cache de listas aqui, use:
-        // Cache::forget('produtos_destaques_8');
     }
 
     /**
@@ -49,7 +45,6 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
      */
     public function update(Produto $produto, array $data): bool
     {
-        // O Model disparará o evento 'updating' para recálculos se necessário
         return $produto->update($data);
     }
 
@@ -58,7 +53,6 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
      */
     public function delete(Produto $produto): bool
     {
-        // Soft delete configurado no Model (devido ao trait SoftDeletes)
         return $produto->delete();
     }
 
@@ -77,7 +71,7 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
     {
         $query = Produto::query();
 
-        // 1. Filtro de Busca Textual (delega para o Scope do Model)
+        // 1. Filtro de Busca Textual
         if (!empty($filters['busca'])) {
             $query->buscar($filters['busca']);
         }
@@ -87,14 +81,15 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
             $query->where('categoria_id', $filters['categoria']);
         }
 
-        // 3. Filtro por Status (delega para os Scopes do Model)
+        // 3. Filtro por Status
         if (!empty($filters['status'])) {
             match ($filters['status']) {
-                'disponivel' => $query->disponivel(),
-                'indisponivel' => $query->where('disponibilidade', \App\Enums\DisponibilidadeEnum::INDISPONIVEL->value),
-                'estoque_baixo' => $query->baixoEstoque(),
-                'inativo' => $query->where('ativo', false),
-                default => $query, // Retorna o query builder para permitir encadeamento seguro
+                'disponivel'     => $query->disponivel(),
+                'indisponivel'   => $query->where('status', \App\Enums\DisponibilidadeEnum::INDISPONIVEL->value),
+                'sob_encomenda'  => $query->where('status', \App\Enums\DisponibilidadeEnum::SOB_ENCOMENDA->value),
+                'estoque_baixo'  => $query->baixoEstoque(),
+                'inativo'        => $query->where('ativo', false),
+                default          => $query,
             };
         }
 
@@ -109,7 +104,7 @@ class EloquentProdutoRepository implements ProdutoRepositoryInterface
         // 5. Ordenação
         $ordenacao = $filters['ordenar'] ?? 'created_at';
         $direcao = strtolower($filters['direcao'] ?? 'desc');
-        
+
         $campoOrdenacao = match ($ordenacao) {
             'preco' => 'valor_atacado',
             'nome' => 'descricao',

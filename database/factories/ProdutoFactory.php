@@ -4,8 +4,8 @@ namespace Database\Factories;
 
 use App\Models\Produto;
 use App\Models\Categoria;
-use App\Enums\DisponibilidadeEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class ProdutoFactory extends Factory
 {
@@ -13,102 +13,94 @@ class ProdutoFactory extends Factory
 
     public function definition(): array
     {
-        $valorCompra = $this->faker->randomFloat(2, 1, 100);
-        $margem = $this->faker->randomElement([60, 65, 70, 75, 80, 85, 90, 95, 98]);
-        $ipi = $this->faker->randomFloat(2, 0, 10);
-        
-        $valorAtacado = $margem < 100 
-            ? round($valorCompra / (1 - ($margem / 100)), 2)
-            : $valorCompra * 10;
+        $descricao = $this->faker->sentence(3);
+        $valorAtacado = $this->faker->randomFloat(2, 5, 500);
 
         return [
-            // Categorias e Identificação
-            'categoria' => $this->faker->word,
+            // Categoria
             'categoria_id' => Categoria::factory(),
+
+            // Identificação
             'referencia' => $this->faker->unique()->numerify('REF-#####'),
-            'descricao' => $this->faker->sentence(3),
+            'descricao' => $descricao,
+            'slug' => Str::slug($descricao) . '-' . $this->faker->unique()->numberBetween(1000, 9999),
             'tipo' => 'UNI',
-            'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
+            'fornecedor' => $this->faker->optional()->company(),
+
+            // Imagem
             'imagem' => null,
-            
-            // Slug
-            'slug' => $this->faker->unique()->slug,
-            
+
             // Estoque
             'quantidade' => $this->faker->numberBetween(10, 100),
             'estoque_minimo' => 5,
-            
-            // Valores Financeiros
-            'valor_atacado' => $valorAtacado,
-            'valor_compra' => $valorCompra,
+
+            // Preços
             'valor_unitario' => $valorAtacado,
-            'valor_custo' => $valorCompra,
+            'valor_atacado' => $valorAtacado,
             'preco_promocional' => null,
-            'ipi' => $ipi,
-            'percentual_custo' => $valorAtacado > 0 
-                ? round(($valorCompra / $valorAtacado) * 100, 2) 
-                : 0,
-            'margem_lucro' => $margem,
-            
+
             // Status
+            'status' => 'disponivel',
             'ativo' => true,
             'destaque' => $this->faker->boolean(20),
-            
+            'novo' => $this->faker->boolean(30),
+            'mais_vendido' => $this->faker->boolean(15),
+            'visualizacoes' => $this->faker->numberBetween(0, 500),
+
             // Datas
             'data_compra' => null,
             'ultima_atualizacao_estoque' => null,
-            
-            'created_at' => now(),
-            'updated_at' => now(),
+            'ultima_visualizacao' => null,
         ];
     }
 
+    // ============================================
+    // STATES
+    // ============================================
+
     public function disponivel(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'ativo' => true,
-                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
-                'quantidade' => $this->faker->numberBetween(10, 100),
-            ];
-        });
+        return $this->state(fn () => [
+            'status' => 'disponivel',
+            'ativo' => true,
+            'quantidade' => $this->faker->numberBetween(10, 100),
+        ]);
     }
 
     public function indisponivel(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'ativo' => false,
-                'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
-                'quantidade' => 0,
-            ];
-        });
+        return $this->state(fn () => [
+            'status' => 'indisponivel',
+            'ativo' => false,
+            'quantidade' => 0,
+        ]);
     }
 
     public function estoqueBaixo(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'ativo' => true,
-                'disponibilidade' => DisponibilidadeEnum::ESTOQUE_BAIXO->value,
-                'quantidade' => $this->faker->numberBetween(1, 5),
-            ];
-        });
+        return $this->state(fn () => [
+            'status' => 'disponivel',
+            'ativo' => true,
+            'quantidade' => $this->faker->numberBetween(1, 5),
+        ]);
+    }
+
+    public function sobEncomenda(): Factory
+    {
+        return $this->state(fn () => [
+            'status' => 'sob_encomenda',
+            'ativo' => true,
+            'quantidade' => 0,
+        ]);
     }
 
     public function comQuantidade(int $quantidade): Factory
     {
-        return $this->state(function (array $attributes) use ($quantidade) {
-            $disponibilidade = $quantidade > 0 
-                ? DisponibilidadeEnum::DISPONIVEL->value 
-                : DisponibilidadeEnum::INDISPONIVEL->value;
-            
-            return [
-                'quantidade' => $quantidade,
-                'disponibilidade' => $disponibilidade,
-                'ativo' => $quantidade > 0,
-            ];
-        });
+        return $this->state(fn () => [
+            'quantidade' => $quantidade,
+            'status' => $quantidade > 0 ? 'disponivel' : 'indisponivel',
+            'ativo' => $quantidade > 0,
+        ]);
     }
 
     public function comPromocao(): Factory
@@ -116,8 +108,8 @@ class ProdutoFactory extends Factory
         return $this->state(function (array $attributes) {
             $preco = $attributes['valor_atacado'] ?? $this->faker->randomFloat(2, 100, 1000);
             return [
-                'valor_atacado' => $preco,
                 'valor_unitario' => $preco,
+                'valor_atacado' => $preco,
                 'preco_promocional' => round($preco * 0.7, 2),
             ];
         });
@@ -125,43 +117,35 @@ class ProdutoFactory extends Factory
 
     public function comImagem(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'imagem' => 'produtos/' . $this->faker->imageUrl(640, 480, 'products', true),
-            ];
-        });
+        return $this->state(fn () => [
+            'imagem' => 'produtos/' . $this->faker->imageUrl(640, 480, 'products', true),
+        ]);
     }
 
     public function inativo(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'ativo' => false,
-                'disponibilidade' => DisponibilidadeEnum::INDISPONIVEL->value,
-                'quantidade' => 0,
-            ];
-        });
+        return $this->state(fn () => [
+            'ativo' => false,
+            'status' => 'indisponivel',
+            'quantidade' => 0,
+        ]);
     }
 
     public function destaque(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'destaque' => true,
-                'ativo' => true,
-                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
-            ];
-        });
+        return $this->state(fn () => [
+            'destaque' => true,
+            'ativo' => true,
+            'status' => 'disponivel',
+        ]);
     }
 
     public function novo(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'novo' => true,
-                'ativo' => true,
-                'disponibilidade' => DisponibilidadeEnum::DISPONIVEL->value,
-            ];
-        });
+        return $this->state(fn () => [
+            'novo' => true,
+            'ativo' => true,
+            'status' => 'disponivel',
+        ]);
     }
 }

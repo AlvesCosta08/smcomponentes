@@ -27,20 +27,14 @@ class ProdutoController extends Controller
     {
         $query = Produto::query()->with(['categoria']);
 
-        // Filtros
         $this->aplicarFiltros($query, $request);
-
-        // Ordenação
         $this->aplicarOrdenacao($query, $request);
 
-        // Paginação
         $perPage = (int) $request->get('per_page', self::PER_PAGE);
         $produtos = $query->paginate($perPage)->withQueryString();
 
-        // Totais para os filtros
         $totais = $this->calcularTotais();
 
-        // Categorias para o filtro
         $categorias = Cache::remember('categorias_ativas', self::CACHE_TTL, function () {
             return Categoria::where('ativo', true)->orderBy('nome')->get();
         });
@@ -60,9 +54,6 @@ class ProdutoController extends Controller
     // DETALHE
     // ================================================================
 
-    /**
-     * Detalhe do produto.
-     */
     public function show(string $slug): View
     {
         $produto = Produto::with(['categoria', 'imagens'])
@@ -72,7 +63,6 @@ class ProdutoController extends Controller
 
         $produto->incrementarVisualizacoes();
 
-        // Produtos relacionados
         $relacionados = collect();
         if ($produto->categoria_id) {
             $relacionados = Produto::query()
@@ -86,7 +76,6 @@ class ProdutoController extends Controller
                 ->get();
         }
 
-        // Wishlist
         $naWishlist = false;
         if (auth()->check() && method_exists(auth()->user(), 'isInWishlist')) {
             $naWishlist = auth()->user()->isInWishlist($produto->id);
@@ -99,9 +88,6 @@ class ProdutoController extends Controller
     // BUSCA
     // ================================================================
 
-    /**
-     * Busca de produtos.
-     */
     public function buscar(BuscarProdutoRequest $request): View|RedirectResponse
     {
         $termo = $request->getTermo();
@@ -163,16 +149,21 @@ class ProdutoController extends Controller
             return Categoria::where('ativo', true)->orderBy('nome')->get();
         });
 
-        return view('produtos.categoria', compact('produtos', 'categoria', 'categorias'));
+        // ✅ ADICIONADO: título
+        $titulo = 'Categoria: ' . $categoriaModel->nome;
+
+        return view('produtos.categoria', [
+            'produtos'   => $produtos,
+            'categoria'  => $categoriaModel,
+            'categorias' => $categorias,
+            'titulo'     => $titulo,     // ← ADICIONADO
+        ]);
     }
 
     // ================================================================
     // FILTRO POR STATUS
     // ================================================================
 
-    /**
-     * Filtro por status de disponibilidade.
-     */
     public function filtroDisponibilidade(string $status): View
     {
         $query = Produto::query()->with('categoria')->where('ativo', true);
@@ -269,17 +260,12 @@ class ProdutoController extends Controller
     // MÉTODOS PRIVADOS
     // ================================================================
 
-    /**
-     * Aplica filtros do request.
-     */
     private function aplicarFiltros($query, Request $request): void
     {
-        // Filtro por categoria
         if ($request->filled('categoria')) {
             $query->where('categoria_id', $request->categoria);
         }
 
-        // Filtro por status
         if ($request->filled('status')) {
             switch ($request->status) {
                 case 'disponivel':
@@ -302,7 +288,6 @@ class ProdutoController extends Controller
             }
         }
 
-        // Filtro por preço (usa valor_atacado com fallback)
         if ($request->filled('preco_min')) {
             $query->whereRaw(
                 'COALESCE(valor_atacado, valor_unitario) >= ?',
@@ -316,7 +301,6 @@ class ProdutoController extends Controller
             );
         }
 
-        // Filtros booleanos
         if ($request->filled('destaque')) {
             $query->where('destaque', true);
         }
@@ -327,15 +311,11 @@ class ProdutoController extends Controller
             $query->where('mais_vendido', true);
         }
 
-        // Busca textual
         if ($request->filled('q')) {
             $query->buscar($request->q);
         }
     }
 
-    /**
-     * Aplica ordenação.
-     */
     private function aplicarOrdenacao($query, Request $request): void
     {
         $campo = (string) $request->get('order', 'created_at');
@@ -361,9 +341,6 @@ class ProdutoController extends Controller
         }
     }
 
-    /**
-     * Calcula totais para os filtros.
-     */
     private function calcularTotais(): array
     {
         return [
@@ -388,9 +365,6 @@ class ProdutoController extends Controller
         ];
     }
 
-    /**
-     * Formata produto para API.
-     */
     private function formatProdutoApi(Produto $produto): array
     {
         return [
