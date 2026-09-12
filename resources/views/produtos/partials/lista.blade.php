@@ -3,22 +3,22 @@
     @forelse($produtos as $produto)
         <div class="col-xl-3 col-lg-4 col-md-6 col-6 product-item">
             <div class="card product-card h-100">
-                <div class="position-relative">
+                <div class="product-image-wrapper">
                     @if($produto->imagem)
                         @php
                             $filename = basename($produto->imagem);
                         @endphp
-                        <img src="{{ asset('storage/produtos/' . $filename) }}" 
-                             class="card-img-top" 
-                             alt="{{ $produto->descricao }}" 
-                             style="height: 200px; object-fit: cover;"
+                        <img src="{{ asset('storage/produtos/' . $filename) }}"
+                             class="card-img-top product-image"
+                             alt="{{ $produto->descricao }}"
+                             loading="lazy"
                              onerror="this.onerror=null; this.src='{{ asset('images/produto-placeholder.jpg') }}';">
                     @else
-                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                        <div class="card-img-top product-image d-flex align-items-center justify-content-center bg-light">
                             <i class="bi bi-plug" style="font-size: 3.5rem; color: #dfe6e9;"></i>
                         </div>
                     @endif
-                    
+
                     <!-- Badge de Disponibilidade -->
                     @if($produto->pode_comprar)
                         <span class="badge bg-success position-absolute top-0 end-0 m-2 px-3 py-1 rounded-pill">
@@ -36,18 +36,18 @@
                         </span>
                     @endif
                 </div>
-                
+
                 <div class="card-body d-flex flex-column">
                     <h6 class="card-title text-truncate" title="{{ $produto->descricao }}">
                         {{ Str::limit($produto->descricao, 40) }}
                     </h6>
-                    
+
                     <div class="mt-auto">
                         <span class="categoria-badge">
-                            <i class="bi bi-tag"></i> 
+                            <i class="bi bi-tag"></i>
                             {{ $produto->categoria?->nome ?? 'Sem categoria' }}
                         </span>
-                        
+
                         <p class="card-text mt-2 mb-0">
                             @if($produto->tem_promocao)
                                 <span class="text-decoration-line-through text-muted small me-1">
@@ -60,8 +60,8 @@
                                 <span class="price">{{ $produto->preco_atacado_formatado }}</span>
                             @endif
                         </p>
-                        
-                        <a href="{{ route('produtos.show', $produto->slug) }}" 
+
+                        <a href="{{ route('produtos.show', $produto->slug) }}"
                            class="btn btn-outline-primary w-100 mt-2 rounded-pill">
                             <i class="bi bi-eye"></i> Detalhes
                         </a>
@@ -78,16 +78,64 @@
 </div>
 
 <style>
+    /* ============================================
+       CARD
+       ============================================ */
     .product-card {
         transition: transform 0.2s, box-shadow 0.2s;
         border-radius: 12px;
         overflow: hidden;
         border: 1px solid #e9ecef;
+        height: 100%;
     }
+
     .product-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
+
+    /* ============================================
+       WRAPPER DA IMAGEM (mantém proporção fixa)
+       ============================================ */
+    .product-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 200px;          /* ✅ altura fixa pra todos os cards */
+        overflow: hidden;
+        background: #f8f9fa;
+    }
+
+    /* ============================================
+       IMAGEM (preenche o wrapper, sem distorcer)
+       ============================================ */
+    .product-card .product-image {
+        width: 100%;
+        height: 200px !important;      /* ✅ força altura única */
+        object-fit: cover;             /* ✅ corta mantendo proporção */
+        object-position: center;       /* ✅ centraliza o corte */
+        display: block;
+    }
+
+    /* ============================================
+       PLACEHOLDER (quando não tem imagem)
+       ============================================ */
+    .product-card .product-image.d-flex {
+        width: 100%;
+        height: 200px !important;
+    }
+
+    /* ============================================
+       BADGES
+       ============================================ */
+    .product-image-wrapper .badge {
+        font-size: 0.7rem;
+        font-weight: 500;
+        z-index: 2;
+    }
+
+    /* ============================================
+       TEXTO / PREÇO
+       ============================================ */
     .categoria-badge {
         font-size: 0.75rem;
         color: #6c757d;
@@ -95,10 +143,23 @@
         padding: 2px 10px;
         border-radius: 20px;
         border: 1px solid #e9ecef;
+        display: inline-block;
     }
+
     .price {
         font-size: 1.1rem;
         font-weight: 700;
         color: #0d6efd;
+    }
+
+    /* ============================================
+       RESPONSIVO (imagem um pouco menor em mobile)
+       ============================================ */
+    @media (max-width: 575.98px) {
+        .product-image-wrapper,
+        .product-card .product-image,
+        .product-card .product-image.d-flex {
+            height: 150px !important;
+        }
     }
 </style>
